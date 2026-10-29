@@ -1,0 +1,167 @@
+name: Verify
+
+# The security audit of SECURITY.md, kept out of the pipeline that builds and tests:
+# after each push to main, each task that the commit does not already hold a standing
+# result for (cargo xtask needed) runs as on a workstation, with the tools and the nightly
+# toolchain pinned in xtask/src/pins.rs. A newer push cancels the run in progress. The
+# results are committed back to audit/ by the last job, the only one that may write; the
+# code under test runs in jobs that cannot.
+on:
+  push:
+    # Per project: the repository's default branch, which the record job below pushes to.
+    branches: [main]
+    paths-ignore: ["audit/**"]
+  workflow_dispatch:
+
+concurrency: { group: "verify-${{ github.ref }}", cancel-in-progress: true }
+
+env:
+  CARGO_TERM_COLOR: always
+  # Each job has a machine of its own, and no systemd user scopes: going over the memory
+  # ends the job alone.
+  RUST_XTASK_NO_SCOPE: "1"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    strategy:
+      # Each task's result is kept, whatever the others do.
+      fail-fast: false
+      matrix:
+        # Per project: the tasks of TASKS in xtask/src/tasks/mod.rs.
+        task: [deny, vet, geiger, miri, coverage, kani, fuzz]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Per project: with vendor/ (an application), restore it first, the fuzz workspace's
+      # dependencies too; xtask itself builds from it. A library has no such steps.
+      - id: vendor-cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-fuzz-${{ hashFiles('Cargo.lock', 'fuzz/Cargo.lock') }}
+      - name: Download dependencies per Cargo.lock and fuzz/Cargo.lock
+        if: steps.vendor-cache.outputs.cache-hit != 'true'
+        run: >
+          cargo --config net.offline=false vendor --locked --versioned-dirs
+          --sync fuzz/Cargo.toml vendor
+      # 0: a run is needed; 1: the committed result stands; anything else is an error.
+      - id: needed
+        run: |
+          set +e
+          cargo xtask needed ${{ matrix.task }}
+          c=$?
+          echo "code=$c" >> "$GITHUB_OUTPUT"
+          [ "$c" -le 1 ]
+      # Per project: what building with the default features needs. geiger and coverage
+      # build rext with them, which compile librclone with Go (see ci.yml); Miri, Kani and
+      # fuzzing build it without them.
+      - id: go
+        if: >
+          steps.needed.outputs.code == '0'
+          && contains(fromJSON('["geiger", "coverage"]'), matrix.task)
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache: false
+      - name: rclone version
+        id: rclone
+        if: steps.go.outcome == 'success'
+        run: |
+          version=$(grep -o 'RCLONE_VERSION: &str = "v[^"]*"' build.rs | grep -o 'v[0-9.]*')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "REXT_LIBRCLONE_DIR=$HOME/librclone" >> "$GITHUB_ENV"
+      - name: Cache librclone
+        id: librclone
+        if: steps.go.outcome == 'success'
+        uses: actions/cache@v4
+        with:
+          path: ~/librclone
+          key: librclone-${{ runner.os }}-${{ steps.rclone.outputs.version }}-${{ hashFiles('scripts/build-librclone.sh') }}
+      - name: Build librclone
+        if: steps.go.outcome == 'success' && steps.librclone.outputs.cache-hit != 'true'
+        run: scripts/build-librclone.sh ~/librclone
+      - if: steps.needed.outputs.code == '0'
+        run: cargo xtask setup ${{ matrix.task }}
+      # A failure fails the job, and is committed too, with the last success kept beside it.
+      - id: task
+        if: steps.needed.outputs.code == '0'
+        run: cargo xtask ${{ matrix.task }}
+      - if: ${{ !cancelled() && steps.task.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-${{ matrix.task }}
+          path: audit/${{ matrix.task }}
+          if-no-files-found: ignore
+      - if: failure() && matrix.task == 'fuzz'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-crashes
+          path: fuzz/artifacts
+
+  record:
+    needs: check
+    if: ${{ !cancelled() && github.ref_name == github.event.repository.default_branch }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: audit-*
+          path: results
+      - name: Commit the results to audit/
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          shopt -s nullglob
+          sha=$GITHUB_SHA
+          for attempt in 1 2 3; do
+            git fetch --quiet origin "$BRANCH"
+            keep=()
+            if [ "$(git rev-parse "origin/$BRANCH")" = "$sha" ]; then
+              git checkout --quiet --detach "$sha"
+            elif ! git diff --quiet "$sha" "origin/$BRANCH" -- . ':!audit'; then
+              # A newer push has its own run, which records its own results.
+              echo "$BRANCH has moved on; not recording."
+              exit 0
+            else
+              # Only results were committed since (which start no run): theirs stand.
+              git checkout --quiet --detach "origin/$BRANCH"
+              mapfile -t keep < <(git diff --name-only "$sha" "origin/$BRANCH" -- audit/ | cut -d/ -f2 | sort -u)
+            fi
+            # Before the first results are committed, there is no audit/ to copy into.
+            mkdir -p audit
+            for dir in results/audit-*; do
+              task=${dir#results/audit-}
+              if printf '%s\n' "${keep[@]}" | grep -qx "$task"; then
+                continue
+              fi
+              rm -rf "audit/$task"
+              cp -r "$dir" "audit/$task"
+            done
+            git add audit
+            if git diff --cached --quiet; then
+              echo "Every task's committed result stands."
+              exit 0
+            fi
+            if git diff --cached --name-only | grep -v '^audit/'; then
+              echo "The results would change files outside audit/." >&2
+              exit 1
+            fi
+            git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit --quiet -m "audit: results for ${sha::7}"
+            if git push origin "HEAD:$BRANCH"; then
+              exit 0
+            fi
+            # Pushed to meanwhile: this commit is left behind, and the next turn starts
+            # again from the branch.
+          done
+          echo "$BRANCH kept moving; not recorded." >&2
+          exit 1

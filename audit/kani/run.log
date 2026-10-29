@@ -1,0 +1,96 @@
+$ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -- cargo kani list --format json
+Kani Rust Verifier 0.68.0 (cargo plugin)
+CBMC 6.11.0
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+warning: Found the following unsupported constructs:
+             - caller_location (1)
+             - foreign function (1)
+         
+         Verification will fail if one or more of these constructs is reachable.
+         See https://model-checking.github.io/kani/rust-feature-support.html for more details.
+
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.05s
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.06s
+Wrote list results to ./kani-list.json
+$ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -- cargo kani --no-default-features --lib --harness hitmap::proofs::every_click_maps_without_overflow --exact -Z unstable-options --harness-timeout 1800s --only-codegen
+Kani Rust Verifier 0.68.0 (cargo plugin)
+CBMC 6.11.0
+warning: function `parse_reply` is never used
+  --> src/rclone/backend.rs:46:4
+   |
+46 | fn parse_reply(status: i32, output: &str) -> Result<Value, RpcError> {
+   |    ^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+warning: Found the following unsupported constructs:
+             - caller_location (1)
+             - foreign function (1)
+         
+         Verification will fail if one or more of these constructs is reachable.
+         See https://model-checking.github.io/kani/rust-feature-support.html for more details.
+
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.05s
+$ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue -- ./target/debug/xtask __kani-harness hitmap::proofs::every_click_maps_without_overflow --peak > kani-hitmap.proofs.every_click_maps_without_overflow.log
+hitmap::proofs::every_click_maps_without_overflow: succeeded, 1 s, peak memory 78 MiB
+$ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -- cargo kani --no-default-features --lib --harness keymap::proofs::prefixes_are_cut_at_character_boundaries --exact -Z unstable-options --harness-timeout 1800s --only-codegen
+Kani Rust Verifier 0.68.0 (cargo plugin)
+CBMC 6.11.0
+warning: function `parse_reply` is never used
+  --> src/rclone/backend.rs:46:4
+   |
+46 | fn parse_reply(status: i32, output: &str) -> Result<Value, RpcError> {
+   |    ^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+warning: Found the following unsupported constructs:
+             - caller_location (1)
+             - foreign function (1)
+         
+         Verification will fail if one or more of these constructs is reachable.
+         See https://model-checking.github.io/kani/rust-feature-support.html for more details.
+
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.06s
+$ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue -- ./target/debug/xtask __kani-harness keymap::proofs::prefixes_are_cut_at_character_boundaries --peak > kani-keymap.proofs.prefixes_are_cut_at_character_boundaries.log
+keymap::proofs::prefixes_are_cut_at_character_boundaries: succeeded, 23 s, peak memory 1017 MiB
+xtask: kani: succeeded

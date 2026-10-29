@@ -1,0 +1,21 @@
+[env]
+# The oldest macOS rext supports. The embedded rclone is built with Go 1.27, whose
+# runtime needs macOS 13, so rustc's defaults (11.0 on arm64, 10.12 on x86_64) would
+# claim too much, and cgo's clang would otherwise build for the host's macOS. rustc and
+# clang both read this variable; it is ignored on Linux, and a value already set in
+# the environment wins.
+MACOSX_DEPLOYMENT_TARGET = "13.0"
+
+# Dependencies come from vendor/, downloaded per Cargo.lock (see README); builds are offline.
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "vendor"
+
+[net]
+offline = true
+
+# The security audit: cargo xtask <task> (see SECURITY.md).
+[alias]
+xtask = "run --quiet --package xtask --"

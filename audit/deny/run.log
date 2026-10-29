@@ -1,0 +1,184 @@
+$ cargo deny --locked --workspace check
+warning[duplicate]: found 2 duplicate entries for crate 'syn'
+    ┌─ ./Cargo.lock:142:1
+    │  
+142 │ ╭ syn 2.0.119 registry+https://github.com/rust-lang/crates.io-index
+143 │ │ syn 3.0.9 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ syn v2.0.119
+      ├── derive_more-impl v2.1.1
+      │   └── derive_more v2.1.1
+      │       └── crossterm v0.29.0
+      │           ├── ratatui-crossterm v0.1.2
+      │           │   └── ratatui v0.30.2
+      │           │       ├── lazyui-ratatui v0.1.0
+      │           │       │   └── rclone-explorer-tui v0.1.0
+      │           │       └── rclone-explorer-tui v0.1.0 (*)
+      │           └── rclone-explorer-tui v0.1.0 (*)
+      ├── fluent-template-macros v0.15.1
+      │   └── fluent-templates v0.15.1
+      │       └── rclone-explorer-tui v0.1.0 (*)
+      ├── strum_macros v0.28.0
+      │   └── strum v0.28.0
+      │       ├── ratatui-core v0.1.2
+      │       │   ├── ratatui v0.30.2 (*)
+      │       │   ├── ratatui-crossterm v0.1.2 (*)
+      │       │   └── ratatui-widgets v0.3.2
+      │       │       └── ratatui v0.30.2 (*)
+      │       └── ratatui-widgets v0.3.2 (*)
+      ├── unic-langid-macros-impl v0.9.6
+      │   └── unic-langid-macros v0.9.6
+      │       └── unic-langid v0.9.6
+      │           ├── fluent-bundle v0.16.0
+      │           │   └── fluent-templates v0.15.1 (*)
+      │           ├── fluent-langneg v0.13.1
+      │           │   ├── fluent-bundle v0.16.0 (*)
+      │           │   └── fluent-templates v0.15.1 (*)
+      │           ├── fluent-template-macros v0.15.1 (*)
+      │           ├── fluent-templates v0.15.1 (*)
+      │           ├── intl-memoizer v0.5.3
+      │           │   ├── fluent-bundle v0.16.0 (*)
+      │           │   └── fluent-templates v0.15.1 (*)
+      │           └── intl_pluralrules v7.0.2
+      │               └── fluent-bundle v0.16.0 (*)
+      ├── windows-implement v0.60.2
+      │   └── windows-core v0.62.2
+      │       └── iana-time-zone v0.1.65
+      │           └── chrono v0.4.45
+      │               └── rclone-explorer-tui v0.1.0 (*)
+      └── windows-interface v0.59.3
+          └── windows-core v0.62.2 (*)
+    ├ syn v3.0.9
+      ├── clap_derive v4.6.7
+      │   └── clap v4.6.7
+      │       └── rclone-explorer-tui v0.1.0
+      ├── darling_core v0.24.1
+      │   ├── darling v0.24.1
+      │   │   └── instability v0.3.14
+      │   │       ├── ratatui v0.30.2
+      │   │       │   ├── lazyui-ratatui v0.1.0
+      │   │       │   │   └── rclone-explorer-tui v0.1.0 (*)
+      │   │       │   └── rclone-explorer-tui v0.1.0 (*)
+      │   │       ├── ratatui-crossterm v0.1.2
+      │   │       │   └── ratatui v0.30.2 (*)
+      │   │       └── ratatui-widgets v0.3.2
+      │   │           └── ratatui v0.30.2 (*)
+      │   └── darling_macro v0.24.1
+      │       └── darling v0.24.1 (*)
+      ├── darling_macro v0.24.1 (*)
+      ├── displaydoc v0.2.7
+      │   └── tinystr v0.8.5
+      │       ├── unic-langid-impl v0.9.6
+      │       │   ├── unic-langid v0.9.6
+      │       │   │   ├── fluent-bundle v0.16.0
+      │       │   │   │   └── fluent-templates v0.15.1
+      │       │   │   │       └── rclone-explorer-tui v0.1.0 (*)
+      │       │   │   ├── fluent-langneg v0.13.1
+      │       │   │   │   ├── fluent-bundle v0.16.0 (*)
+      │       │   │   │   └── fluent-templates v0.15.1 (*)
+      │       │   │   ├── fluent-template-macros v0.15.1
+      │       │   │   │   └── fluent-templates v0.15.1 (*)
+      │       │   │   ├── fluent-templates v0.15.1 (*)
+      │       │   │   ├── intl-memoizer v0.5.3
+      │       │   │   │   ├── fluent-bundle v0.16.0 (*)
+      │       │   │   │   └── fluent-templates v0.15.1 (*)
+      │       │   │   └── intl_pluralrules v7.0.2
+      │       │   │       └── fluent-bundle v0.16.0 (*)
+      │       │   ├── unic-langid-macros v0.9.6
+      │       │   │   └── unic-langid v0.9.6 (*)
+      │       │   └── unic-langid-macros-impl v0.9.6
+      │       │       └── unic-langid-macros v0.9.6 (*)
+      │       └── unic-langid-macros v0.9.6 (*)
+      ├── instability v0.3.14 (*)
+      ├── serde_derive v1.0.229
+      │   └── serde v1.0.229
+      │       └── rclone-explorer-tui v0.1.0 (*)
+      ├── thiserror-impl v2.0.21
+      │   └── thiserror v2.0.21
+      │       ├── fluent-syntax v0.12.0
+      │       │   ├── fluent-bundle v0.16.0 (*)
+      │       │   └── fluent-templates v0.15.1 (*)
+      │       ├── fluent-templates v0.15.1 (*)
+      │       ├── kasuari v0.4.13
+      │       │   └── ratatui-core v0.1.2
+      │       │       ├── ratatui v0.30.2 (*)
+      │       │       ├── ratatui-crossterm v0.1.2 (*)
+      │       │       └── ratatui-widgets v0.3.2 (*)
+      │       ├── ratatui-core v0.1.2 (*)
+      │       └── rclone-explorer-tui v0.1.0 (*)
+      └── wasm-bindgen-macro-support v0.2.129
+          └── wasm-bindgen-macro v0.2.129
+              └── wasm-bindgen v0.2.129
+                  ├── iana-time-zone v0.1.65
+                  │   └── chrono v0.4.45
+                  │       └── rclone-explorer-tui v0.1.0 (*)
+                  └── js-sys v0.3.106
+                      └── iana-time-zone v0.1.65 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows-sys'
+    ┌─ ./Cargo.lock:187:1
+    │  
+187 │ ╭ windows-sys 0.52.0 registry+https://github.com/rust-lang/crates.io-index
+188 │ │ windows-sys 0.61.2 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows-sys v0.52.0
+      └── ring v0.17.14
+          ├── rustls v0.23.46
+          │   └── ureq v3.5.0
+          │       ├── rclone-explorer-tui v0.1.0
+          │       └── xtask v0.0.0
+          └── rustls-webpki v0.103.16
+              └── rustls v0.23.46 (*)
+    ├ windows-sys v0.61.2
+      ├── anstyle-query v1.1.5
+      │   └── anstream v1.0.0
+      │       └── clap_builder v4.6.7
+      │           └── clap v4.6.7
+      │               └── rclone-explorer-tui v0.1.0
+      ├── anstyle-wincon v3.0.11
+      │   └── anstream v1.0.0 (*)
+      ├── console v0.16.6
+      │   └── insta v1.49.0
+      │       └── (dev) rclone-explorer-tui v0.1.0 (*)
+      ├── errno v0.3.14
+      │   ├── rustix v1.1.5
+      │   │   ├── crossterm v0.29.0
+      │   │   │   ├── ratatui-crossterm v0.1.2
+      │   │   │   │   └── ratatui v0.30.2
+      │   │   │   │       ├── lazyui-ratatui v0.1.0
+      │   │   │   │       │   └── rclone-explorer-tui v0.1.0 (*)
+      │   │   │   │       └── rclone-explorer-tui v0.1.0 (*)
+      │   │   │   └── rclone-explorer-tui v0.1.0 (*)
+      │   │   ├── rclone-explorer-tui v0.1.0 (*)
+      │   │   └── tempfile v3.27.0
+      │   │       ├── insta v1.49.0 (*)
+      │   │       └── (dev) rclone-explorer-tui v0.1.0 (*)
+      │   └── signal-hook-registry v1.4.8
+      │       └── signal-hook v0.3.18
+      │           ├── crossterm v0.29.0 (*)
+      │           └── signal-hook-mio v0.2.5
+      │               └── crossterm v0.29.0 (*)
+      ├── mio v1.2.4
+      │   ├── crossterm v0.29.0 (*)
+      │   └── signal-hook-mio v0.2.5 (*)
+      ├── rpassword v7.5.4
+      │   └── rclone-explorer-tui v0.1.0 (*)
+      ├── rtoolbox v0.0.6
+      │   └── rpassword v7.5.4 (*)
+      ├── rustix v1.1.5 (*)
+      ├── tempfile v3.27.0 (*)
+      └── winapi-util v0.1.11
+          ├── same-file v1.0.6
+          │   └── walkdir v2.5.0
+          │       ├── fluent-template-macros v0.15.1
+          │       │   └── fluent-templates v0.15.1
+          │       │       └── rclone-explorer-tui v0.1.0 (*)
+          │       └── fluent-templates v0.15.1 (*)
+          └── walkdir v2.5.0 (*)
+
+advisories ok, bans ok, licenses ok, sources ok
+$ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
+advisories ok, sources ok
+xtask: deny: succeeded

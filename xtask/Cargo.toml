@@ -1,0 +1,27 @@
+[package]
+name = "xtask"
+version = "0.0.0"
+edition = "2024"
+# Per project: the license, as the project's (or license.workspace = true).
+license = "Apache-2.0"
+publish = false
+description = "The security audit: cargo xtask <task> (see SECURITY.md)"
+
+# Only crates already among the project's normal dependencies, with the features these need,
+# so that the tasks add nothing to Cargo.lock, vendor/ or what cargo vet covers: each with
+# only the features the code needs, since defaults could bring in crates. Per project: the
+# versions in Cargo.lock (here, with the rcd feature too; proc-macro2 through clap's
+# derive macros).
+[dependencies]
+proc-macro2 = { version = "1.0.107", default-features = false }
+serde_json = { version = "1.0.154", default-features = false, features = ["std"] }
+toml = { version = "1.1.8", default-features = false, features = ["std", "parse", "display", "serde"] }
+ureq = { version = "3.5.0", default-features = false, features = ["rustls"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+pedantic = { level = "deny", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"

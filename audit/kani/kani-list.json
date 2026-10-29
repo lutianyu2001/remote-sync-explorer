@@ -1,0 +1,19 @@
+{
+  "kani-version": "0.68.0",
+  "file-version": "0.1",
+  "standard-harnesses": {
+    "src/hitmap.rs": [
+      "hitmap::proofs::every_click_maps_without_overflow"
+    ],
+    "src/keymap.rs": [
+      "keymap::proofs::prefixes_are_cut_at_character_boundaries"
+    ]
+  },
+  "contract-harnesses": {},
+  "contracts": [],
+  "totals": {
+    "standard-harnesses": 2,
+    "contract-harnesses": 0,
+    "functions-under-contract": 0
+  }
+}

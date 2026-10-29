@@ -1,0 +1,95 @@
+[package]
+name = "rclone-explorer-tui"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "Dual-pane terminal file manager for local paths and rclone remotes"
+license = "Apache-2.0"
+repository = "https://github.com/lutianyu2001/rclone-explorer-tui"
+readme = "README.md"
+# Only for working in this repository: the offline vendor/ setup does not apply to an
+# install from crates.io, which downloads the dependencies itself, and the results of the
+# security audit in audit/ are read in the repository.
+exclude = [".cargo/", ".github/", "supply-chain/", "scripts/cargo-online.sh", "fuzz/", "xtask/", "audit/"]
+keywords = ["rclone", "tui", "file-manager", "terminal"]
+categories = ["command-line-utilities"]
+build = "build.rs"
+
+[workspace]
+# xtask/ holds the security audit (cargo xtask, see SECURITY.md): no crate rext does not
+# already depend on, and never built by cargo build or cargo test, which build rext alone. fuzz/ is a
+# workspace of its own (see SUPPLY_CHAIN.md): its tools stay out of this Cargo.lock and
+# out of what users build.
+members = [".", "xtask"]
+exclude = ["fuzz"]
+
+[lib]
+name = "rext"
+path = "src/lib.rs"
+doctest = false
+
+[[bin]]
+name = "rext"
+path = "src/main.rs"
+
+[features]
+default = ["embedded"]
+# Link rclone into the binary as a static library (needs Go at build time).
+embedded = []
+# Talk to an external `rclone rcd` over HTTP.
+rcd = ["dep:ureq", "dep:base64"]
+
+[dependencies]
+aes = "0.8.4"
+anyhow = "1.0.104"
+base64 = { version = "0.23.1", optional = true }
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
+clap = { version = "4.6.7", features = ["derive", "string", "unicode"] }
+crossbeam-channel = "0.5.17"
+crossterm = "0.29.0"
+fluent-templates = { version = "0.15.1", default-features = false, features = ["macros", "walkdir"] }
+lazyui-ratatui = "0.1.0"
+libc = "0.2.191"
+ratatui = { version = "0.30.2", default-features = false, features = ["crossterm"] }
+rpassword = "7.5.4"
+rustix = { version = "1.1.5", features = ["process", "stdio"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+sys-locale = "0.3.2"
+thiserror = "2.0.21"
+toml = "1.1.8"
+unicode-segmentation = "1.13.3"
+ureq = { version = "3.5.0", optional = true }
+
+[dev-dependencies]
+insta = "1.49.0"
+tempfile = "3.27.0"
+
+[profile.release]
+strip = true
+lto = "thin"
+# An integer overflow stops rext instead of carrying on with a wrapped-around number.
+overflow-checks = true
+
+[profile.dev.package.insta]
+opt-level = 3
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+# unsafe only where a function allows it by name, so a new use cannot slip in unnoticed.
+unsafe_code = "deny"
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(fuzzing)", "cfg(kani)"] }
+
+[lints.clippy]
+pedantic = { level = "deny", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+# Every unsafe block says why it is sound in a // SAFETY: comment.
+undocumented_unsafe_blocks = "deny"
+multiple_unsafe_ops_per_block = "deny"
+# Pedantic noise for an internal library: #[must_use] on nearly every getter, and
+# # Errors / # Panics doc sections on every fallible function.
+must_use_candidate = "allow"
+return_self_not_must_use = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"

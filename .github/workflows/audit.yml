@@ -1,0 +1,60 @@
+name: Advisories
+
+# Fails when a dependency in Cargo.lock, or a tool pinned in xtask, gets a known
+# vulnerability (daily), or when a pinned tool is due for an update (weekly). Quick checks
+# that record nothing; the security audit itself runs in verify.yml.
+on:
+  schedule:
+    - cron: "0 6 * * *"
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.event.schedule != '17 3 * * 1'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      # Per project: with vendor/ (an application), restore it first; a library has no
+      # such steps.
+      - id: vendor-cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-fuzz-${{ hashFiles('Cargo.lock', 'fuzz/Cargo.lock') }}
+      # Both workspaces: cargo xtask deny also checks fuzz/'s advisories and sources.
+      - name: Download dependencies per Cargo.lock and fuzz/Cargo.lock
+        if: steps.vendor-cache.outputs.cache-hit != 'true'
+        run: >
+          cargo --config net.offline=false vendor --locked --versioned-dirs
+          --sync fuzz/Cargo.toml vendor
+      - run: cargo xtask setup deny
+      - run: cargo xtask deny --no-record
+      # The tools pinned in xtask/src/pins.rs: a known vulnerability in one is due at once.
+      - if: always()
+        run: cargo xtask outdated --vulns
+
+  # Red when a pinned tool has a release at least a month newer, or a known
+  # vulnerability: update it with `cargo xtask outdated` on a workstation.
+  outdated:
+    if: github.event.schedule != '0 6 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Per project: with vendor/ (an application), restore it first; a library has no
+      # such steps.
+      - id: vendor-cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-fuzz-${{ hashFiles('Cargo.lock', 'fuzz/Cargo.lock') }}
+      - name: Download dependencies per Cargo.lock and fuzz/Cargo.lock
+        if: steps.vendor-cache.outputs.cache-hit != 'true'
+        run: >
+          cargo --config net.offline=false vendor --locked --versioned-dirs
+          --sync fuzz/Cargo.toml vendor
+      - run: cargo xtask outdated

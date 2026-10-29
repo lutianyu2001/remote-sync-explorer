@@ -1,0 +1,10 @@
+2c1c1741fb6accf0d5dccb1050e46f7de850d570	.cargo/config.toml
+7bbd0d7860f49a79c60972c4805be1cd6ebcbb5c	Cargo.lock
+7ede7d042b2de6ee2f0b36e1fe0e8bdc0f16d80b	Cargo.toml
+9e6e1e03e4c32f5c0773a9f69e871097d43c5bcf	deny.toml
+83308a63388c5b6ef2cd43c7e6434f1c86cf3af4	fuzz/Cargo.lock
+27089b0225da0e1f3b709f7d1d4cd8b6057c887b	fuzz/Cargo.toml
+9ec55b3b621dbc75fc68817cd51b96e407d3c94c	rust-toolchain.toml
+2141a0520ab3c002183ba3ad29d33ac1ef3957c3	xtask/Cargo.toml
+f13c2b277d46a8521c04b3336a9025019a5dfc26	xtask/src/main.rs
+c8bd4447b82b9c31c73bc212ab85adac089c0ee8	xtask/src/outdated.rs

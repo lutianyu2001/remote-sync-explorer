@@ -1,0 +1,18 @@
+$ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -- cargo +nightly-2026-10-28 fuzz build
+warning: function `parse_reply` is never used
+  --> ./src/rclone/backend.rs:46:4
+   |
+46 | fn parse_reply(status: i32, output: &str) -> Result<Value, RpcError> {
+   |    ^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `rclone-explorer-tui` (lib) generated 1 warning
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.10s
+$ systemd-run --user --scope --quiet -p MemoryMax=6400M -p MemorySwapMax=0 -- ./target/debug/xtask __fuzz-targets ./audit/.running/fuzz 3600 5 address config secrets ssh_command text
+$ cargo +nightly-2026-10-28 fuzz run address -- -max_total_time=3600 -rss_limit_mb=1024 -timeout=10 > fuzz-address.log
+$ cargo +nightly-2026-10-28 fuzz run config -- -max_total_time=3600 -rss_limit_mb=1024 -timeout=10 > fuzz-config.log
+$ cargo +nightly-2026-10-28 fuzz run secrets -- -max_total_time=3600 -rss_limit_mb=1024 -timeout=10 > fuzz-secrets.log
+$ cargo +nightly-2026-10-28 fuzz run ssh_command -- -max_total_time=3600 -rss_limit_mb=1024 -timeout=10 > fuzz-ssh_command.log
+$ cargo +nightly-2026-10-28 fuzz run text -- -max_total_time=3600 -rss_limit_mb=1024 -timeout=10 > fuzz-text.log
+xtask: fuzz: succeeded

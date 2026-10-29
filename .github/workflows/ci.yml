@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+# Read-only unless a job says otherwise; only release writes.
+permissions:
+  contents: read
+
+# Cargo builds offline from vendor/ (see SUPPLY_CHAIN.md). Each job downloads it per
+# Cargo.lock and fuzz/Cargo.lock, or restores it from the cache keyed by both; release always
+# downloads it, so that what it builds never comes from a cache another job wrote.
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - id: vendor-cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-fuzz-${{ hashFiles('Cargo.lock', 'fuzz/Cargo.lock') }}
+      - name: Download dependencies per Cargo.lock and fuzz/Cargo.lock
+        if: steps.vendor-cache.outputs.cache-hit != 'true'
+        run: >
+          cargo --config net.offline=false vendor --locked --versioned-dirs
+          --sync fuzz/Cargo.toml vendor
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache: false
+      - name: rclone version
+        id: rclone
+        run: |
+          version=$(grep -o 'RCLONE_VERSION: &str = "v[^"]*"' build.rs | grep -o 'v[0-9.]*')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "REXT_LIBRCLONE_DIR=$HOME/librclone" >> "$GITHUB_ENV"
+      # librclone takes minutes to compile; cache it per OS, rclone version and build script.
+      - name: Cache librclone
+        id: librclone
+        uses: actions/cache@v4
+        with:
+          path: ~/librclone
+          key: librclone-${{ runner.os }}-${{ steps.rclone.outputs.version }}-${{ hashFiles('scripts/build-librclone.sh') }}
+      - name: Build librclone
+        if: steps.librclone.outputs.cache-hit != 'true'
+        run: scripts/build-librclone.sh ~/librclone
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --locked
+      - run: cargo clippy --locked -p xtask
+      - run: cargo test --locked -p xtask
+      - run: cargo clippy --all-targets --locked --no-default-features --features rcd
+      - run: cargo build --locked
+      - run: cargo test --locked
+
+  # The rcd feature needs no Go, so this build runs with no network at all.
+  build-offline:
+    name: build without network (rcd feature)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - id: vendor-cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-fuzz-${{ hashFiles('Cargo.lock', 'fuzz/Cargo.lock') }}
+      - name: Download dependencies per Cargo.lock and fuzz/Cargo.lock
+        if: steps.vendor-cache.outputs.cache-hit != 'true'
+        run: >
+          cargo --config net.offline=false vendor --locked --versioned-dirs
+          --sync fuzz/Cargo.toml vendor
+      # As the runner's user, not root: a test checks that an unwritable directory is not
+      # written to.
+      - name: Build and test without network
+        run: |
+          docker run --rm --network none --user "$(id -u):$(id -g)" -e CARGO_HOME=/tmp/cargo \
+            -e RUSTUP_TOOLCHAIN=1.99.1 -v "$PWD":/src -w /src rust:1.99.1 \
+            sh -c 'cargo build --locked --offline --no-default-features --features rcd &&
+                   cargo test --locked --offline --no-default-features --features rcd'
+      # Keeps the dependencies this build used, in case a crate is ever taken off crates.io.
+      - run: tar czf vendor-${{ hashFiles('Cargo.lock') }}.tar.gz vendor
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vendor-${{ hashFiles('Cargo.lock') }}
+          path: vendor-*.tar.gz
+          retention-days: 90
+
+  supply-chain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - id: vendor-cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-fuzz-${{ hashFiles('Cargo.lock', 'fuzz/Cargo.lock') }}
+      # Both workspaces: cargo xtask deny also checks fuzz/'s advisories and sources.
+      - name: Download dependencies per Cargo.lock and fuzz/Cargo.lock
+        if: steps.vendor-cache.outputs.cache-hit != 'true'
+        run: >
+          cargo --config net.offline=false vendor --locked --versioned-dirs
+          --sync fuzz/Cargo.toml vendor
+      # The versions pinned in xtask/src/pins.rs, as on any machine. Quick checks that
+      # record nothing; verify.yml records them.
+      - run: cargo xtask setup deny vet
+      - run: cargo xtask deny --no-record
+      - run: cargo xtask vet --no-record
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, build-offline, supply-chain]
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux-x86_64
+          - os: macos-latest
+            name: macos-arm64
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Download dependencies per Cargo.lock and fuzz/Cargo.lock
+        run: >
+          cargo --config net.offline=false vendor --locked --versioned-dirs
+          --sync fuzz/Cargo.toml vendor
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache: false
+      - name: Tools for license texts and the embedded dependency list
+        run: |
+          (cd "$HOME" && cargo install --locked cargo-about cargo-auditable)
+          go install github.com/google/go-licenses@latest
+      # cargo auditable embeds the dependency list, so cargo audit bin can check a release.
+      - name: Build
+        run: cargo auditable build --release --locked
+      - name: Package
+        run: |
+          dir="rext-${GITHUB_REF_NAME}-${{ matrix.name }}"
+          mkdir -p "$dir"
+          cp target/release/rext README.md LICENSE "$dir/"
+          PATH="$(go env GOPATH)/bin:$PATH" scripts/third-party-licenses.sh "$dir/third-party"
+          ./target/release/rext --version > "$dir/VERSIONS"
+          tar czf "$dir.tar.gz" "$dir"
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: rext-*.tar.gz

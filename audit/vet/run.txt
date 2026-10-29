@@ -1,0 +1,6 @@
+result: succeeded
+started: 2026-11-01 21:56 UTC
+seconds: 0
+commit: 24a5703d9ea86cf49e6f5527b5ffec683d179e3e
+args: 
+tools: cargo-vet 0.10.3

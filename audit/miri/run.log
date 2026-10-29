@@ -1,0 +1,71 @@
+$ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -- cargo +nightly-2026-10-28 miri test --locked --no-default-features --lib -- rclone::obscure:: rclone::ssh_passwords:: config:: jobs:: event:: keymap:: location:: endpoint:: ui::text:: ui::panes::tests hitmap:: --skip base64_round_trips_every_short_input
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src/lib.rs (target/miri/x86_64-unknown-linux-gnu/debug/build/rclone-explorer-tui/799a3a173b10c8e2/out/rext-799a3a173b10c8e2)
+
+running 62 tests
+test config::tests::a_full_config_parses ... ok
+test config::tests::missing_file_gives_defaults ... ok
+test config::tests::save_is_atomic_and_round_trips ... ok
+test config::tests::typos_and_bad_values_are_errors ... ok
+test endpoint::tests::address_text_reads_back ... ok
+test endpoint::tests::fs_strings_per_backend ... ok
+test endpoint::tests::logins_and_ports ... ok
+test endpoint::tests::schemes_and_aliases ... ok
+test endpoint::tests::sftp_paths_follow_url_conventions ... ok
+test hitmap::tests::dialog_captures_everything ... ok
+test hitmap::tests::rows_account_for_scroll_offset ... ok
+test hitmap::tests::title_queue_and_hints ... ok
+test jobs::tests::a_cancelled_check_makes_room_and_its_answer_is_ignored ... ok
+test jobs::tests::a_retried_job_waits_for_a_later_one_under_way ... ok
+test jobs::tests::a_taken_target_fails_the_job_until_the_user_chooses ... ok
+test jobs::tests::cancel_all_stops_running_and_drops_queued ... ok
+test jobs::tests::cancel_queued_is_local_and_running_goes_through_rclone ... ok
+test jobs::tests::clear_removes_only_finished ... ok
+test jobs::tests::concurrency_limit_queues_the_rest ... ok
+test jobs::tests::copies_and_moves_use_the_right_rc_calls ... ok
+test jobs::tests::copy_without_target_fails_instead_of_deleting ... ok
+test jobs::tests::failure_keeps_the_error_and_retry_requeues ... ok
+test jobs::tests::jobs_that_change_one_entry_never_run_at_once ... ok
+test jobs::tests::overwrite_mode_starts_jobs_without_a_check ... ok
+test jobs::tests::progress_updates_running_jobs ... ok
+test jobs::tests::the_target_is_checked_before_a_job_starts ... ok
+test jobs::tests::touched_directories ... ok
+test keymap::tests::bad_overrides_are_rejected ... ok
+test keymap::tests::default_keys_map_to_their_actions ... ok
+test keymap::tests::help_lists_every_action ... ok
+test keymap::tests::overrides_replace_defaults ... ok
+test keymap::tests::parses_key_names ... ok
+test location::tests::addresses_with_a_tag_or_a_password ... ok
+test location::tests::connection_string_values_may_hold_slashes_and_quoted_colons ... ok
+test location::tests::contains_is_component_wise ... ok
+test location::tests::fs_string_and_display ... ok
+test location::tests::only_names_of_one_entry_are_safe ... ok
+test location::tests::parent_and_join_round_trip ... ok
+test location::tests::parses_local_and_remote_forms ... ok
+test location::tests::rc_pair_keeps_absolute_paths_in_the_fs ... ok
+test location::tests::scp_style_destinations_are_sftp ... ok
+test location::tests::segments_lead_to_each_level ... ok
+test location::tests::servers_by_address_are_shown_as_urls ... ok
+test rclone::obscure::tests::decodes_only_the_text_rclone_writes ... ok
+test rclone::obscure::tests::obscures_like_rclone ... ok
+test rclone::obscure::tests::rejects_other_text ... ok
+test rclone::obscure::tests::reveals_what_rclone_obscured ... ok
+test rclone::ssh_passwords::tests::keeps_other_lines ... ok
+test rclone::ssh_passwords::tests::refuses_a_file_others_can_read ... ok
+test rclone::ssh_passwords::tests::remembers_and_forgets ... ok
+test rclone::ssh_passwords::tests::reports_a_damaged_entry ... ok
+test ui::panes::tests::breadcrumb_joins_the_levels ... ok
+test ui::panes::tests::long_breadcrumb_shows_only_the_current_directory ... ok
+test ui::panes::tests::wrap_breaks_on_words_and_cuts_long_ones ... ok
+test ui::text::tests::emoji_and_control_characters_match_the_drawn_width ... ok
+test ui::text::tests::extension_rules ... ok
+test ui::text::tests::middle_ellipsis_keeps_both_ends ... ok
+test ui::text::tests::name_ellipsis_keeps_extension ... ok
+test ui::text::tests::sizes_and_durations ... ok
+test ui::text::tests::time_in_given_zone ... ok
+test ui::text::tests::what_cannot_be_seen_is_shown_as_a_mark ... ok
+test ui::text::tests::wide_characters_count_double ... ok
+
+test result: ok. 62 passed; 0 failed; 0 ignored; 0 measured; 138 filtered out; finished in 169.56s
+
+xtask: miri: succeeded

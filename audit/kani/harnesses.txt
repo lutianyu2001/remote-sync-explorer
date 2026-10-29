@@ -1,0 +1,2 @@
+hitmap::proofs::every_click_maps_without_overflow: succeeded, 1 s, peak memory 78 MiB
+keymap::proofs::prefixes_are_cut_at_character_boundaries: succeeded, 23 s, peak memory 1017 MiB

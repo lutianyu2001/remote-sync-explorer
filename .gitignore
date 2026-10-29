@@ -1,0 +1,12 @@
+/target
+# audit/ is committed: the results of the security audit. Not the locks of the runs
+# in progress, nor what an interrupted one left.
+/audit/lock
+/audit/budget
+/audit/.running/
+/kani-list.json
+/fuzz-*.log
+*.pending-snap
+*.snap.new
+/vendor/
+/.cargo/config.toml.offline-bak
