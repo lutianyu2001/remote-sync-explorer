@@ -50,16 +50,24 @@ jobs:
           version=$(grep -o 'RCLONE_VERSION: &str = "v[^"]*"' build.rs | grep -o 'v[0-9.]*')
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "RSE_LIBRCLONE_DIR=$HOME/librclone" >> "$GITHUB_ENV"
-      # librclone takes minutes to compile; cache it per OS, rclone version and build script.
+      # librclone takes minutes to compile; cache it per OS, rclone version, build script and
+      # the Go module it is built from.
       - name: Cache librclone
         id: librclone
         uses: actions/cache@v4
         with:
           path: ~/librclone
-          key: librclone-${{ runner.os }}-${{ steps.rclone.outputs.version }}-${{ hashFiles('scripts/build-librclone.sh') }}
+          key: librclone-${{ runner.os }}-${{ steps.rclone.outputs.version }}-${{ hashFiles('scripts/build-librclone.sh', 'librse/**') }}
       - name: Build librclone
         if: steps.librclone.outputs.cache-hit != 'true'
         run: scripts/build-librclone.sh ~/librclone
+      # rse's own rc calls, which the archive adds to rclone's.
+      - name: Go checks and tests of librse
+        working-directory: librse
+        run: |
+          test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+          go vet ./...
+          go test ./...
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --check
       - run: cargo clippy --all-targets --locked

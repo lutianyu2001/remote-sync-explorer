@@ -11,21 +11,17 @@ set -eu
 
 out=${1:?usage: $0 OUT}
 here=$(cd "$(dirname "$0")/.." && pwd)
-version=$(sed -n 's/^const RCLONE_VERSION: &str = "\(v[^"]*\)";/\1/p' "$here/build.rs")
-go=${GO:-go}
+# librse/ itself is rse's own code, under rse's license.
+own=github.com/lutianyu2001/remote-sync-explorer
 
 mkdir -p "$out"
 out=$(cd "$out" && pwd)
 
 (cd "$here" && cargo about generate --fail about.hbs -o "$out/rust-licenses.html")
 
-work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT
-cd "$work"
-export CGO_ENABLED=1 GOTOOLCHAIN=${GOTOOLCHAIN:-local}
-"$go" mod init rse-librclone >/dev/null 2>&1
-"$go" get "github.com/rclone/rclone/librclone@$version" >/dev/null 2>&1
+cd "$here/librse"
+export CGO_ENABLED=1 GOTOOLCHAIN=${GOTOOLCHAIN:-local} GOWORK=off GOFLAGS=-mod=readonly
 rm -rf "$out/go"
-go-licenses save github.com/rclone/rclone/librclone --save_path "$out/go"
-go-licenses report github.com/rclone/rclone/librclone > "$out/go-licenses.csv"
+go-licenses save . --ignore "$own" --save_path "$out/go"
+go-licenses report . --ignore "$own" > "$out/go-licenses.csv"
 echo "license texts in $out"

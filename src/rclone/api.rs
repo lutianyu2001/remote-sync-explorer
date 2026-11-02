@@ -119,6 +119,50 @@ pub fn move_dir_params(src_fs: &str, dst_fs: &str) -> Value {
     json!({ "srcFs": src_fs, "dstFs": dst_fs, "createEmptySrcDirs": true, "deleteEmptySrcDirs": true })
 }
 
+/// rse's own copy and move (`librse/resume`): it skips files the target already has, and
+/// resumes a file a stopped or failed job left half done where the target allows it (see
+/// [`resumable`]). Runs as a job, like `sync/copy`, with stats in [`job_group`].
+pub const COPY: &str = "rse/copy";
+
+/// The parameters of [`COPY`] for a file (`src_remote` in `src_fs` to `dst_remote` in
+/// `dst_fs`), or for a directory with `is_dir`, where the remotes may be empty to take
+/// the fs roots. A directory's empty directories are copied too; a move deletes the
+/// source directories it empties, but not the source root.
+pub fn copy_params(
+    src_fs: &str,
+    src_remote: &str,
+    dst_fs: &str,
+    dst_remote: &str,
+    is_dir: bool,
+    moving: bool,
+) -> Value {
+    json!({
+        "srcFs": src_fs,
+        "srcRemote": src_remote,
+        "dstFs": dst_fs,
+        "dstRemote": dst_remote,
+        "isDir": is_dir,
+        "move": moving,
+        "createEmptySrcDirs": is_dir,
+    })
+}
+
+#[derive(Deserialize)]
+struct ResumableReply {
+    resumable: bool,
+}
+
+/// Whether [`COPY`] from `src_fs` to `dst_fs` resumes a stopped file instead of starting
+/// it over: when the target is the local disk or an sftp server reached through an
+/// `ssh` command.
+///
+/// # Errors
+/// Returns rclone's error, e.g. for an unknown remote.
+pub fn resumable(b: &dyn Backend, src_fs: &str, dst_fs: &str) -> Result<bool, RpcError> {
+    let v = b.rpc("rse/resumable", json!({ "srcFs": src_fs, "dstFs": dst_fs }))?;
+    Ok(decode::<ResumableReply>("rse/resumable", v)?.resumable)
+}
+
 /// # Errors
 /// Returns rclone's error.
 pub fn rmdir(b: &dyn Backend, fs: &str, remote: &str) -> Result<(), RpcError> {
@@ -287,6 +331,24 @@ mod tests {
         let b = FakeBackend::new(|_, _| Ok(json!({"jobid": 7})));
         assert_eq!(submit(&b, "sync/copy", json!({"srcFs": "a:", "dstFs": "b:"})).unwrap(), 7);
         assert_eq!(b.calls_to("sync/copy")[0]["_async"], json!(true));
+    }
+
+    #[test]
+    fn copy_params_name_rse_copy_parameters() {
+        let p = copy_params("/a", "x", "box:", "y", false, true);
+        assert_eq!(
+            p,
+            json!({"srcFs": "/a", "srcRemote": "x", "dstFs": "box:", "dstRemote": "y",
+                   "isDir": false, "move": true, "createEmptySrcDirs": false})
+        );
+        assert_eq!(copy_params("/a", "", "/b", "", true, false)["createEmptySrcDirs"], json!(true));
+    }
+
+    #[test]
+    fn resumable_reads_the_reply() {
+        let b = FakeBackend::new(|_, _| Ok(json!({"resumable": true})));
+        assert!(resumable(&b, "/", "box:").unwrap());
+        assert_eq!(b.calls_to("rse/resumable"), vec![json!({"srcFs": "/", "dstFs": "box:"})]);
     }
 
     #[test]

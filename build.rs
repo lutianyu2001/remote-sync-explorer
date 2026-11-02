@@ -1,7 +1,9 @@
-//! Builds librclone as a static C archive at a pinned rclone version.
+//! Builds librclone as a static C archive from the Go module in `librse/`: rclone at a
+//! pinned version, with rse's own rc calls added (see `librse/main.go`).
 //!
 //! Environment:
-//! - `RSE_RCLONE_VERSION` overrides the pinned rclone version.
+//! - `RSE_RCLONE_VERSION` overrides the pinned rclone version: Go fetches it, in a copy
+//!   of `librse/go.mod` in `OUT_DIR`.
 //! - `RSE_LIBRCLONE_DIR` points at a directory that already holds `librclone.a` and
 //!   `librclone.h`; the Go build is skipped entirely.
 //! - `GO` names the Go binary (default `go` from `PATH`).
@@ -20,10 +22,14 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 /// The rclone version this release of remote-sync-explorer is built and tested against.
+/// `librse/go.mod` requires the same.
 const RCLONE_VERSION: &str = "v1.75.2";
 
 /// Bump when the go build flags change, so cached libraries are rebuilt.
-const STAMP_REV: u32 = 3;
+const STAMP_REV: u32 = 4;
+
+/// The Go module librclone is built from, in the package.
+const LIBRSE: &str = "librse";
 
 /// The declarations `src/rclone/ffi.rs` writes by hand. `librclone.h` must contain
 /// exactly these, otherwise the build fails.
@@ -40,6 +46,8 @@ const EXPECTED_LIBINTL: &str =
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
+    // A directory: cargo looks at every file in it.
+    println!("cargo:rerun-if-changed={LIBRSE}");
     println!("cargo:rerun-if-env-changed=RSE_RCLONE_VERSION");
     println!("cargo:rerun-if-env-changed=RSE_LIBRCLONE_DIR");
     println!("cargo:rerun-if-env-changed=GO");
@@ -155,17 +163,24 @@ fn target_cc(goos: &str, goarch: &str) -> Option<String> {
 }
 
 /// Builds librclone into `OUT_DIR/librclone-<version>`, reusing an earlier build of the
-/// same version for the same target.
+/// same version and sources for the same target.
 fn build_librclone(version: &str, target: &GoTarget) -> PathBuf {
     let out_dir = PathBuf::from(env_or_panic("OUT_DIR"));
+    let src = PathBuf::from(env_or_panic("CARGO_MANIFEST_DIR")).join(LIBRSE);
+    let pinned = go_mod_rclone(&src);
+    assert!(
+        pinned == RCLONE_VERSION,
+        "{LIBRSE}/go.mod requires rclone {pinned}, build.rs pins {RCLONE_VERSION}"
+    );
     let dir = out_dir.join(format!("librclone-{version}"));
     let stamp = dir.join("stamp");
     let stamp_text = format!(
-        "{version} {STAMP_REV} {}/{} cc={} macos={}",
+        "{version} {STAMP_REV} {}/{} cc={} macos={} src={:016x}",
         target.goos,
         target.goarch,
         target.cc.as_deref().unwrap_or("default"),
-        target.macos_min.as_deref().unwrap_or("-")
+        target.macos_min.as_deref().unwrap_or("-"),
+        digest_dir(&src)
     );
     if fs::read_to_string(&stamp).is_ok_and(|s| s == stamp_text)
         && dir.join("librclone.a").is_file()
@@ -181,35 +196,90 @@ fn build_librclone(version: &str, target: &GoTarget) -> PathBuf {
     fs::create_dir_all(&dir).unwrap_or_else(|e| panic!("cannot create {}: {e}", dir.display()));
 
     let go = env::var("GO").unwrap_or_else(|_| "go".to_owned());
-    let module = format!("github.com/rclone/rclone/librclone@{version}");
-    run(&dir, target, &go, &["mod", "init", "rse-librclone"]);
-    run(&dir, target, &go, &["get", &module]);
-    run(
-        &dir,
-        target,
-        &go,
-        &[
-            "build",
-            "-buildmode=c-archive",
-            "-trimpath",
-            // A release build, like rclone's own: report v1.75.2, not v1.75.2-DEV.
-            "-ldflags=-X github.com/rclone/rclone/fs.VersionSuffix=",
-            "-o",
-            "librclone.a",
-            "github.com/rclone/rclone/librclone",
-        ],
-    );
+    // The pinned version builds from librse/go.sum as it is; another one from a copy,
+    // so that the package itself is never written to.
+    let mut module_flags = vec!["-mod=readonly".to_owned()];
+    if version != RCLONE_VERSION {
+        let modfile = dir.join("go.mod");
+        for name in ["go.mod", "go.sum"] {
+            fs::copy(src.join(name), dir.join(name))
+                .unwrap_or_else(|e| panic!("cannot copy {LIBRSE}/{name}: {e}"));
+        }
+        let modfile_flag = format!("-modfile={}", modfile.display());
+        let module = format!("github.com/rclone/rclone@{version}");
+        run(&src, target, &go, &["get", &modfile_flag, &module]);
+        module_flags = vec![modfile_flag, "-mod=mod".to_owned()];
+    }
+    let output = dir.join("librclone.a");
+    let output = output.to_str().unwrap_or_else(|| panic!("{} is not UTF-8", dir.display()));
+    let mut args = vec!["build"];
+    args.extend(module_flags.iter().map(String::as_str));
+    args.extend([
+        "-buildmode=c-archive",
+        "-trimpath",
+        // A release build, like rclone's own: report v1.75.2, not v1.75.2-DEV.
+        "-ldflags=-X github.com/rclone/rclone/fs.VersionSuffix=",
+        "-o",
+        output,
+        ".",
+    ]);
+    run(&src, target, &go, &args);
 
     fs::write(&stamp, &stamp_text)
         .unwrap_or_else(|e| panic!("cannot write {}: {e}", stamp.display()));
     dir
 }
 
+/// The rclone version `go.mod` in `dir` requires.
+fn go_mod_rclone(dir: &Path) -> String {
+    let path = dir.join("go.mod");
+    let text =
+        fs::read_to_string(&path).unwrap_or_else(|e| panic!("cannot read {}: {e}", path.display()));
+    text.lines()
+        .map(|l| l.trim().trim_start_matches("require").split_whitespace().collect::<Vec<_>>())
+        .find_map(|w| match w.as_slice() {
+            ["github.com/rclone/rclone", v, ..] => Some((*v).to_owned()),
+            _ => None,
+        })
+        .unwrap_or_else(|| panic!("{} does not require github.com/rclone/rclone", path.display()))
+}
+
+/// A digest of the names and contents of the files under `dir`, so that a change to the
+/// Go sources rebuilds the library. Stable within one build of the toolchain, which is
+/// all a cache in `OUT_DIR` needs.
+fn digest_dir(dir: &Path) -> u64 {
+    use std::hash::{DefaultHasher, Hash as _, Hasher as _};
+    fn walk(dir: &Path, files: &mut Vec<PathBuf>) {
+        let entries =
+            fs::read_dir(dir).unwrap_or_else(|e| panic!("cannot read {}: {e}", dir.display()));
+        for entry in entries {
+            let path = entry.unwrap_or_else(|e| panic!("{}: {e}", dir.display())).path();
+            if path.is_dir() {
+                walk(&path, files);
+            } else {
+                files.push(path);
+            }
+        }
+    }
+    let mut files = Vec::new();
+    walk(dir, &mut files);
+    files.sort();
+    let mut hasher = DefaultHasher::new();
+    for file in files {
+        file.strip_prefix(dir).unwrap_or(&file).hash(&mut hasher);
+        fs::read(&file)
+            .unwrap_or_else(|e| panic!("cannot read {}: {e}", file.display()))
+            .hash(&mut hasher);
+    }
+    hasher.finish()
+}
+
 /// Runs one command and panics with the full command line and stderr if it fails.
 fn run(dir: &Path, target: &GoTarget, program: &str, args: &[&str]) {
     let command_line = format!("{program} {}", args.join(" "));
     let mut cmd = Command::new(program);
-    cmd.args(args).current_dir(dir).env("CGO_ENABLED", "1");
+    // Never a go.work from a directory above: the module builds as it is.
+    cmd.args(args).current_dir(dir).env("CGO_ENABLED", "1").env("GOWORK", "off");
     target.apply(&mut cmd);
     if env::var_os("GOTOOLCHAIN").is_none() {
         // Fail with a clear message instead of silently downloading another toolchain.
