@@ -559,6 +559,8 @@ cargo fmt --check
 - Integration tests run the embedded rclone on the local and memory backends, cancel
   transfers midway, and browse an sftp remote through a private `sshd` (skipped when
   `sshd` is not installed).
+- `tests/resume.rs` stops transfers midway and checks that the next one resumes, from
+  a remote to the local disk and to an sftp server through the system ssh.
 - `tests/concurrency.rs` checks that rclone calls do not block each other.
 - `cargo test` also checks that both language files define the same messages and that
   every message is used.
