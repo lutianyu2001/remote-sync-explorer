@@ -47,6 +47,7 @@ use super::backend::{Backend, RpcError};
 use super::obscure::reveal;
 use super::ssh_passwords::PasswordFile;
 use crate::location::remote_colon;
+use crate::rsync::RsyncRemote;
 
 /// rc parameters that hold fs strings.
 const FS_KEYS: [&str; 3] = ["fs", "srcFs", "dstFs"];
@@ -57,6 +58,8 @@ const RECHECK: Duration = Duration::from_secs(10);
 /// How long a login may take, not counting the time the user takes to answer: enough for
 /// a slow server or a push to a phone, not for a server that stalls after its banner.
 const LOGIN_TIME: Duration = Duration::from_secs(120);
+/// How long asking a server whether it has rsync may take, through a master already up.
+const PROBE_TIME: Duration = Duration::from_secs(15);
 
 /// sftp options the system ssh takes over. rclone still reads some of them when it runs
 /// ssh (the key file, failing on one with a passphrase) and warns about others, so they
@@ -168,8 +171,14 @@ pub struct SystemSsh {
     /// How each fs name (`nas`, `:sftp,host=box`) is reached. Each has its own lock, so
     /// concurrent first uses of a server open one master connection.
     routes: Mutex<HashMap<String, Arc<Mutex<Route>>>>,
+    /// Whether each server has rsync, by the ssh command that reaches it; `None` until
+    /// known.
+    rsync: Mutex<HashMap<Vec<String>, Probe>>,
     next_log: AtomicU64,
 }
+
+/// Whether a server has rsync, once known.
+type Probe = Arc<Mutex<Option<bool>>>;
 
 // One per server name, so the size of `Login` does not matter.
 #[allow(clippy::large_enum_variant)]
@@ -331,6 +340,7 @@ impl SystemSsh {
             passwords: None,
             save_errors: Mutex::new(HashMap::new()),
             routes: Mutex::new(HashMap::new()),
+            rsync: Mutex::new(HashMap::new()),
             next_log: AtomicU64::new(0),
         }
     }
@@ -374,7 +384,17 @@ impl SystemSsh {
     /// The fs string to send for `fs`, opening a master connection first if needed.
     fn route(&self, fs: &str) -> Result<Option<String>, RpcError> {
         let Some(colon) = remote_colon(fs) else { return Ok(None) };
-        let name = &fs[..colon];
+        self.with_route(&fs[..colon], |route| match route {
+            Route::Ssh(Login { fs_name, .. }) | Route::Checked(fs_name) => {
+                Some(format!("{fs_name}{}", &fs[colon..]))
+            }
+            _ => None,
+        })
+    }
+
+    /// Calls `f` with how fs name `name` is reached, deciding it first, and opening or
+    /// checking its master connection.
+    fn with_route<T>(&self, name: &str, f: impl FnOnce(&Route) -> T) -> Result<T, RpcError> {
         let entry = {
             let mut routes = self.routes.lock().map_err(|_| poisoned())?;
             routes
@@ -393,12 +413,36 @@ impl SystemSsh {
             let fallback = login.fallback();
             *route = fallback;
         }
-        Ok(match &*route {
-            Route::Ssh(Login { fs_name, .. }) | Route::Checked(fs_name) => {
-                Some(format!("{fs_name}{}", &fs[colon..]))
-            }
+        Ok(f(&route))
+    }
+
+    /// How rsync reaches the server of `fs` (`box:`, `box:/srv`), whose path after the
+    /// colon becomes [`RsyncRemote::root`]; `None` when rsync is not to be used: `fs` is
+    /// not an sftp fs reached through the system ssh, or its server has no `rsync`, or
+    /// rsync would read the server's name otherwise ([`RsyncRemote::new`]).
+    ///
+    /// Like an rc call on `fs`, this opens the master connection when it is not up, which
+    /// may ask the user to log in, and fails as that call would. rsync goes through the
+    /// master and never logs in itself, so call this before each transfer: it also checks
+    /// the master is still up. Whether a server has rsync is asked once, through the
+    /// master (`command -v rsync`).
+    pub fn rsync_remote(&self, fs: &str) -> Result<Option<RsyncRemote>, RpcError> {
+        let Some(colon) = remote_colon(fs) else { return Ok(None) };
+        let ssh = self.with_route(&fs[..colon], |route| match route {
+            Route::Ssh(login) => Some(transfer_ssh(&login.control, &login.dest)),
             _ => None,
-        })
+        })?;
+        let Some(ssh) = ssh else { return Ok(None) };
+        let known = {
+            let mut probes = self.rsync.lock().map_err(|_| poisoned())?;
+            probes.entry(ssh.clone()).or_default().clone()
+        };
+        // Its own lock, so that concurrent first transfers to a server ask once.
+        let mut known = known.lock().map_err(|_| poisoned())?;
+        if known.is_none() {
+            *known = has_rsync(&ssh);
+        }
+        Ok(if *known == Some(true) { RsyncRemote::new(&ssh, &fs[colon + 1..]) } else { None })
     }
 
     /// How to reach a fs name seen for the first time.
@@ -1204,9 +1248,9 @@ fn ssh_target(params: &BTreeMap<String, String>) -> Result<Vec<String>, String> 
     Ok(args)
 }
 
-/// The command rclone runs for each connection, through the master and never asking, as
-/// the value of rclone's space-separated `ssh` option.
-pub(crate) fn ssh_command(control: &[String], dest: &[String]) -> String {
+/// The ssh command of a transfer, through the master and never asking: what rclone runs
+/// for each connection, and rsync's remote shell.
+fn transfer_ssh(control: &[String], dest: &[String]) -> Vec<String> {
     let mut cmd = vec!["ssh".to_owned(), "-o".to_owned(), "BatchMode=yes".to_owned()];
     cmd.extend(TRANSFER_ONLY.map(str::to_owned));
     if !control.is_empty() {
@@ -1214,8 +1258,50 @@ pub(crate) fn ssh_command(control: &[String], dest: &[String]) -> String {
         cmd.extend(control.iter().cloned());
     }
     cmd.extend(dest.iter().cloned());
-    let cmd: Vec<String> = cmd.iter().map(|a| space_sep_quote(a)).collect();
+    cmd
+}
+
+/// The command rclone runs for each connection ([`transfer_ssh`]), as the value of
+/// rclone's space-separated `ssh` option.
+pub(crate) fn ssh_command(control: &[String], dest: &[String]) -> String {
+    let cmd: Vec<String> = transfer_ssh(control, dest).iter().map(|a| space_sep_quote(a)).collect();
     cmd.join(" ")
+}
+
+/// Whether the server `ssh` (a [`transfer_ssh`] command) reaches has rsync; `None` when
+/// it cannot be told, such as when ssh fails.
+fn has_rsync(ssh: &[String]) -> Option<bool> {
+    let (program, args) = ssh.split_first()?;
+    let mut child = Command::new(program)
+        .args(args)
+        .arg("command -v rsync")
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .ok()?;
+    let deadline = Instant::now() + PROBE_TIME;
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) if Instant::now() < deadline => std::thread::sleep(Duration::from_millis(20)),
+            _ => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return None;
+            }
+        }
+    };
+    let mut out = String::new();
+    child.stdout.take()?.read_to_string(&mut out).ok()?;
+    match status.code() {
+        // A path, as `command -v` prints for a program, rather than whatever a server
+        // that runs a command of its own (`ForceCommand`) prints.
+        Some(0) => Some(out.lines().any(|l| l.starts_with('/'))),
+        // ssh's own failure.
+        Some(255) | None => None,
+        Some(_) => Some(false),
+    }
 }
 
 fn classify(message: &str) -> OpenError {
@@ -1430,6 +1516,20 @@ mod tests {
                 "{v:?} as {name:?}"
             );
         }
+    }
+
+    #[test]
+    fn whether_a_server_has_rsync() {
+        // In place of ssh: `sh -c <script>`, with the probe's command as `$0`.
+        let probe =
+            |script: &str| has_rsync(&["sh".to_owned(), "-c".to_owned(), script.to_owned()]);
+        assert_eq!(probe("[ \"$0\" = 'command -v rsync' ] && echo /usr/bin/rsync"), Some(true));
+        assert_eq!(probe("exit 1"), Some(false));
+        assert_eq!(probe("echo 'alias rsync=x'"), Some(false));
+        // What a server running a command of its own prints.
+        assert_eq!(probe("exit 0"), Some(false));
+        assert_eq!(probe("exit 255"), None, "ssh failed");
+        assert_eq!(has_rsync(&["/no/such/ssh".to_owned()]), None);
     }
 
     #[test]
@@ -1815,6 +1915,7 @@ mod tests {
             passwords: Some(PasswordFile::new(path.to_owned())),
             save_errors: Mutex::new(HashMap::new()),
             routes: Mutex::new(HashMap::new()),
+            rsync: Mutex::new(HashMap::new()),
             next_log: AtomicU64::new(0),
         };
         let questions = Questions::default();
@@ -2051,6 +2152,7 @@ mod tests {
             passwords: None,
             save_errors: Mutex::new(HashMap::new()),
             routes: Mutex::new(HashMap::new()),
+            rsync: Mutex::new(HashMap::new()),
             next_log: AtomicU64::new(0),
         };
         for fs in ["/home", "nas:x", "nas:y", ":sftp,host=box:z", ":s3,env_auth=true:b"] {

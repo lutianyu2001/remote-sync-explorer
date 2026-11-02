@@ -295,6 +295,9 @@ passwords-updating = 更新 { $path } 失败
 passwords-forgotten = 已删除 { $login } 记住的密码（{ $path }）。
 passwords-none-for = { $path } 中没有为 { $login } 记住的密码
 ssh-host-key = ssh 拒绝了服务器的主机密钥（{ $reason }）；请核实密钥，如果更换是预期的，请修正 known_hosts
+rsync-stopped = rsync 已停止；传到一半的文件已保留，下次运行会接着传
+rsync-exit = rsync 失败（退出码 { $code }）
+rsync-signal = rsync 被信号 { $signal } 终止
 internal-lock = 内部锁已损坏
 
 ## 按键（帮助页），每个动作一条

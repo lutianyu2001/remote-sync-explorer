@@ -53,3 +53,25 @@ pub fn reveal(obscured: &str) -> Result<String, String> {
 pub fn password_entry(line: &str) -> Option<(&str, &str)> {
     ssh_passwords::entry(line)
 }
+
+/// rsync's output as `rsync::Running` reads it.
+#[derive(Default)]
+pub struct RsyncProgress(crate::rsync::Progress);
+
+impl RsyncProgress {
+    pub fn feed(&mut self, data: &[u8]) {
+        self.0.feed(data);
+    }
+
+    pub fn stats(&self) -> crate::rclone::api::Stats {
+        self.0.stats()
+    }
+
+    pub fn total_bounds(&self) -> (u64, Option<u64>) {
+        self.0.total_bounds()
+    }
+
+    pub fn wire(&self) -> Option<(u64, u64)> {
+        self.0.wire()
+    }
+}

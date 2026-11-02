@@ -35,6 +35,7 @@ The targets in `fuzz/fuzz_targets/` need a nightly toolchain and
 | `text` | Names and messages drawn in cells | Cutting and wrapping keep to the width (a line is wider only when one character is), lose no text and end; control characters, bidirectional marks and zero-width spaces are marked, and letters, digits and punctuation never are |
 | `config` | `config.toml` | What is read writes back to the same settings |
 | `secrets` | Obscured passwords, the password file, ssh's version | base64 decoding is the exact inverse of encoding; the password file and ssh's version are read without panicking |
+| `rsync` | rsync's command line, from an sftp remote's ssh options and a transfer's paths; rsync's output | No path becomes an rsync option, or is read as another server's or an rsync daemon's; rsync reads back exactly ssh's command and destination; the output is read the same however it comes in pieces, and the total is narrowed down to the true one |
 
 ```bash
 cargo xtask fuzz 300 --no-record   # every target for five minutes, not recorded
