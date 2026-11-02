@@ -79,7 +79,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/librclone
-          key: librclone-${{ runner.os }}-${{ steps.rclone.outputs.version }}-${{ hashFiles('scripts/build-librclone.sh') }}
+          key: librclone-${{ runner.os }}-${{ steps.rclone.outputs.version }}-${{ hashFiles('scripts/build-librclone.sh', 'librse/**') }}
       - name: Build librclone
         if: steps.go.outcome == 'success' && steps.librclone.outputs.cache-hit != 'true'
         run: scripts/build-librclone.sh ~/librclone

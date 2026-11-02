@@ -101,7 +101,7 @@ What this does not show:
 - 56 of the 123 crates in the default build use `unsafe` code. That code rests on its
   authors and on the audits above, not on rse's tests, Miri or Kani.
 - The rclone compiled into rse is Go code, which none of these checks covers; Go checks
-  its modules against `go.sum` when it downloads them.
+  its modules against `librse/go.sum` when it downloads them.
 - Kani proves a property only up to its bound, and fuzzing tries samples. Not proved: the
   decoding of obscured passwords, and the readers of addresses, ssh options, connection
   strings and the config file; tests of every short input and fuzzing check them.
@@ -128,10 +128,11 @@ What this does not show:
    cargo install --locked remote-sync-explorer
    ```
 
-The first build compiles rclone, which takes a minute or more. The binary is around
-90–115 MB because it contains all of rclone. The build checks `librclone.h` against the
-hand-written bindings and fails if rclone ever changes the four exported functions; on
-glibc, it checks the one libintl function rse declares the same way.
+The first build compiles rclone, with rse's own additions from `librse/`, which takes a
+minute or more. The binary is around 90–115 MB because it contains all of rclone. The
+build checks `librclone.h` against the hand-written bindings and fails if rclone ever
+changes the four exported functions; on glibc, it checks the one libintl function rse
+declares the same way.
 
 ### Building from Source
 
@@ -144,7 +145,7 @@ Build-time environment variables, for either way of building:
 
 | Variable | Effect |
 |----------|--------|
-| `RSE_RCLONE_VERSION` | Build against another rclone version (default: the pinned `v1.75.2`) |
+| `RSE_RCLONE_VERSION` | Build against another rclone version (default: the `v1.75.2` that `librse/go.mod` pins); Go downloads it |
 | `RSE_LIBRCLONE_DIR` | Directory with a prebuilt `librclone.a` and `librclone.h`; skips the Go build entirely (offline builds, packaging) |
 | `GO` | The Go binary to use |
 | `GOTOOLCHAIN` | Passed to Go as is; when unset, rse sets it to `local` so an old Go fails clearly instead of downloading a toolchain |
