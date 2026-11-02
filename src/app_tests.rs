@@ -685,7 +685,7 @@ fn copy_file_asks_then_submits_copyfile() {
     assert!(h.screen.contains("to    nas:backup"), "{}", h.screen);
     h.press(KeyCode::Enter);
     h.wait_until(|a| a.queue.jobs.first().is_some_and(|j| j.state == JobState::Done));
-    let call = last_call(&h, "operations/copyfile");
+    let call = last_call(&h, "rse/copy");
     assert_eq!(call["srcFs"], "/home/sky");
     assert_eq!(call["srcRemote"], "b.txt");
     assert_eq!(call["dstFs"], "nas:backup");
@@ -696,14 +696,14 @@ fn copy_file_asks_then_submits_copyfile() {
 }
 
 #[test]
-fn copy_dir_uses_sync_copy_and_merges_note() {
+fn copy_dir_uses_rse_copy_and_merges_note() {
     let mut h = standard();
     select(&mut h, "projects");
     h.press(KeyCode::Char('c'));
     assert!(h.screen.contains("Directories are merged"), "{}", h.screen);
     h.press(KeyCode::Enter);
     h.wait_until(|a| a.queue.jobs.first().is_some_and(|j| j.state == JobState::Done));
-    let call = last_call(&h, "sync/copy");
+    let call = last_call(&h, "rse/copy");
     assert_eq!(call["srcFs"], "/home/sky/projects");
     assert_eq!(call["dstFs"], "nas:backup/projects");
     assert_eq!(call["createEmptySrcDirs"], true);
@@ -725,8 +725,7 @@ fn conflicts_ask_per_item() {
     assert!(matches!(&h.app.dialog, Some(Dialog::Conflict { focus: 1, .. })));
     h.press(KeyCode::Enter);
     h.wait_until(|a| a.queue.jobs.first().is_some_and(|j| j.state == JobState::Done));
-    let copied: Vec<_> =
-        h.calls("operations/copyfile").iter().map(|c| c["srcRemote"].clone()).collect();
+    let copied: Vec<_> = h.calls("rse/copy").iter().map(|c| c["srcRemote"].clone()).collect();
     assert_eq!(copied, [json!("b.txt")]);
 }
 
@@ -740,7 +739,7 @@ fn overwrite_all_copies_everything() {
     h.press(KeyCode::Right);
     h.press(KeyCode::Enter);
     h.wait_until(|a| !a.queue.jobs.is_empty());
-    assert_eq!(h.calls("operations/copyfile").len(), 1);
+    assert_eq!(h.calls("rse/copy").len(), 1);
 }
 
 /// The pane showing the target listed it before a.pdf appeared there: the target is listed
@@ -780,7 +779,7 @@ fn move_across_remotes_warns() {
     assert!(h.screen.contains("already gone from the source"), "{}", h.screen);
     h.press(KeyCode::Enter);
     h.wait_until(|a| a.queue.jobs.first().is_some_and(|j| j.state == JobState::Done));
-    assert_eq!(last_call(&h, "operations/movefile")["dstFs"], "nas:backup");
+    assert_eq!(last_call(&h, "rse/copy")["dstFs"], "nas:backup");
 }
 
 #[test]
@@ -888,7 +887,7 @@ fn transfer_queue_cancel_retry_clear() {
         "operations/list" => Ok(
             json!({"list": if input["fs"] == "/home/sky" { vec![file("big.bin", 1 << 30)] } else { vec![] }}),
         ),
-        "operations/copyfile" => Ok(json!({"jobid": 5})),
+        "rse/copy" => Ok(json!({"jobid": 5})),
         "job/stop" => {
             s.store(true, Ordering::SeqCst);
             Ok(json!({}))
@@ -939,7 +938,7 @@ fn stoppable_copy() -> (Arc<FakeBackend>, Arc<AtomicBool>) {
         "operations/list" => Ok(
             json!({"list": if input["fs"] == "/home/sky" { vec![file("big.bin", 10)] } else { vec![] }}),
         ),
-        "operations/copyfile" => Ok(json!({"jobid": 1})),
+        "rse/copy" => Ok(json!({"jobid": 1})),
         "job/stop" => {
             s.store(true, Ordering::SeqCst);
             Ok(json!({}))
@@ -1022,7 +1021,7 @@ fn leaving_an_endpoint_pauses_its_jobs_until_it_is_shown_again() {
     assert!(h.app.dialog.is_none());
     h.wait_until(|a| a.queue.jobs[0].state == JobState::Running);
     assert_eq!(h.app.queue.visible().len(), 1);
-    assert_eq!(backend.calls_to("operations/copyfile").len(), 2);
+    assert_eq!(backend.calls_to("rse/copy").len(), 2);
 }
 
 #[test]
@@ -1101,12 +1100,12 @@ fn a_file_that_arrives_before_the_job_starts_is_not_overwritten() {
     // An error, in the queue and the log; nothing is copied.
     assert_eq!(h.app.queue.jobs[0].state, JobState::Failed("b.txt already exists there".into()));
     assert_eq!(h.app.errors[0].message, "copy b.txt → nas:backup: b.txt already exists there");
-    assert_eq!(h.calls("operations/copyfile").len(), 0);
+    assert_eq!(h.calls("rse/copy").len(), 0);
 
     h.press(KeyCode::Left);
     h.press(KeyCode::Enter);
     h.wait_until(|a| a.queue.jobs[0].state == JobState::Done);
-    assert_eq!(last_call(&h, "operations/copyfile")["dstRemote"], "b.txt");
+    assert_eq!(last_call(&h, "rse/copy")["dstRemote"], "b.txt");
 }
 
 /// Cancel leaves the job failed. A retry lists the target again: still taken, it asks
@@ -1121,13 +1120,13 @@ fn a_retry_checks_the_target_again() {
     h.press(KeyCode::Char('r'));
     h.wait_until(|a| a.dialog.is_some());
     assert_eq!(job_conflicts(&h.app), 1);
-    assert_eq!(h.calls("operations/copyfile").len(), 0);
+    assert_eq!(h.calls("rse/copy").len(), 0);
 
     h.press(KeyCode::Esc);
     tree.lock().unwrap().insert("nas:backup".to_owned(), vec![]);
     h.press(KeyCode::Char('r'));
     h.wait_until(|a| a.queue.jobs[0].state == JobState::Done);
-    assert_eq!(h.calls("operations/copyfile").len(), 1);
+    assert_eq!(h.calls("rse/copy").len(), 1);
     assert!(h.app.dialog.is_none());
 }
 
@@ -1142,7 +1141,7 @@ fn jobs_in_conflict_together_are_decided_together() {
     h.press(KeyCode::Right);
     h.press(KeyCode::Enter);
     h.wait_until(|a| a.queue.jobs.iter().all(|j| j.state == JobState::Done));
-    assert_eq!(h.calls("operations/copyfile").len(), 2);
+    assert_eq!(h.calls("rse/copy").len(), 2);
     assert!(h.app.dialog.is_none());
 }
 
@@ -1207,7 +1206,7 @@ fn a_job_waits_for_an_earlier_one_writing_its_name() {
             Ok(json!({ "list": list }))
         }
         "operations/list" => Ok(json!({"list": [file("IMG.JPG", 1), file("img.jpg", 2)]})),
-        "operations/copyfile" => {
+        "rse/copy" => {
             t.lock().unwrap().push(file(input["dstRemote"].as_str().unwrap_or_default(), 1));
             Ok(json!({"jobid": 1}))
         }
@@ -1222,7 +1221,7 @@ fn a_job_waits_for_an_earlier_one_writing_its_name() {
     assert_eq!(job_conflicts(&h.app), 1);
     assert!(h.screen.contains("copy img.jpg → nas:backup did not start:"), "{}", h.screen);
     assert!(h.screen.contains("IMG.JPG already exists in nas:backup"), "{}", h.screen);
-    assert_eq!(h.calls("operations/copyfile").len(), 1);
+    assert_eq!(h.calls("rse/copy").len(), 1);
     assert_eq!(h.app.queue.jobs[0].state, JobState::Done);
 }
 
@@ -1273,8 +1272,8 @@ fn cancelling_checks_that_hang_starts_the_next_job() {
     release.store(true, Ordering::SeqCst);
     h.wait_until(|a| a.queue.jobs[2].state == JobState::Done);
     assert_eq!(states(&h)[..2], [JobState::Cancelled, JobState::Cancelled]);
-    assert_eq!(h.calls("operations/copyfile").len(), 1);
-    assert_eq!(last_call(&h, "operations/copyfile")["srcRemote"], "c");
+    assert_eq!(h.calls("rse/copy").len(), 1);
+    assert_eq!(last_call(&h, "rse/copy")["srcRemote"], "c");
 }
 
 /// The answer to a check that was cancelled changes nothing, even with the job retried
@@ -1318,7 +1317,7 @@ fn overwrite_mode_turned_on_during_a_check_applies_to_it() {
     h.press(KeyCode::Char('O'));
     h.wait_until(|a| a.queue.jobs[0].state == JobState::Done);
     assert_eq!(h.app.dialog, None);
-    assert_eq!(h.calls("operations/copyfile").len(), 1);
+    assert_eq!(h.calls("rse/copy").len(), 1);
 }
 
 /// Overwrite mode: a row in white on red across the top says so, and a copy onto a file
@@ -1345,7 +1344,7 @@ fn overwrite_mode_copies_without_checking_and_says_so() {
     h.press(KeyCode::Enter);
     h.wait_until(|a| a.queue.jobs.first().is_some_and(|j| j.state == JobState::Done));
     h.wait_until(|a| a.panes[1].status == PaneStatus::Ready);
-    assert_eq!(last_call(&h, "operations/copyfile")["dstRemote"], "a.pdf");
+    assert_eq!(last_call(&h, "rse/copy")["dstRemote"], "a.pdf");
     assert_eq!(listed(&h), before + 1, "only the reload after the copy");
 
     h.press(KeyCode::Char('O'));
@@ -1553,7 +1552,7 @@ fn drag_to_other_pane_offers_copy_or_move() {
     assert!(h.screen.contains("Copy here") && h.screen.contains("Move here"), "{}", h.screen);
     h.press(KeyCode::Enter);
     h.wait_until(|a| a.queue.jobs.first().is_some_and(|j| j.state == JobState::Done));
-    assert_eq!(last_call(&h, "operations/copyfile")["dstFs"], "nas:backup");
+    assert_eq!(last_call(&h, "rse/copy")["dstFs"], "nas:backup");
 }
 
 #[test]
@@ -1568,7 +1567,7 @@ fn drag_menu_move_still_confirms() {
     );
     h.press(KeyCode::Enter);
     h.wait_until(|a| a.queue.jobs.first().is_some_and(|j| j.state == JobState::Done));
-    assert_eq!(h.calls("operations/movefile").len(), 1);
+    assert_eq!(h.calls("rse/copy").len(), 1);
 }
 
 #[test]
@@ -1653,7 +1652,7 @@ fn drop_action_copy_skips_the_menu() {
     let from = h.find("b.txt");
     drag(&mut h, from, (50, 5));
     h.wait_until(|a| a.queue.jobs.first().is_some_and(|j| j.state == JobState::Done));
-    assert_eq!(h.calls("operations/copyfile").len(), 1);
+    assert_eq!(h.calls("rse/copy").len(), 1);
 }
 
 #[test]
@@ -1678,7 +1677,7 @@ fn clicking_a_queue_cross_cancels() {
         "operations/list" => Ok(
             json!({"list": if input["fs"] == "/home/sky" { vec![file("big.bin", 10)] } else { vec![] }}),
         ),
-        "operations/copyfile" => Ok(json!({"jobid": 1})),
+        "rse/copy" => Ok(json!({"jobid": 1})),
         "job/status" => Ok(json!({"id": 1, "finished": false, "success": false})),
         _ => Ok(json!({})),
     }));
@@ -1757,7 +1756,7 @@ fn double_click_on_copy_does_not_hit_the_conflict_dialog() {
     }
     h.settle();
     assert!(matches!(h.app.dialog, Some(Dialog::Conflict { .. })), "a button fired too early");
-    assert_eq!(h.calls("operations/copyfile").len(), 0);
+    assert_eq!(h.calls("rse/copy").len(), 0);
 }
 
 /// The second Enter comes while the target is being listed: nothing is overwritten, and
@@ -1772,7 +1771,7 @@ fn double_enter_on_confirm_skips_instead_of_overwriting() {
     h.app.handle(Event::Key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)), now);
     h.wait_until(|a| a.dialog.is_some());
     assert!(matches!(h.app.dialog, Some(Dialog::Conflict { focus: 1, .. })));
-    assert_eq!(h.calls("operations/copyfile").len(), 0);
+    assert_eq!(h.calls("rse/copy").len(), 0);
     h.press(KeyCode::Enter);
     assert_eq!(h.app.status.as_deref(), Some("nothing to do: all items skipped"));
 }
@@ -1795,7 +1794,7 @@ fn late_target_check_does_not_replace_an_open_dialog() {
     h.settle();
     assert!(matches!(h.app.dialog, Some(Dialog::Help { .. })));
     assert!(h.app.errors.front().is_some_and(|e| e.message.contains("copy not started")));
-    assert_eq!(h.calls("operations/copyfile").len(), 0);
+    assert_eq!(h.calls("rse/copy").len(), 0);
 }
 
 #[test]
@@ -1857,7 +1856,7 @@ fn names_differing_only_in_case_conflict() {
         matches!(&h.app.dialog, Some(Dialog::Conflict { conflicts, .. }) if conflicts[0].name == "report.pdf")
     );
     h.press(KeyCode::Enter); // Skip
-    assert_eq!(h.calls("operations/copyfile").len(), 0);
+    assert_eq!(h.calls("rse/copy").len(), 0);
 }
 
 #[test]

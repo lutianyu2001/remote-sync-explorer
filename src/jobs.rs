@@ -77,15 +77,19 @@ impl Transfer {
     pub fn rc_call(&self) -> Result<(&'static str, Value), String> {
         let src = self.src_dir.join(&self.name);
         let dst = self.dst_dir.as_ref().map(|d| d.join(&self.name));
+        let moving = self.kind == OpKind::Move;
         Ok(match (self.kind, self.is_dir, dst) {
-            (OpKind::Copy, false, Some(_)) => ("operations/copyfile", self.file_pair()),
-            (OpKind::Move, false, Some(_)) => ("operations/movefile", self.file_pair()),
-            (OpKind::Copy, true, Some(dst)) => (
-                "sync/copy",
-                json!({ "srcFs": src.fs_string(), "dstFs": dst.fs_string(), "createEmptySrcDirs": true }),
-            ),
-            (OpKind::Move, true, Some(dst)) => {
-                ("sync/move", api::move_dir_params(&src.fs_string(), &dst.fs_string()))
+            (OpKind::Copy | OpKind::Move, false, Some(_)) => {
+                let dst_dir = self.dst_dir.as_ref().unwrap_or(&self.src_dir);
+                let (src_fs, dst_fs) = (self.src_dir.fs_string(), dst_dir.fs_string());
+                (
+                    api::COPY,
+                    api::copy_params(&src_fs, &self.name, &dst_fs, &self.name, false, moving),
+                )
+            }
+            (OpKind::Copy | OpKind::Move, true, Some(dst)) => {
+                let (src_fs, dst_fs) = (src.fs_string(), dst.fs_string());
+                (api::COPY, api::copy_params(&src_fs, "", &dst_fs, "", true, moving))
             }
             (OpKind::Delete, false, _) => {
                 ("operations/deletefile", in_dir(&self.src_dir, &self.name))
@@ -130,20 +134,6 @@ impl Transfer {
 /// drives) `Report.pdf` replaces `report.pdf`.
 pub fn same_name(a: &str, b: &str) -> bool {
     a.to_lowercase() == b.to_lowercase()
-}
-
-impl Transfer {
-    /// The directories as fs strings and the name as the remote, as rclone's command line
-    /// does it (a leading `/` in a remote parameter would be dropped).
-    fn file_pair(&self) -> Value {
-        let dst = self.dst_dir.as_ref().unwrap_or(&self.src_dir);
-        json!({
-            "srcFs": self.src_dir.fs_string(),
-            "srcRemote": self.name,
-            "dstFs": dst.fs_string(),
-            "dstRemote": self.name,
-        })
-    }
 }
 
 fn in_dir(dir: &Location, name: &str) -> Value {
@@ -605,21 +595,19 @@ mod tests {
     #[test]
     fn copies_and_moves_use_the_right_rc_calls() {
         let (m, p) = t(OpKind::Copy, "a.txt", false).rc_call().unwrap();
-        assert_eq!(m, "operations/copyfile");
+        assert_eq!(m, "rse/copy");
         assert_eq!(
             p,
-            json!({"srcFs": "/home/sky", "srcRemote": "a.txt", "dstFs": "nas:backup", "dstRemote": "a.txt"})
-        );
-        let (m, p) = t(OpKind::Copy, "d", true).rc_call().unwrap();
-        assert_eq!(m, "sync/copy");
-        assert_eq!(
-            p,
-            json!({"srcFs": "/home/sky/d", "dstFs": "nas:backup/d", "createEmptySrcDirs": true})
+            json!({"srcFs": "/home/sky", "srcRemote": "a.txt", "dstFs": "nas:backup", "dstRemote": "a.txt",
+                "isDir": false, "move": false, "createEmptySrcDirs": false})
         );
         let (m, p) = t(OpKind::Move, "d", true).rc_call().unwrap();
-        assert_eq!(m, "sync/move");
-        assert_eq!(p["deleteEmptySrcDirs"], json!(true));
-        assert_eq!(t(OpKind::Move, "a", false).rc_call().unwrap().0, "operations/movefile");
+        assert_eq!(m, "rse/copy");
+        assert_eq!(
+            p,
+            json!({"srcFs": "/home/sky/d", "srcRemote": "", "dstFs": "nas:backup/d", "dstRemote": "",
+                "isDir": true, "move": true, "createEmptySrcDirs": true})
+        );
         assert_eq!(
             t(OpKind::Delete, "a", false).rc_call().unwrap(),
             ("operations/deletefile", json!({"fs": "/home/sky", "remote": "a"}))
@@ -780,10 +768,7 @@ mod tests {
         assert_eq!(q.jobs[0].state, JobState::Checking);
         assert_eq!((q.active_count(), q.queued_count()), (1, 1), "a check takes a place");
         let effects = q.checked(1, 1, Ok(()));
-        assert!(matches!(
-            effects[..],
-            [Effect::Start { id: 1, method: "operations/copyfile", .. }]
-        ));
+        assert!(matches!(effects[..], [Effect::Start { id: 1, method: "rse/copy", .. }]));
         assert_eq!(q.jobs[0].state, JobState::Running);
     }
 
