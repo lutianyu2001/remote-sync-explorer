@@ -1,4 +1,4 @@
-//! Typed wrappers for the rc methods rclone-explorer-tui uses.
+//! Typed wrappers for the rc methods remote-sync-explorer uses.
 
 use serde::Deserialize;
 use serde_json::{Value, json};

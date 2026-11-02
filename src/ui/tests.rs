@@ -31,7 +31,7 @@ fn harness(w: u16, h: u16, left: &str, left_entries: Vec<Value>) -> Harness {
 
 fn projects() -> Vec<Value> {
     vec![
-        dir("rext"),
+        dir("rse"),
         file("report-final-v3.pdf", 2_516_582),
         file("huge.bin", 1_610_612_736),
         file("very-long-file-name-that-needs-shortening.tar.gz", 12_582_912),
@@ -103,7 +103,7 @@ fn main_screen_in_chinese() {
 fn delete_confirmation_and_help_in_chinese() {
     crate::i18n::set_for_this_thread(crate::config::Language::ZhCn);
     let mut h = harness(80, 24, "/home/sky/projects", projects());
-    h.app.panes[0].marks.insert(Entry::dir("rext").mark());
+    h.app.panes[0].marks.insert(Entry::dir("rse").mark());
     h.app.panes[0].marks.insert(Entry::file("huge.bin", 0).mark());
     h.press(KeyCode::F(8));
     insta::assert_snapshot!("delete_in_chinese", h.render());
@@ -189,7 +189,7 @@ fn failed_and_done_jobs() {
 #[test]
 fn delete_confirmation_dialog() {
     let mut h = harness(80, 24, "/home/sky/projects", projects());
-    h.app.panes[0].marks.insert(Entry::dir("rext").mark());
+    h.app.panes[0].marks.insert(Entry::dir("rse").mark());
     h.app.panes[0].marks.insert(Entry::file("huge.bin", 0).mark());
     h.press(KeyCode::F(8));
     assert!(matches!(h.app.dialog, Some(Dialog::Confirm { focus: 1, .. })));

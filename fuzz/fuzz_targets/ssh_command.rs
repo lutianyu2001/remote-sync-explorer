@@ -6,7 +6,7 @@
 use std::collections::BTreeMap;
 
 use libfuzzer_sys::fuzz_target;
-use rext::fuzz::{TRANSFER_ONLY, conn_quote, split_params, ssh_command, ssh_dest, ssh_fs_name};
+use rse::fuzz::{TRANSFER_ONLY, conn_quote, split_params, ssh_command, ssh_dest, ssh_fs_name};
 
 /// Options the system ssh takes over from rclone (`SSH_TAKES_OVER`).
 const TAKEN: [&str; 10] = [
@@ -41,7 +41,7 @@ fuzz_target!(|input: (bool, Vec<(String, String)>)| {
     let Ok(dest) = ssh_dest(&params, askpass) else { return };
     let last = dest.last().expect("a destination");
     assert!(!last.starts_with('-'), "{last} would be an ssh option");
-    let control = vec!["-o".to_owned(), "ControlPath=/tmp/rext-1000/%C".to_owned()];
+    let control = vec!["-o".to_owned(), "ControlPath=/tmp/rse-1000/%C".to_owned()];
     let cmd = ssh_command(&control, &dest);
     let mut argv = vec!["ssh", "-o", "BatchMode=yes"];
     argv.extend(TRANSFER_ONLY);

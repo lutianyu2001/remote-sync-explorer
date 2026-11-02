@@ -8,11 +8,11 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use crossbeam_channel::{Receiver, unbounded};
-use rext::event::{BrowseOp, Event};
-use rext::exec::Exec;
-use rext::jobs::{Effect, JobState, OpKind, Queue, Transfer};
-use rext::location::Location;
-use rext::rclone::{Backend, Embedded, api};
+use rse::event::{BrowseOp, Event};
+use rse::exec::Exec;
+use rse::jobs::{Effect, JobState, OpKind, Queue, Transfer};
+use rse::location::Location;
+use rse::rclone::{Backend, Embedded, api};
 
 struct Rig {
     backend: Arc<dyn Backend>,
@@ -56,7 +56,7 @@ impl Rig {
         self.queue.jobs[first..].iter().map(|j| j.state.clone()).collect()
     }
 
-    fn op(&self, op: BrowseOp) -> Result<(), rext::rclone::RpcError> {
+    fn op(&self, op: BrowseOp) -> Result<(), rse::rclone::RpcError> {
         self.exec.op(1, op);
         loop {
             if let Event::OpDone { result, .. } =
@@ -166,7 +166,7 @@ fn move_between_backends() {
     assert_eq!(states, [JobState::Done]);
     assert_eq!(rig.names(&mem.join("d")), ["one.txt", "sub"]);
     assert!(!src.path().join("d/one.txt").exists());
-    // rclone leaves the emptied source root; rext removes it afterwards.
+    // rclone leaves the emptied source root; rse removes it afterwards.
     assert!(src.path().join("d").is_dir());
     rig.op(BrowseOp::RemoveEmptyDir(local(src.path()).join("d"))).unwrap();
     assert!(!src.path().join("d").exists());

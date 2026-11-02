@@ -1011,7 +1011,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "rclone-explorer-tui"
+name = "redox_syscall"
+version = "0.5.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d"
+dependencies = [
+ "bitflags",
+]
+
+[[package]]
+name = "remote-sync-explorer"
 version = "0.1.0"
 dependencies = [
  "aes",
@@ -1035,25 +1044,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "redox_syscall"
-version = "0.5.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d"
-dependencies = [
- "bitflags",
-]
-
-[[package]]
-name = "rext-fuzz"
-version = "0.0.0"
-dependencies = [
- "libfuzzer-sys",
- "rclone-explorer-tui",
- "toml",
- "unicode-segmentation",
-]
-
-[[package]]
 name = "rpassword"
 version = "7.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1062,6 +1052,16 @@ dependencies = [
  "libc",
  "rtoolbox",
  "windows-sys",
+]
+
+[[package]]
+name = "rse-fuzz"
+version = "0.0.0"
+dependencies = [
+ "libfuzzer-sys",
+ "remote-sync-explorer",
+ "toml",
+ "unicode-segmentation",
 ]
 
 [[package]]

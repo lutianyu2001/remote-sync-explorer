@@ -10,11 +10,11 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use crossbeam_channel::{Receiver, unbounded};
-use rext::event::Event;
-use rext::exec::Exec;
-use rext::jobs::{Effect, JobState, OpKind, Queue, Transfer};
-use rext::location::Location;
-use rext::rclone::{Backend, Embedded, api};
+use rse::event::Event;
+use rse::exec::Exec;
+use rse::jobs::{Effect, JobState, OpKind, Queue, Transfer};
+use rse::location::Location;
+use rse::rclone::{Backend, Embedded, api};
 use serde_json::json;
 
 const SIZE: usize = 64 << 20;
@@ -187,7 +187,7 @@ fn shutdown_stops_running_jobs() {
             overwrite: true,
         }]),
     );
-    // Wait until it is running, then drop the workers as rext does at exit.
+    // Wait until it is running, then drop the workers as rse does at exit.
     let Ok(Event::Jobs(_)) = rx.recv_timeout(Duration::from_secs(5)) else { panic!("no progress") };
     exec.shutdown();
     // The job worker stopped the job on its way out. Wait until rclone has ended it: every rc

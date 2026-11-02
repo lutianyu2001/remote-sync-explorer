@@ -1,35 +1,35 @@
 [package]
-name = "rclone-explorer-tui"
+name = "remote-sync-explorer"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
-description = "Dual-pane terminal file manager for local paths and rclone remotes"
+description = "Remote sync explorer: a dual-pane terminal file manager that transfers with rsync and rclone"
 license = "Apache-2.0"
-repository = "https://github.com/lutianyu2001/rclone-explorer-tui"
+repository = "https://github.com/lutianyu2001/remote-sync-explorer"
 readme = "README.md"
 # Only for working in this repository: the offline vendor/ setup does not apply to an
 # install from crates.io, which downloads the dependencies itself, and the results of the
 # security audit in audit/ are read in the repository.
 exclude = [".cargo/", ".github/", "supply-chain/", "scripts/cargo-online.sh", "fuzz/", "xtask/", "audit/"]
-keywords = ["rclone", "tui", "file-manager", "terminal"]
+keywords = ["rsync", "rclone", "sftp", "tui", "file-manager"]
 categories = ["command-line-utilities"]
 build = "build.rs"
 
 [workspace]
-# xtask/ holds the security audit (cargo xtask, see SECURITY.md): no crate rext does not
-# already depend on, and never built by cargo build or cargo test, which build rext alone. fuzz/ is a
+# xtask/ holds the security audit (cargo xtask, see SECURITY.md): no crate rse does not
+# already depend on, and never built by cargo build or cargo test, which build rse alone. fuzz/ is a
 # workspace of its own (see SUPPLY_CHAIN.md): its tools stay out of this Cargo.lock and
 # out of what users build.
 members = [".", "xtask"]
 exclude = ["fuzz"]
 
 [lib]
-name = "rext"
+name = "rse"
 path = "src/lib.rs"
 doctest = false
 
 [[bin]]
-name = "rext"
+name = "rse"
 path = "src/main.rs"
 
 [features]
@@ -68,7 +68,7 @@ tempfile = "3.27.0"
 [profile.release]
 strip = true
 lto = "thin"
-# An integer overflow stops rext instead of carrying on with a wrapped-around number.
+# An integer overflow stops rse instead of carrying on with a wrapped-around number.
 overflow-checks = true
 
 [profile.dev.package.insta]

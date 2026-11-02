@@ -3,8 +3,8 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use rext::config::Config;
-use rext::keymap::{Key, Keymap};
+use rse::config::Config;
+use rse::keymap::{Key, Keymap};
 
 fuzz_target!(|text: &str| {
     for line in text.lines() {

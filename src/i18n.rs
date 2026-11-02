@@ -62,13 +62,13 @@ fn set_system_messages(chinese: bool) {
     let locales: &[&std::ffi::CStr] =
         if chinese { &[c"zh_CN.UTF-8", c"zh_CN.utf8"] } else { &[c"C"] };
     // Rust leaves LC_CTYPE at "C" (ASCII); without this glibc turns Chinese into "?".
-    // SAFETY: both strings are NUL-terminated literals. `set` runs before rext starts any
+    // SAFETY: both strings are NUL-terminated literals. `set` runs before rse starts any
     // thread; the Go runtime of the embedded build has threads by then, but Go never reads
     // libc's locale or text domains.
     unsafe { bind_textdomain_codeset(c"libc".as_ptr(), c"UTF-8".as_ptr()) };
     for locale in locales {
         // SAFETY: a NUL-terminated literal. setlocale must not race other locale users: `set`
-        // runs before rext starts any thread, and Go's threads never use libc's locale.
+        // runs before rse starts any thread, and Go's threads never use libc's locale.
         if !unsafe { libc::setlocale(libc::LC_MESSAGES, locale.as_ptr()) }.is_null() {
             break;
         }
@@ -169,7 +169,7 @@ mod tests {
 
     #[test]
     fn both_languages_have_every_message_in_use() {
-        let (en, zh) = (ids("en/rext.ftl"), ids("zh-CN/rext.ftl"));
+        let (en, zh) = (ids("en/rse.ftl"), ids("zh-CN/rse.ftl"));
         assert_eq!(en, zh, "the two files define different messages");
         let missing: Vec<_> = used().difference(&en).cloned().collect();
         assert!(missing.is_empty(), "not in the Fluent files: {missing:?}");

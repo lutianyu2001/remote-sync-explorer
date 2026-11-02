@@ -1,5 +1,5 @@
 //! sftp through the system OpenSSH: remotes with `ssh = ...` in rclone.conf, and remotes
-//! that rext's `SystemSsh` moves from rclone's built-in ssh to the system one.
+//! that rse's `SystemSsh` moves from rclone's built-in ssh to the system one.
 //! The server is a private `sshd` started as the current user on a free localhost port,
 //! with its own host key and `authorized_keys` in a temporary directory, so no account
 //! setup is needed. Skipped when sshd, sftp-server, ssh or ssh-keygen is missing.
@@ -13,14 +13,14 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use crossbeam_channel::unbounded;
-use rext::app::with_hint;
-use rext::event::Event;
-use rext::exec::Exec;
-use rext::jobs::{Effect, JobState, OpKind, Queue, Transfer};
-use rext::location::Location;
-use rext::rclone::ssh_passwords::PasswordFile;
-use rext::rclone::system_ssh::{SshAnswer, SshQuestion, SystemSsh};
-use rext::rclone::{Backend, Embedded, api};
+use rse::app::with_hint;
+use rse::event::Event;
+use rse::exec::Exec;
+use rse::jobs::{Effect, JobState, OpKind, Queue, Transfer};
+use rse::location::Location;
+use rse::rclone::ssh_passwords::PasswordFile;
+use rse::rclone::system_ssh::{SshAnswer, SshQuestion, SystemSsh};
+use rse::rclone::{Backend, Embedded, api};
 
 /// The tests set rclone's global config path, so they take turns.
 static RCLONE: std::sync::Mutex<()> = std::sync::Mutex::new(());
@@ -246,9 +246,9 @@ impl Drop for CloseMasters {
     }
 }
 
-/// rext itself, which ssh runs as its askpass program.
+/// rse itself, which ssh runs as its askpass program.
 fn askpass() -> std::path::PathBuf {
-    env!("CARGO_BIN_EXE_rext").into()
+    env!("CARGO_BIN_EXE_rse").into()
 }
 
 fn logins(dir: &Path) -> usize {
@@ -429,7 +429,7 @@ fn passphrases_come_from_rclone_conf_or_the_user() {
     assert_eq!(fs::read_dir(&sockets).unwrap().count(), 1, "a master socket");
     ssh.close_masters();
 
-    // Kept in plain text, which rext cannot use: the user is asked, and told why.
+    // Kept in plain text, which rse cannot use: the user is asked, and told why.
     assert_eq!(list(&ssh, "unobscured"), Ok(1));
     let questions = asked.lock().unwrap().clone();
     assert_eq!(questions.len(), 2, "{questions:?}");
@@ -475,7 +475,7 @@ fn ssh_says_why_it_asks_again() {
     let user = std::env::var("USER").unwrap_or_else(|_| "root".to_owned());
     let embedded: Arc<dyn Backend> = Arc::new(Embedded::new());
     let mut ssh = SystemSsh::new(embedded, &work.path().join("sockets"), Some(askpass()));
-    let passwords = work.path().join("rext-passwords");
+    let passwords = work.path().join("rse-passwords");
     ssh.set_password_file(PasswordFile::new(passwords.clone()));
     // The user takes longer to answer than a login may take: their time does not count.
     ssh.set_login_time(Duration::from_secs(1));

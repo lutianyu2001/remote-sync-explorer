@@ -49,7 +49,7 @@ jobs:
         run: |
           version=$(grep -o 'RCLONE_VERSION: &str = "v[^"]*"' build.rs | grep -o 'v[0-9.]*')
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "REXT_LIBRCLONE_DIR=$HOME/librclone" >> "$GITHUB_ENV"
+          echo "RSE_LIBRCLONE_DIR=$HOME/librclone" >> "$GITHUB_ENV"
       # librclone takes minutes to compile; cache it per OS, rclone version and build script.
       - name: Cache librclone
         id: librclone
@@ -157,12 +157,12 @@ jobs:
         run: cargo auditable build --release --locked
       - name: Package
         run: |
-          dir="rext-${GITHUB_REF_NAME}-${{ matrix.name }}"
+          dir="rse-${GITHUB_REF_NAME}-${{ matrix.name }}"
           mkdir -p "$dir"
-          cp target/release/rext README.md LICENSE "$dir/"
+          cp target/release/rse README.md LICENSE "$dir/"
           PATH="$(go env GOPATH)/bin:$PATH" scripts/third-party-licenses.sh "$dir/third-party"
-          ./target/release/rext --version > "$dir/VERSIONS"
+          ./target/release/rse --version > "$dir/VERSIONS"
           tar czf "$dir.tar.gz" "$dir"
       - uses: softprops/action-gh-release@v2
         with:
-          files: rext-*.tar.gz
+          files: rse-*.tar.gz

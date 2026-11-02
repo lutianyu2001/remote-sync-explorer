@@ -1,4 +1,4 @@
-//! `rext`: command line, start-up, the event loop and clean shutdown.
+//! `rse`: command line, start-up, the event loop and clean shutdown.
 
 use std::io::{self, Write};
 use std::os::fd::{AsFd, OwnedFd};
@@ -21,26 +21,26 @@ use crossterm::terminal::{
 use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
 
-use rext::app::{App, AppInit, QuitState};
-use rext::config::{Config, Language, UiConfig};
-use rext::endpoint::Address;
-use rext::event::Event;
-use rext::exec::Exec;
-use rext::hitmap::HitMap;
-use rext::keymap::Keymap;
-use rext::location::{Destination, Location};
-use rext::rclone::ssh_passwords::PasswordFile;
-use rext::rclone::system_ssh::{self, SystemSsh};
-use rext::rclone::{Backend, api};
-use rext::tr;
-use rext::ui::text::shown;
+use rse::app::{App, AppInit, QuitState};
+use rse::config::{Config, Language, UiConfig};
+use rse::endpoint::Address;
+use rse::event::Event;
+use rse::exec::Exec;
+use rse::hitmap::HitMap;
+use rse::keymap::Keymap;
+use rse::location::{Destination, Location};
+use rse::rclone::ssh_passwords::PasswordFile;
+use rse::rclone::system_ssh::{self, SystemSsh};
+use rse::rclone::{Backend, api};
+use rse::tr;
+use rse::ui::text::shown;
 
 const TICK: Duration = Duration::from_millis(250);
 
 /// The command line. Its help texts and value names are the `cli-*` messages in
 /// `locales/`, filled in by `command`.
 #[derive(Parser, Debug)]
-#[command(name = "rext", disable_version_flag = true, disable_help_flag = true)]
+#[command(name = "rse", disable_version_flag = true, disable_help_flag = true)]
 struct Cli {
     left: Option<String>,
     right: Option<String>,
@@ -159,7 +159,7 @@ impl ErrorFormatter for Localized {
                 args = args.join(&tr!("list-separator"))
             ));
         }
-        // rext has no subcommands, so clap's only other tip is this one.
+        // rse has no subcommands, so clap's only other tip is this one.
         if error.get(ContextKind::Suggested).is_some() {
             let escaped = quoted(valid, &format!("-- {arg}"));
             tips.push(tr!("cli-after-dashes", arg = quoted(invalid, arg), escaped = escaped));
@@ -202,15 +202,15 @@ fn language_before_parsing() -> Language {
 }
 
 fn main() {
-    // ssh runs rext as its SSH_ASKPASS program to ask the running rext a question.
+    // ssh runs rse as its SSH_ASKPASS program to ask the running rse a question.
     if let Some(socket) = system_ssh::askpass_socket() {
         std::process::exit(system_ssh::askpass_main(&socket));
     }
-    rext::i18n::set(language_before_parsing());
+    rse::i18n::set(language_before_parsing());
     let cli = parse_cli();
     if let Err(e) = run(&cli) {
         let causes: Vec<_> = e.chain().map(ToString::to_string).collect();
-        eprintln!("rext: {}", shown(&causes.join(&tr!("cause-separator"))));
+        eprintln!("rse: {}", shown(&causes.join(&tr!("cause-separator"))));
         std::process::exit(1);
     }
 }
@@ -224,25 +224,26 @@ fn make_backend(cli: &Cli) -> Result<Arc<dyn Backend>> {
             let env = |name| std::env::var(name).ok();
             let user = cli.rc_user.clone().or_else(|| env("RCLONE_RC_USER"));
             let pass = cli.rc_pass.clone().or_else(|| env("RCLONE_RC_PASS"));
-            let http = rext::rclone::Http::new(url, user.as_deref(), pass.as_deref());
+            let http = rse::rclone::Http::new(url, user.as_deref(), pass.as_deref());
             return Ok(Arc::new(http.map_err(anyhow::Error::msg)?));
         }
         #[cfg(not(feature = "rcd"))]
         bail!("{}", tr!("startup-no-rcd", url = url.as_str()));
     }
     #[cfg(feature = "embedded")]
-    return Ok(Arc::new(rext::rclone::Embedded::new()));
+    return Ok(Arc::new(rse::rclone::Embedded::new()));
     #[cfg(not(feature = "embedded"))]
     bail!("{}", tr!("startup-no-embedded"));
 }
 
 fn run(cli: &Cli) -> Result<()> {
+    let migrated = rse::config::migrate_from_rext();
     let config_path = cli.config.clone().or_else(Config::default_path);
     let config = match &config_path {
         Some(p) => Config::load(p)?,
         None => Config::default(),
     };
-    rext::i18n::set(config.ui.language);
+    rse::i18n::set(config.ui.language);
     if let Some(login) = &cli.forget_password {
         return forget_password(login);
     }
@@ -250,10 +251,10 @@ fn run(cli: &Cli) -> Result<()> {
 
     let mut backend = make_backend(cli)?;
     if cli.version {
-        println!("rext {} (rclone-explorer-tui)", env!("CARGO_PKG_VERSION"));
+        println!("rse {} (remote-sync-explorer)", env!("CARGO_PKG_VERSION"));
         let running = api::version(backend.as_ref())
             .unwrap_or_else(|e| tr!("version-unknown", error = e.to_string()));
-        let built = env!("REXT_RCLONE_VERSION");
+        let built = env!("RSE_RCLONE_VERSION");
         let line =
             tr!("version-rclone", running = running, backend = backend.describe(), built = built);
         println!("{}", shown(&line));
@@ -277,7 +278,7 @@ fn run(cli: &Cli) -> Result<()> {
         }
     };
 
-    let home = rext::config::home_dir().unwrap_or_else(|| PathBuf::from("/"));
+    let home = rse::config::home_dir().unwrap_or_else(|| PathBuf::from("/"));
     let cwd = std::env::current_dir().unwrap_or_else(|_| home.clone());
     let parse = |s: &str| match Location::parse_address(s, None, &home, &cwd)
         .map_err(anyhow::Error::msg)?
@@ -321,6 +322,9 @@ fn run(cli: &Cli) -> Result<()> {
 
     // rclone logs to stderr, which would draw over the screen: send it to a file.
     redirect_stderr(log_path().as_deref());
+    for (from, to) in &migrated {
+        eprintln!("rse: moved {} to {}", from.display(), to.display());
+    }
     let result = run_tui(&mut app, &rx, &tx, config.ui.mouse);
 
     let workers_done = app.into_exec().shutdown_timeout(Duration::from_secs(2));
@@ -331,7 +335,7 @@ fn run(cli: &Cli) -> Result<()> {
     }
     restore_stderr();
     if !workers_done {
-        eprintln!("rext: {}", tr!("startup-still-listing"));
+        eprintln!("rse: {}", tr!("startup-still-listing"));
     }
     result
 }
@@ -448,7 +452,7 @@ fn log_in(backend: &dyn Backend, address: Address) -> Result<Location> {
 }
 
 fn expand(p: &str) -> PathBuf {
-    match (p.strip_prefix("~/"), rext::config::home_dir()) {
+    match (p.strip_prefix("~/"), rse::config::home_dir()) {
         (Some(rest), Some(home)) => home.join(rest),
         _ => PathBuf::from(p),
     }
@@ -456,7 +460,7 @@ fn expand(p: &str) -> PathBuf {
 
 fn log_path() -> Option<PathBuf> {
     use std::os::unix::fs::DirBuilderExt as _;
-    let dir = rext::config::cache_dir()?.join("rext");
+    let dir = rse::config::cache_dir()?.join("rse");
     std::fs::DirBuilder::new().recursive(true).mode(0o700).create(&dir).ok()?;
     Some(dir.join("rclone.log"))
 }
@@ -489,7 +493,7 @@ fn redirect_stderr(path: Option<&Path>) {
         return;
     };
     let Ok(mut slot) = SAVED_STDERR.lock() else { return };
-    // Close-on-exec (F_DUPFD_CLOEXEC, in one step): the programs rext starts must not
+    // Close-on-exec (F_DUPFD_CLOEXEC, in one step): the programs rse starts must not
     // inherit the terminal through it.
     let Ok(saved) = io::stderr().as_fd().try_clone_to_owned() else { return };
     // fd 2 is replaced in one step; on failure the copy is closed as it drops.
@@ -531,7 +535,7 @@ fn run_tui(
     let default_hook = std::panic::take_hook();
     let ui_thread = thread::current().id();
     std::panic::set_hook(Box::new(move |info| {
-        // A panic on the UI thread ends rext: give the terminal and stderr back so the
+        // A panic on the UI thread ends rse: give the terminal and stderr back so the
         // message is visible. A worker thread's panic only goes to the log.
         if thread::current().id() == ui_thread {
             restore_terminal();
@@ -585,7 +589,7 @@ fn event_loop(
     spawn_ticker(tx.clone());
     loop {
         let mut map = HitMap::default();
-        terminal.draw(|f| map = rext::ui::draw(f, app))?;
+        terminal.draw(|f| map = rse::ui::draw(f, app))?;
         app.set_hitmap(map);
 
         let Ok(first) = rx.recv() else { bail!("{}", tr!("startup-events-closed")) };
@@ -607,7 +611,7 @@ mod tests {
     use super::*;
 
     fn start(args: &[&str], remotes: &[&str]) -> (String, String) {
-        let cli = Cli::try_parse_from(std::iter::once("rext").chain(args.iter().copied())).unwrap();
+        let cli = Cli::try_parse_from(std::iter::once("rse").chain(args.iter().copied())).unwrap();
         let remotes: Vec<_> = remotes.iter().map(|r| ((*r).to_owned(), String::new())).collect();
         let home = Path::new("/home/me");
         let parse = |s: &str| Location::parse(s, home, home).map_err(anyhow::Error::msg);

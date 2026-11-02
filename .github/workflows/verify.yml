@@ -56,7 +56,7 @@ jobs:
           echo "code=$c" >> "$GITHUB_OUTPUT"
           [ "$c" -le 1 ]
       # Per project: what building with the default features needs. geiger and coverage
-      # build rext with them, which compile librclone with Go (see ci.yml); Miri, Kani and
+      # build rse with them, which compile librclone with Go (see ci.yml); Miri, Kani and
       # fuzzing build it without them.
       - id: go
         if: >
@@ -72,7 +72,7 @@ jobs:
         run: |
           version=$(grep -o 'RCLONE_VERSION: &str = "v[^"]*"' build.rs | grep -o 'v[0-9.]*')
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "REXT_LIBRCLONE_DIR=$HOME/librclone" >> "$GITHUB_ENV"
+          echo "RSE_LIBRCLONE_DIR=$HOME/librclone" >> "$GITHUB_ENV"
       - name: Cache librclone
         id: librclone
         if: steps.go.outcome == 'success'

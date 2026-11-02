@@ -1,4 +1,4 @@
-# English interface text. Every message here must also be in zh-CN/rext.ftl;
+# English interface text. Every message here must also be in zh-CN/rse.ftl;
 # `cargo test` checks that both files define the same messages and that all are used.
 
 ## Common
@@ -211,18 +211,18 @@ mouse-drag-does = copy or move (marked entries if you drag a marked one)
 mouse-cancel = click ✕ in the queue
 mouse-cancel-does = cancel that job
 
-## Command line (`rext --help` and its errors)
+## Command line (`rse --help` and its errors)
 
 cli-about = Dual-pane terminal file manager for local paths and rclone remotes
 cli-usage-heading = Usage:
-cli-usage = rext [OPTIONS] [LEFT] [RIGHT]
+cli-usage = rse [OPTIONS] [LEFT] [RIGHT]
 cli-arguments = Arguments:
 cli-options = Options:
 cli-left = Initial location of the left pane, e.g. ~/work
 cli-left-value = LEFT
 cli-right = Initial location of the right pane, e.g. nas:backup. Given alone, a remote opens here instead of on the left
 cli-right-value = RIGHT
-cli-config = rclone-explorer-tui config file
+cli-config = remote-sync-explorer config file
 cli-rclone-config = rclone config file
 cli-path-value = PATH
 cli-ask-password = Ask for the rclone config password before starting
@@ -234,7 +234,7 @@ cli-rc-user = User for --rcd
 cli-user-value = USER
 cli-rc-pass = Password for --rcd (better: the RCLONE_RC_PASS environment variable)
 cli-pass-value = PASS
-cli-version = Print the rclone-explorer-tui and rclone versions
+cli-version = Print the remote-sync-explorer and rclone versions
 cli-help = Print help
 cli-error = error:
 cli-tip = tip:
@@ -252,10 +252,10 @@ cli-invalid-utf8 = invalid UTF-8 was detected in one or more arguments
 cli-other = { $detail }
 cli-try-help = For more information, try '{ $flag }'.
 
-## Start-up (`rext --version`, the config files, rclone and ssh)
+## Start-up (`rse --version`, the config files, rclone and ssh)
 
-startup-no-rcd = --rcd { $url }: this rext was built without the `rcd` feature
-startup-no-embedded = this rext was built without embedded rclone; use --rcd <url>
+startup-no-rcd = --rcd { $url }: this rse was built without the `rcd` feature
+startup-no-embedded = this rse was built without embedded rclone; use --rcd <url>
 startup-keys = in the config file
 startup-config-path = setting the rclone config path
 startup-configuring = configuring rclone
@@ -300,7 +300,7 @@ ssh-passphrase-wrong = The key_file_pass set for { $remote } does not unlock the
 passwords-refused = The server refused the remembered password.
 passwords-unusable = The remembered password cannot be used: { $error }
 passwords-not-saved-before = Last time the password could not be remembered: { $error }
-passwords-not-private = { $path } can be read by other users, so rext does not use it; run chmod 600 { $path }
+passwords-not-private = { $path } can be read by other users, so rse does not use it; run chmod 600 { $path }
 passwords-bad-entry = { $path }: the password for { $login } is not obscured the way rclone obscures it ({ $error })
 passwords-not-saved = cannot save the password for { $login } in { $path }: { $error }
 passwords-no-home = cannot find the home directory

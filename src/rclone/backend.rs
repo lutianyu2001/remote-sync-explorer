@@ -115,7 +115,7 @@ impl Http {
     ///
     /// # Errors
     /// Refuses plain `http://` to anything but this machine: the password, rclone.conf
-    /// and every password typed into rext would cross the network readable by anyone.
+    /// and every password typed into rse would cross the network readable by anyone.
     pub fn new(url: &str, user: Option<&str>, pass: Option<&str>) -> Result<Self, String> {
         use base64::Engine;
         if !private_url(url) {

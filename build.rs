@@ -1,8 +1,8 @@
 //! Builds librclone as a static C archive at a pinned rclone version.
 //!
 //! Environment:
-//! - `REXT_RCLONE_VERSION` overrides the pinned rclone version.
-//! - `REXT_LIBRCLONE_DIR` points at a directory that already holds `librclone.a` and
+//! - `RSE_RCLONE_VERSION` overrides the pinned rclone version.
+//! - `RSE_LIBRCLONE_DIR` points at a directory that already holds `librclone.a` and
 //!   `librclone.h`; the Go build is skipped entirely.
 //! - `GO` names the Go binary (default `go` from `PATH`).
 //! - `CC_<target>` or `TARGET_CC` names the C compiler cgo uses for the target. Cross
@@ -19,7 +19,7 @@ use std::io::Write as _;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-/// The rclone version this release of rclone-explorer-tui is built and tested against.
+/// The rclone version this release of remote-sync-explorer is built and tested against.
 const RCLONE_VERSION: &str = "v1.75.2";
 
 /// Bump when the go build flags change, so cached libraries are rebuilt.
@@ -40,13 +40,13 @@ const EXPECTED_LIBINTL: &str =
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-env-changed=REXT_RCLONE_VERSION");
-    println!("cargo:rerun-if-env-changed=REXT_LIBRCLONE_DIR");
+    println!("cargo:rerun-if-env-changed=RSE_RCLONE_VERSION");
+    println!("cargo:rerun-if-env-changed=RSE_LIBRCLONE_DIR");
     println!("cargo:rerun-if-env-changed=GO");
     println!("cargo:rerun-if-env-changed=CGO_CFLAGS");
 
-    let version = env::var("REXT_RCLONE_VERSION").unwrap_or_else(|_| RCLONE_VERSION.to_owned());
-    println!("cargo:rustc-env=REXT_RCLONE_VERSION={version}");
+    let version = env::var("RSE_RCLONE_VERSION").unwrap_or_else(|_| RCLONE_VERSION.to_owned());
+    println!("cargo:rustc-env=RSE_RCLONE_VERSION={version}");
 
     if env_or_panic("CARGO_CFG_TARGET_OS") == "linux"
         && env::var("CARGO_CFG_TARGET_ENV").is_ok_and(|e| e == "gnu")
@@ -58,7 +58,7 @@ fn main() {
         return;
     }
 
-    let lib_dir = if let Some(dir) = env::var_os("REXT_LIBRCLONE_DIR") {
+    let lib_dir = if let Some(dir) = env::var_os("RSE_LIBRCLONE_DIR") {
         let dir = PathBuf::from(dir);
         println!("cargo:rerun-if-changed={}", dir.join("librclone.a").display());
         println!("cargo:rerun-if-changed={}", dir.join("librclone.h").display());
@@ -91,14 +91,14 @@ impl GoTarget {
         let goos = match os.as_str() {
             "linux" => "linux",
             "macos" => "darwin",
-            other => panic!("rclone-explorer-tui does not support target OS `{other}`"),
+            other => panic!("remote-sync-explorer does not support target OS `{other}`"),
         };
         let goarch = match arch.as_str() {
             "x86_64" => "amd64",
             "aarch64" => "arm64",
             other => panic!(
                 "no Go architecture known for `{other}`; build librclone yourself and set \
-                 REXT_LIBRCLONE_DIR"
+                 RSE_LIBRCLONE_DIR"
             ),
         };
         let macos_min = if goos == "darwin" {
@@ -182,7 +182,7 @@ fn build_librclone(version: &str, target: &GoTarget) -> PathBuf {
 
     let go = env::var("GO").unwrap_or_else(|_| "go".to_owned());
     let module = format!("github.com/rclone/rclone/librclone@{version}");
-    run(&dir, target, &go, &["mod", "init", "rext-librclone"]);
+    run(&dir, target, &go, &["mod", "init", "rse-librclone"]);
     run(&dir, target, &go, &["get", &module]);
     run(
         &dir,
@@ -219,7 +219,7 @@ fn run(dir: &Path, target: &GoTarget, program: &str, args: &[&str]) {
         panic!(
             "failed to run `{command_line}` in {}: {e}\n\
              librclone needs Go 1.26 or newer (see README); set GO to the go binary, or \
-             REXT_LIBRCLONE_DIR to a prebuilt librclone",
+             RSE_LIBRCLONE_DIR to a prebuilt librclone",
             dir.display()
         )
     });
@@ -317,7 +317,7 @@ fn emit_platform_link_args() {
             }
             println!("cargo:rustc-link-lib=dylib=resolv");
         }
-        other => panic!("rclone-explorer-tui does not support target OS `{other}`"),
+        other => panic!("remote-sync-explorer does not support target OS `{other}`"),
     }
 }
 

@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use rext::rclone::{Backend, Embedded, api};
+use rse::rclone::{Backend, Embedded, api};
 use serde_json::json;
 
 /// Builds a directory with many files so `operations/list` takes a while.

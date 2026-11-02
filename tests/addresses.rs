@@ -9,8 +9,8 @@ use std::net::TcpListener;
 use std::path::Path;
 use std::thread;
 
-use rext::location::{Destination, Location};
-use rext::rclone::{Embedded, api};
+use rse::location::{Destination, Location};
+use rse::rclone::{Embedded, api};
 
 /// `me:pw` in Basic authentication.
 const AUTH: &str = "Basic bWU6cHc=";

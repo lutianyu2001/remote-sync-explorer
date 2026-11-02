@@ -34,7 +34,7 @@ const RELEASES_EVERY: (&str, u64) = ("RUST_XTASK_RELEASES_EVERY", 7);
 const VULNS_EVERY: (&str, u64) = ("RUST_XTASK_VULNS_EVERY", 1);
 /// crates.io asks for one that says who is calling.
 // Per project: its name and address, and no e-mail.
-const USER_AGENT: &str = "rext-xtask (+https://github.com/lutianyu2001/rclone-explorer-tui)";
+const USER_AGENT: &str = "rse-xtask (+https://github.com/lutianyu2001/remote-sync-explorer)";
 
 /// An update that is due.
 struct Due {

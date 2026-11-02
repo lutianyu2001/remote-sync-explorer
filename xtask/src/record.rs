@@ -208,7 +208,7 @@ fn scrub(dir: &Path, root: &Path) {
 }
 
 /// `text` with `from` replaced by `to` where it is a whole path or begins one: not where
-/// it begins a longer name, as `/home/me/rext` begins `/home/me/rext-old`.
+/// it begins a longer name, as `/home/me/rse` begins `/home/me/rse-old`.
 fn replace_path(text: &[u8], from: &[u8], to: &[u8]) -> Vec<u8> {
     if from.len() < 2 {
         return text.to_vec();
@@ -423,10 +423,10 @@ mod tests {
 
     #[test]
     fn paths_are_replaced_only_where_whole() {
-        let text = b"/home/me/rext/src/a.rs /home/me/rext-old /home/me/rext: /home/me/rext";
+        let text = b"/home/me/rse/src/a.rs /home/me/rse-old /home/me/rse: /home/me/rse";
         assert_eq!(
-            replace_path(text, b"/home/me/rext", b"."),
-            b"./src/a.rs /home/me/rext-old .: .".to_vec()
+            replace_path(text, b"/home/me/rse", b"."),
+            b"./src/a.rs /home/me/rse-old .: .".to_vec()
         );
     }
 

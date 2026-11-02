@@ -1,4 +1,4 @@
-//! rclone-explorer-tui: a dual-pane terminal file manager built on rclone.
+//! remote-sync-explorer: a dual-pane terminal file manager built on rclone.
 
 // First, so that `tr!` is in scope in the modules below.
 #[macro_use]

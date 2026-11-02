@@ -23,7 +23,7 @@ work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 cd "$work"
 export CGO_ENABLED=1 GOTOOLCHAIN=${GOTOOLCHAIN:-local}
-"$go" mod init rext-librclone >/dev/null 2>&1
+"$go" mod init rse-librclone >/dev/null 2>&1
 "$go" get "github.com/rclone/rclone/librclone@$version" >/dev/null 2>&1
 rm -rf "$out/go"
 go-licenses save github.com/rclone/rclone/librclone --save_path "$out/go"

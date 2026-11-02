@@ -5,8 +5,8 @@
 use std::borrow::Cow;
 
 use libfuzzer_sys::fuzz_target;
-use rext::fuzz::wrap;
-use rext::ui::text::{
+use rse::fuzz::wrap;
+use rse::ui::text::{
     ellipsize_middle, ellipsize_name, fit, fit_right, format_eta, human_size, shown, take_width,
     take_width_end, width,
 };

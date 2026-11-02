@@ -1,11 +1,11 @@
-//! ssh passwords rext remembers, in `~/.ssh/rext-passwords`.
+//! ssh passwords rse remembers, in `~/.ssh/rse-passwords`.
 //!
 //! One login per line: `user@host` (`user@host:port` off port 22), a space, and the
 //! password obscured the way rclone.conf keeps passwords (`rclone reveal` shows it).
 //! Other lines, such as `#` comments, are kept as they are. Obscuring only keeps a
-//! password from being read at a glance, so, as ssh does with private keys, rext uses
+//! password from being read at a glance, so, as ssh does with private keys, rse uses
 //! the file only while nobody else can read it. Deleting a line forgets that password,
-//! as does `rext --forget-password user@host`.
+//! as does `rse --forget-password user@host`.
 
 use std::fs;
 use std::io::{self, Write as _};
@@ -24,7 +24,7 @@ impl PasswordFile {
     }
 
     pub fn default_path() -> Option<PathBuf> {
-        crate::config::home_dir().map(|h| h.join(".ssh").join("rext-passwords"))
+        crate::config::home_dir().map(|h| h.join(".ssh").join("rse-passwords"))
     }
 
     pub fn path(&self) -> &Path {
@@ -140,7 +140,7 @@ mod tests {
     use super::*;
 
     fn file(dir: &tempfile::TempDir) -> PasswordFile {
-        PasswordFile::new(dir.path().join(".ssh").join("rext-passwords"))
+        PasswordFile::new(dir.path().join(".ssh").join("rse-passwords"))
     }
 
     #[test]

@@ -5,9 +5,9 @@
 use std::path::Path;
 
 use libfuzzer_sys::fuzz_target;
-use rext::endpoint::{Address, Scheme};
-use rext::fuzz::{remote_colon, split_params};
-use rext::location::{Destination, Location};
+use rse::endpoint::{Address, Scheme};
+use rse::fuzz::{remote_colon, split_params};
+use rse::location::{Destination, Location};
 
 const SCHEMES: [Scheme; 6] =
     [Scheme::Sftp, Scheme::Ftp, Scheme::Ftps, Scheme::Smb, Scheme::Webdav, Scheme::Webdavs];

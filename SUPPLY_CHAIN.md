@@ -15,7 +15,7 @@
   WebAssembly would build (`windows-sys`, `winapi`, `wasm-bindgen`, …).
 - `rust-toolchain.toml` pins the Rust toolchain.
 - `fuzz/` is a workspace of its own, with its own `fuzz/Cargo.lock`, so the fuzzing
-  tools (`libfuzzer-sys`, `arbitrary` and what they pull in) are not among rext's
+  tools (`libfuzzer-sys`, `arbitrary` and what they pull in) are not among rse's
   dependencies: not in `Cargo.lock`, not built for users, and not covered by
   `cargo deny` and `cargo vet` below; `cargo xtask deny` checks them for known
   vulnerabilities and foreign sources only (`cargo deny --locked --manifest-path
@@ -29,14 +29,14 @@
 - The Rust side ends there. The default build also compiles rclone with Go, and Go
   downloads rclone's modules from the Go module proxy (checked against `go.sum`) on
   the first build. To build with no network at all, build librclone once with
-  `scripts/build-librclone.sh <dir>` and point `REXT_LIBRCLONE_DIR` at it, or build
+  `scripts/build-librclone.sh <dir>` and point `RSE_LIBRCLONE_DIR` at it, or build
   the `rcd` feature, which needs no Go.
 
 ## Audit
 
 `cargo xtask deny` and `cargo xtask vet` run the two below with the versions pinned in
 `xtask/src/pins.rs` (`cargo xtask setup` installs them). `xtask/` is a member of this
-workspace that uses only crates rext already depends on (ureq and serde_json, to look
+workspace that uses only crates rse already depends on (ureq and serde_json, to look
 up newer releases), so it adds no package to `Cargo.lock`; `cargo build`
 and `cargo test` never build it.
 
@@ -76,11 +76,11 @@ full table to `audit/geiger/geiger.txt`):
 - 123 crates: 56 use `unsafe`, 53 use none, and 14 also declare `forbid(unsafe_code)`.
 - In all: 376 unsafe functions, 27,349 expressions, 432 impls, 56 traits and 970
   methods used by the build.
-- rext itself has 8 `unsafe` blocks, each in a function that allows it by name: the
+- rse itself has 8 `unsafe` blocks, each in a function that allows it by name: the
   calls into librclone (`src/rclone/ffi.rs`), `setlocale` and its text domain
   (`src/i18n.rs`), and `pre_exec` to start ssh in a session of its own
   (`src/rclone/system_ssh.rs`). File descriptors, `getuid` and `setsid` go through
-  rustix's safe functions. (geiger's line for rext adds up its dependencies too.)
+  rustix's safe functions. (geiger's line for rse adds up its dependencies too.)
 
 The crates with the most unsafe expressions used by the build:
 
@@ -102,7 +102,7 @@ The crates with the most unsafe expressions used by the build:
 | anyhow 1.0.104 | 12/15 | 354/360 | 2/2 | 12/12 | errors |
 | linux-raw-sys 0.12.1 | 10/10 | 292/17551 | 0/0 | 20/2286 | system call numbers and types |
 
-This code is not checked by rext's own tests, Miri or Kani; it rests on the audits
+This code is not checked by rse's own tests, Miri or Kani; it rests on the audits
 above and on its authors.
 
 ## Code Run at Build Time

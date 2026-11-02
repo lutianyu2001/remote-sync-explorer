@@ -3,7 +3,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use rext::fuzz::{base64_url_decode, base64_url_encode, openssh_version, password_entry, reveal};
+use rse::fuzz::{base64_url_decode, base64_url_encode, openssh_version, password_entry, reveal};
 
 fuzz_target!(|input: (&str, &[u8])| {
     let (text, data) = input;

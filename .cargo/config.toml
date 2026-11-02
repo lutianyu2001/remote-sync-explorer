@@ -1,5 +1,5 @@
 [env]
-# The oldest macOS rext supports. The embedded rclone is built with Go 1.27, whose
+# The oldest macOS rse supports. The embedded rclone is built with Go 1.27, whose
 # runtime needs macOS 13, so rustc's defaults (11.0 on arm64, 10.12 on x86_64) would
 # claim too much, and cgo's clang would otherwise build for the host's macOS. rustc and
 # clang both read this variable; it is ignored on Linux, and a value already set in

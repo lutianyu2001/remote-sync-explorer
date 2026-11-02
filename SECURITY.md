@@ -1,6 +1,6 @@
 # Security
 
-How rext's own code is checked, and the decisions that keep secrets and files safe. How
+How rse's own code is checked, and the decisions that keep secrets and files safe. How
 the dependencies are checked is in [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md).
 
 ## Audit
@@ -19,7 +19,7 @@ a known vulnerability in it; nothing is updated without the user's choice.
 | Kani | Proofs for every input: mouse hit-testing never overflows (1 s, 95 MiB); key names are never cut inside a character, up to 7 bytes (31 s, 1009 MiB) | `cargo xtask kani` |
 | Miri | Undefined behaviour in the tests of the pure modules, dependencies included | `cargo xtask miri` |
 | Branch coverage | Which branches the tests reach, to find decisions whose conditions are not each tested ([cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov), nightly) | `cargo xtask coverage` |
-| Release build | `overflow-checks = true`: an integer overflow stops rext instead of wrapping | `cargo build --release` |
+| Release build | `overflow-checks = true`: an integer overflow stops rse instead of wrapping | `cargo build --release` |
 
 ### Fuzzing
 
@@ -68,7 +68,7 @@ These are kept apart from building and testing: none of them runs in `cargo buil
 workflow after each push to main (see below). README's Security Audit section sums up
 what they cover.
 
-They run through `cargo xtask`, a small program in `xtask/` that uses no crate rext
+They run through `cargo xtask`, a small program in `xtask/` that uses no crate rse
 does not already depend on. It pins the tools and the nightly toolchain that fuzzing,
 Miri and coverage need (Kani brings its own), so every machine and CI use the same
 versions, and runs each heavy check in a systemd scope with a
@@ -168,7 +168,7 @@ names.
   minutes without progress, not counting the user's answers, so a server that stalls
   cannot hold a remote and a worker. Ending a login ends what ssh started with it, such
   as a `ProxyCommand`.
-- **New host keys.** rext never tells ssh to accept a new host key by itself: ssh's own
+- **New host keys.** rse never tells ssh to accept a new host key by itself: ssh's own
   question, with the key's fingerprint, is shown in a dialog whose default is No.
 - **ssh arguments.** A `host` or `user` starting with `-`, or any ssh setting holding a
   control character, is never passed to the system ssh.
@@ -180,20 +180,20 @@ names.
   https, or a port only rclone can have, on a shared machine.
 - **Obscured passwords** are read only from text exactly as `rclone obscure` writes it.
   rclone itself also reads text whose last base64 bits are not zero, or with line breaks in
-  it; rext refuses such a value, which rclone never writes. From rclone.conf, it asks for
+  it; rse refuses such a value, which rclone never writes. From rclone.conf, it asks for
   the password instead and tells the user why.
 - **Files.** The rclone log is created readable only by its owner (`0600`), and obscured
-  passwords are left out of what rext writes to it. The ssh socket directory is `0700`
+  passwords are left out of what rse writes to it. The ssh socket directory is `0700`
   and must belong to the user; the password file is `0600` and refused otherwise.
-- **Socket directory.** It is `$XDG_RUNTIME_DIR/rext` where the system has one, since no
-  other user can create anything there; `/tmp/rext-<uid>` could be created first by
+- **Socket directory.** It is `$XDG_RUNTIME_DIR/rse` where the system has one, since no
+  other user can create anything there; `/tmp/rse-<uid>` could be created first by
   anyone. If it cannot be used, sftp falls back to rclone's built-in ssh still checking
-  host keys, as when the system ssh fails, and rext shows why on startup.
+  host keys, as when the system ssh fails, and rse shows why on startup.
 - **Names from servers.** An entry listed as `.`, `..`, or with `/` or a NUL in its name
   is left out, with a message, since joined to the directory it would lead elsewhere.
   Control characters and the formatting characters with no glyph (bidirectional marks,
   zero-width spaces) are shown as `�` in names, paths, messages, ssh's questions and
-  what rext prints after the interface closes, so a name cannot pass for another one
+  what rse prints after the interface closes, so a name cannot pass for another one
   that way, nor reach the terminal. The joiners U+200C and U+200D stay, for emoji and
   the scripts written with them, and so do look-alike letters from other scripts. The
   Go to field shows the address as it is typed.

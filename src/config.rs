@@ -1,4 +1,4 @@
-//! `~/.config/rext/config.toml`. Remotes stay in rclone.conf.
+//! `~/.config/rse/config.toml`. Remotes stay in rclone.conf.
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -127,14 +127,40 @@ pub fn cache_dir() -> Option<PathBuf> {
     Some(if cfg!(target_os = "macos") { home.join("Library/Caches") } else { home.join(".cache") })
 }
 
+/// `$XDG_CONFIG_HOME`, else `~/.config`.
+fn config_base() -> Option<PathBuf> {
+    std::env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .filter(|p| p.is_absolute())
+        .or_else(|| home_dir().map(|h| h.join(".config")))
+}
+
+/// Moves what rse kept under its former name, rext, to its own: the config directory, the
+/// cache directory and the remembered ssh passwords, each only where rse has none yet.
+/// Returns what was moved, as (from, to).
+pub fn migrate_from_rext() -> Vec<(PathBuf, PathBuf)> {
+    let ssh = home_dir().map(|h| h.join(".ssh"));
+    let pairs = [
+        config_base().map(|b| (b.join("rext"), b.join("rse"))),
+        cache_dir().map(|b| (b.join("rext"), b.join("rse"))),
+        ssh.map(|d| (d.join("rext-passwords"), d.join("rse-passwords"))),
+    ];
+    pairs.into_iter().flatten().filter(|(from, to)| migrate(from, to)).collect()
+}
+
+/// Renames `from` to `to` when `from` exists and `to` does not; whether it did. Neither
+/// may be a link, so a link planted at either cannot send the move elsewhere.
+fn migrate(from: &Path, to: &Path) -> bool {
+    let real = |p: &Path| fs::symlink_metadata(p).map(|m| !m.file_type().is_symlink());
+    real(from).unwrap_or(false)
+        && fs::symlink_metadata(to).is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound)
+        && fs::rename(from, to).is_ok()
+}
+
 impl Config {
-    /// `$XDG_CONFIG_HOME/rext/config.toml`, else under `~/.config`.
+    /// `$XDG_CONFIG_HOME/rse/config.toml`, else under `~/.config`.
     pub fn default_path() -> Option<PathBuf> {
-        let base = std::env::var_os("XDG_CONFIG_HOME")
-            .map(PathBuf::from)
-            .filter(|p| p.is_absolute())
-            .or_else(|| home_dir().map(|h| h.join(".config")))?;
-        Some(base.join("rext").join("config.toml"))
+        Some(config_base()?.join("rse").join("config.toml"))
     }
 
     /// Reads the file; a missing file gives the defaults.
@@ -197,6 +223,33 @@ pub fn write_atomic(path: &Path, data: &[u8]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn migrate_moves_only_to_a_free_name() {
+        let dir = tempfile::tempdir().unwrap();
+        let (old, new) = (dir.path().join("rext"), dir.path().join("rse"));
+        fs::create_dir(&old).unwrap();
+        fs::write(old.join("config.toml"), "x").unwrap();
+        assert!(migrate(&old, &new));
+        assert_eq!(fs::read_to_string(new.join("config.toml")).unwrap(), "x");
+        // Gone, so nothing to move; then rse's own is never replaced.
+        assert!(!migrate(&old, &new));
+        fs::create_dir(&old).unwrap();
+        assert!(!migrate(&old, &new));
+        assert!(old.exists());
+    }
+
+    #[test]
+    fn migrate_leaves_links_alone() {
+        let dir = tempfile::tempdir().unwrap();
+        let (old, new) = (dir.path().join("rext"), dir.path().join("rse"));
+        std::os::unix::fs::symlink(dir.path(), &old).unwrap();
+        assert!(!migrate(&old, &new));
+        std::os::unix::fs::symlink(dir.path(), &new).unwrap();
+        fs::remove_file(&old).unwrap();
+        fs::create_dir(&old).unwrap();
+        assert!(!migrate(&old, &new));
+    }
 
     #[test]
     fn missing_file_gives_defaults() {

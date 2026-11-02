@@ -1,6 +1,6 @@
 #!/bin/sh
 # Builds librclone.a and librclone.h into DIR, the same way build.rs does, so that
-# REXT_LIBRCLONE_DIR=DIR can skip the Go build (CI caching, packaging, offline builds).
+# RSE_LIBRCLONE_DIR=DIR can skip the Go build (CI caching, packaging, offline builds).
 #
 #   scripts/build-librclone.sh DIR [VERSION]
 #
@@ -19,7 +19,7 @@ work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 cd "$work"
 export CGO_ENABLED=1 GOTOOLCHAIN=${GOTOOLCHAIN:-local}
-"$go" mod init rext-librclone
+"$go" mod init rse-librclone
 "$go" get "github.com/rclone/rclone/librclone@$version"
 "$go" build -buildmode=c-archive -trimpath \
     "-ldflags=-X github.com/rclone/rclone/fs.VersionSuffix=" \

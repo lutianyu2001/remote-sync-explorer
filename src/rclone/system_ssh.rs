@@ -3,14 +3,14 @@
 //! [`SystemSsh`] wraps a backend and rewrites the fs strings of rc calls. An sftp fs that
 //! would use rclone's built-in ssh (`host=`, `user=`, … and no `ssh=`) gets an `ssh=`
 //! command, so rclone runs the system `ssh` and `~/.ssh/config` applies. Before the
-//! first use, rext opens an OpenSSH master connection to the server; the ssh processes
+//! first use, rse opens an OpenSSH master connection to the server; the ssh processes
 //! rclone starts for its connections go through it, so the server sees one login
 //! however many connections rclone opens.
 //!
 //! Logging in may need a password, a key passphrase or a one-time code. ssh asks for
-//! them through `SSH_ASKPASS`, which is rext itself ([`askpass_main`]): it hands ssh's
-//! question to the running rext over a socket. A password or passphrase kept in
-//! rclone.conf answers it, then a password rext remembers ([`PasswordFile`]); anything
+//! them through `SSH_ASKPASS`, which is rse itself ([`askpass_main`]): it hands ssh's
+//! question to the running rse over a socket. A password or passphrase kept in
+//! rclone.conf answers it, then a password rse remembers ([`PasswordFile`]); anything
 //! else is asked in the interface (see [`SystemSsh::set_prompter`]), which can offer to
 //! remember a password. This needs OpenSSH 8.4 or newer.
 //!
@@ -161,7 +161,7 @@ pub struct SystemSsh {
     /// it without a display.
     askpass: Option<PathBuf>,
     prompter: Mutex<Option<Arc<Prompter>>>,
-    /// Remembered passwords; `None` when rext remembers none.
+    /// Remembered passwords; `None` when rse remembers none.
     passwords: Option<PasswordFile>,
     /// Why remembering a login's password failed last time, by its `password_key`.
     save_errors: Mutex<HashMap<String, String>>,
@@ -189,10 +189,10 @@ enum Route {
 struct Login {
     /// The ssh arguments naming the server and the account, e.g. `-p 2222 me@box`.
     dest: Vec<String>,
-    /// `ControlPath` options when rext supplies the master socket; empty when the user's
+    /// `ControlPath` options when rse supplies the master socket; empty when the user's
     /// ssh config sets up connection sharing itself.
     control: Vec<String>,
-    /// Whether rext opened the master, and so closes it at the end.
+    /// Whether rse opened the master, and so closes it at the end.
     opened: bool,
     checked: Option<Instant>,
     secrets: Secrets,
@@ -293,7 +293,7 @@ impl SystemSsh {
     /// Wraps `inner`. Master sockets go in `socket_dir`, which is created private. Without
     /// an `ssh` program every fs passes through unchanged; without a usable directory,
     /// sftp uses rclone's built-in ssh, checking host keys as ssh would.
-    /// `askpass` is a program that runs [`askpass_main`] (rext itself).
+    /// `askpass` is a program that runs [`askpass_main`] (rse itself).
     pub fn new(inner: Arc<dyn Backend>, socket_dir: &Path, askpass: Option<PathBuf>) -> Self {
         let version = Command::new("ssh").arg("-V").stdin(Stdio::null()).output().ok();
         let have_ssh = version.as_ref().is_some_and(|o| o.status.success());
@@ -360,14 +360,14 @@ impl SystemSsh {
         self.warning.as_deref()
     }
 
-    /// The default socket directory: `rext` in the session's runtime directory, in which
-    /// no other user can create anything, else `/tmp/rext-<uid>`, where one could first.
+    /// The default socket directory: `rse` in the session's runtime directory, in which
+    /// no other user can create anything, else `/tmp/rse-<uid>`, where one could first.
     /// Short either way, because socket paths are limited to about 100 bytes and a socket
     /// is named by a 40-character hash, a tag for its options and ssh's temporary suffix.
     pub fn default_socket_dir() -> PathBuf {
         runtime_dir(std::env::var_os("XDG_RUNTIME_DIR")).map_or_else(
-            || PathBuf::from(format!("/tmp/rext-{}", current_uid())),
-            |dir| dir.join("rext"),
+            || PathBuf::from(format!("/tmp/rse-{}", current_uid())),
+            |dir| dir.join("rse"),
         )
     }
 
@@ -629,7 +629,7 @@ impl SystemSsh {
         cmd.env("SSH_ASKPASS", program)
             .env("SSH_ASKPASS_REQUIRE", "force")
             .env(ASKPASS_ENV, socket);
-        // Without a controlling terminal, ssh cannot ask on the terminal rext draws on.
+        // Without a controlling terminal, ssh cannot ask on the terminal rse draws on.
         let detach = || {
             let _ = rustix::process::setsid();
             Ok(())
@@ -718,7 +718,7 @@ impl SystemSsh {
                 let _ = stream.write_all(b"NO\n");
                 return Answer::Failed;
             };
-            // rext's own reasons first, then whatever ssh said about the last answer.
+            // rse's own reasons first, then whatever ssh said about the last answer.
             // rclone.conf's answer, if it was given already, was wrong.
             let given =
                 |conf: &Option<String>, left: &Option<String>| conf.is_some() && left.is_none();
@@ -779,16 +779,16 @@ enum Answer {
     Failed,
 }
 
-/// Set for ssh's askpass child: the socket to ask the running rext through.
-const ASKPASS_ENV: &str = "REXT_ASKPASS";
+/// Set for ssh's askpass child: the socket to ask the running rse through.
+const ASKPASS_ENV: &str = "RSE_ASKPASS";
 
 /// Whether this process was started as ssh's askpass program.
 pub fn askpass_socket() -> Option<std::ffi::OsString> {
     std::env::var_os(ASKPASS_ENV)
 }
 
-/// rext as ssh's `SSH_ASKPASS` program: passes the question (the first argument) to the
-/// running rext through `socket` and prints the answer. Returns the exit code.
+/// rse as ssh's `SSH_ASKPASS` program: passes the question (the first argument) to the
+/// running rse through `socket` and prints the answer. Returns the exit code.
 pub fn askpass_main(socket: &OsStr) -> i32 {
     let prompt = std::env::args_os().nth(1).map(|p| p.to_string_lossy().into_owned());
     let prompt = prompt.unwrap_or_default();
@@ -832,7 +832,7 @@ impl Backend for SystemSsh {
 }
 
 impl SystemSsh {
-    /// Closes the master connections rext opened. Finalizing does this too.
+    /// Closes the master connections rse opened. Finalizing does this too.
     pub fn close_masters(&self) {
         let routes: Vec<_> =
             self.routes.lock().map(|r| r.values().cloned().collect()).unwrap_or_default();
@@ -1014,7 +1014,7 @@ fn redacted(name: &str) -> String {
 }
 
 fn note(message: &str) {
-    eprintln!("rext: sftp {message}");
+    eprintln!("rse: sftp {message}");
 }
 
 /// Whether the master connection for `login` is up.
@@ -1313,7 +1313,7 @@ fn end_session(child: &mut std::process::Child) {
     let _ = child.wait();
 }
 
-/// The user rext runs as.
+/// The user rse runs as.
 pub fn current_uid() -> u32 {
     rustix::process::getuid().as_raw()
 }
@@ -1518,7 +1518,7 @@ mod tests {
         assert_eq!(askpass(&ssh, &login, &mut asked, PASSWORD).as_deref(), Some("kept"));
     }
 
-    /// A password or passphrase in rclone.conf that rext cannot read is asked for instead,
+    /// A password or passphrase in rclone.conf that rse cannot read is asked for instead,
     /// saying why, but only in ssh's own question for it.
     #[test]
     fn unreadable_secrets_are_asked_for_saying_why() {
@@ -1852,7 +1852,7 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
 
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("rext-passwords");
+        let path = dir.path().join("rse-passwords");
         let (ssh, login, questions, answers) = remembering(&path);
         let file = PasswordFile::new(path.clone());
         let asked_last = || questions.lock().unwrap().pop().unwrap();
@@ -1930,7 +1930,7 @@ mod tests {
     #[test]
     fn what_ssh_says_tells_why_it_asks_again() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("rext-passwords");
+        let path = dir.path().join("rse-passwords");
         let (ssh, login, questions, answers) = remembering(&path);
         let asked_last = || questions.lock().unwrap().pop().unwrap();
         let log = dir.path().join("ssh.log");
@@ -1945,7 +1945,7 @@ mod tests {
         askpass(&ssh, &login, &mut asked, PASSWORD);
         assert_eq!(asked_last().notice, None, "a new host key is no reason");
 
-        // After rext's own reason, if any; for any question; each line once.
+        // After rse's own reason, if any; for any question; each line once.
         fs::write(&log, format!("{added}Permission denied, please try again.\n")).unwrap();
         asked.notice = Some("own reason".to_owned());
         askpass(&ssh, &login, &mut asked, PASSWORD);

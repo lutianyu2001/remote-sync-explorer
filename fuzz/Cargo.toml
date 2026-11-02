@@ -1,6 +1,6 @@
-# Fuzz targets for rext's parsers (see SECURITY.md): cargo +nightly fuzz run <target>
+# Fuzz targets for rse's parsers (see SECURITY.md): cargo +nightly fuzz run <target>
 [package]
-name = "rext-fuzz"
+name = "rse-fuzz"
 version = "0.0.0"
 edition = "2024"
 publish = false
@@ -9,12 +9,12 @@ publish = false
 cargo-fuzz = true
 
 # A workspace of its own, with its own Cargo.lock: libfuzzer and the fuzz targets never
-# enter rext's dependencies.
+# enter rse's dependencies.
 [workspace]
 
 [dependencies]
 libfuzzer-sys = { version = "0.4.13", features = ["arbitrary-derive"] }
-rclone-explorer-tui = { path = "..", default-features = false }
+remote-sync-explorer = { path = "..", default-features = false }
 toml = "1.1.8"
 unicode-segmentation = "1.13.3"
 

@@ -34,7 +34,7 @@ fn standard() -> Harness {
                     file("a.pdf", 3_000_000),
                 ],
             ),
-            ("/home/sky/projects", vec![file("main.rs", 100), dir("rext")]),
+            ("/home/sky/projects", vec![file("main.rs", 100), dir("rse")]),
             ("/home/sky/Docs", vec![]),
             ("nas:backup", vec![file("a.pdf", 1), dir("photos")]),
             ("nas:backup/photos", vec![]),
@@ -86,7 +86,7 @@ fn enter_and_parent_restore_the_cursor() {
     select(&mut h, "projects");
     h.press(KeyCode::Enter);
     assert_eq!(h.app.panes[0].loc, home().join("projects"));
-    assert_eq!(names(&h, 0), ["..", "rext", "main.rs"]);
+    assert_eq!(names(&h, 0), ["..", "rse", "main.rs"]);
     h.press(KeyCode::Backspace);
     assert_eq!(h.app.panes[0].loc, home());
     assert_eq!(cursor_name(&h, 0), "projects");
@@ -563,8 +563,8 @@ fn ssh_passwords_can_be_remembered() {
 
     // Why a remembered password was not used shows in a window under the dialog, and
     // stays while the box is toggled.
-    let reason = "The remembered password cannot be used: /home/me/.ssh/rext-passwords can \
-                  be read by other users, so rext does not use it; run chmod 600 it";
+    let reason = "The remembered password cannot be used: /home/me/.ssh/rse-passwords can \
+                  be read by other users, so rse does not use it; run chmod 600 it";
     let answer = ssh_asks_remember(&mut h, "me@box's password:", true, Some(reason));
     let lines: Vec<&str> = h.screen.lines().collect();
     let dialog = lines.iter().position(|l| l.contains("SSH login")).unwrap();
@@ -815,7 +815,7 @@ fn copy_to_the_same_directory_is_refused() {
 #[test]
 fn copying_a_directory_into_itself_is_refused() {
     let mut h = standard();
-    h.app.panes[1].loc = home().join("projects").join("rext");
+    h.app.panes[1].loc = home().join("projects").join("rse");
     select(&mut h, "projects");
     h.press(KeyCode::F(5));
     assert_eq!(h.app.status.as_deref(), Some("cannot put a directory inside itself"));

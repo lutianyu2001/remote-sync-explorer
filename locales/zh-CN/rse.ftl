@@ -1,4 +1,4 @@
-# 中文界面文本。这里的每条消息都要和 en/rext.ftl 一一对应；
+# 中文界面文本。这里的每条消息都要和 en/rse.ftl 一一对应；
 # `cargo test` 会检查两个文件定义的消息相同，并且都被用到。
 
 ## 通用
@@ -193,18 +193,18 @@ mouse-drag-does = 复制或移动（拖动已选中的项时，带上所有选�
 mouse-cancel = 单击队列中的 ✕
 mouse-cancel-does = 取消该任务
 
-## 命令行（`rext --help` 及其报错）
+## 命令行（`rse --help` 及其报错）
 
 cli-about = 本地路径与 rclone 远程的双栏终端文件管理器
 cli-usage-heading = 用法：
-cli-usage = rext [选项] [左侧位置] [右侧位置]
+cli-usage = rse [选项] [左侧位置] [右侧位置]
 cli-arguments = 参数：
 cli-options = 选项：
 cli-left = 左侧窗格的初始位置，例如 ~/work
 cli-left-value = 左侧位置
 cli-right = 右侧窗格的初始位置，例如 nas:backup。只给一个位置且是远程时，它放在右侧而不是左侧
 cli-right-value = 右侧位置
-cli-config = rclone-explorer-tui 的配置文件
+cli-config = remote-sync-explorer 的配置文件
 cli-rclone-config = rclone 的配置文件
 cli-path-value = 路径
 cli-ask-password = 启动前先询问 rclone 配置文件的密码
@@ -216,7 +216,7 @@ cli-rc-user = --rcd 的用户名
 cli-user-value = 用户名
 cli-rc-pass = --rcd 的密码（更好的做法：用环境变量 RCLONE_RC_PASS）
 cli-pass-value = 密码
-cli-version = 显示 rclone-explorer-tui 和 rclone 的版本
+cli-version = 显示 remote-sync-explorer 和 rclone 的版本
 cli-help = 显示帮助
 cli-error = 错误：
 cli-tip = 提示：
@@ -229,12 +229,12 @@ cli-unexpected-value = { $arg } 不接受值，却给了 { $value }
 cli-repeated = 参数 { $arg } 不能重复使用
 cli-invalid-utf8 = 参数中有无效的 UTF-8 字符
 cli-other = 无法解析命令行：{ $detail }
-cli-try-help = 想了解更多，请运行 rext { $flag }。
+cli-try-help = 想了解更多，请运行 rse { $flag }。
 
-## 启动（`rext --version`、配置文件、rclone 与 ssh）
+## 启动（`rse --version`、配置文件、rclone 与 ssh）
 
-startup-no-rcd = --rcd { $url }：这个 rext 编译时没有启用 `rcd` 功能
-startup-no-embedded = 这个 rext 编译时没有内置 rclone；请用 --rcd <URL>
+startup-no-rcd = --rcd { $url }：这个 rse 编译时没有启用 `rcd` 功能
+startup-no-embedded = 这个 rse 编译时没有内置 rclone；请用 --rcd <URL>
 startup-keys = 配置文件有误
 startup-config-path = 设置 rclone 配置文件路径失败
 startup-configuring = 配置 rclone 失败
@@ -279,7 +279,7 @@ ssh-passphrase-wrong = { $remote } 设置的 key_file_pass 解不开私钥。
 passwords-refused = 服务器拒绝了记住的密码。
 passwords-unusable = 无法使用记住的密码：{ $error }
 passwords-not-saved-before = 上次没能记住密码：{ $error }
-passwords-not-private = { $path } 其他用户也能读取，rext 不会使用它；请运行 chmod 600 { $path }
+passwords-not-private = { $path } 其他用户也能读取，rse 不会使用它；请运行 chmod 600 { $path }
 passwords-bad-entry = { $path }：{ $login } 的密码不是 rclone 混淆后的格式（{ $error }）
 passwords-not-saved = 无法把 { $login } 的密码保存到 { $path }：{ $error }
 passwords-no-home = 找不到用户主目录

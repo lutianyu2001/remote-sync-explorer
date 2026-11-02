@@ -1,14 +1,14 @@
-# rclone-explorer-tui
+# remote-sync-explorer
 
 <p align="right">
     <strong>English</strong> | <a href="./README/README_CN.md">中文</a>
 </p>
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![CI](https://github.com/lutianyu2001/rclone-explorer-tui/actions/workflows/ci.yml/badge.svg)](https://github.com/lutianyu2001/rclone-explorer-tui/actions/workflows/ci.yml)
-[![Advisories](https://github.com/lutianyu2001/rclone-explorer-tui/actions/workflows/audit.yml/badge.svg)](https://github.com/lutianyu2001/rclone-explorer-tui/actions/workflows/audit.yml)
+[![CI](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/ci.yml/badge.svg)](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/ci.yml)
+[![Advisories](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/audit.yml/badge.svg)](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/audit.yml)
 
-rclone-explorer-tui (`rext`) is a dual-pane terminal file manager for the local disk,
+remote-sync-explorer (`rse`) is a dual-pane terminal file manager for the local disk,
 remote servers and any [rclone](https://rclone.org) remote.
 
 ## Table of Contents
@@ -32,7 +32,7 @@ remote servers and any [rclone](https://rclone.org) remote.
 
 Each pane shows a location; copy, move, delete, rename and create directories between
 them, with a transfer queue that shows live progress. rclone is compiled in as a static
-library, so a release is a single binary called `rext`.
+library, so a release is a single binary called `rse`.
 
 ```text
 ╭───────╮╭────────────[1] Address─╮╭───╮╭────────╮╭───────────[3] Address─╮╭───╮
@@ -40,7 +40,7 @@ library, so a release is a single binary called `rext`.
 ╰───────╯╰────────────────────────╯╰───╯╰────────╯╰───────────────────────╯╰───╯
 ╭────────────────────────────[2] Local─╮╭───────────────────────────[4] Remote─╮
 │ ..                                   ││ ..                                   │
-│ rext/                           <DIR>││ photos/                         <DIR>│
+│ rse/                           <DIR>││ photos/                         <DIR>│
 │*huge.bin                       1.5 GB││ notes.md                       4.1 KB│
 │*report-final-v3.pdf            2.4 MB││ report-final-v2.pdf            2.3 MB│
 │ very-long-file-n…ing.tar.gz     12 MB││                                      │
@@ -74,7 +74,7 @@ library, so a release is a single binary called `rext`.
 
 ## Security Audit
 
-rext handles passwords, ssh logins and the files on remote servers, so its code has been
+rse handles passwords, ssh logins and the files on remote servers, so its code has been
 audited for security. The audit was done by the project's maintainer, not by an
 independent third party: it raises confidence in the code but is no guarantee. The audit
 is repeated rather than done once: its latest results are committed with the code in
@@ -85,22 +85,22 @@ of 2026-11-02.
 
 | Area | What was audited | Extent |
 |---|---|---|
-| Threat model | Every place where input from outside, or a secret, reaches rext, reviewed by hand, with each decision written down | 15 decisions in SECURITY.md: where passwords go, host keys (also after falling back to rclone's built-in ssh), what a server can make ssh do, options slipped into ssh, `--rcd` over plain http, file permissions, names and text from servers on screen, overwrites |
-| `unsafe` code | rext forbids `unsafe` except in functions that allow it by name | 8 blocks, each a call that has no safe form (into librclone, `setlocale`, `pre_exec`), each with the reason it is sound |
+| Threat model | Every place where input from outside, or a secret, reaches rse, reviewed by hand, with each decision written down | 15 decisions in SECURITY.md: where passwords go, host keys (also after falling back to rclone's built-in ssh), what a server can make ssh do, options slipped into ssh, `--rcd` over plain http, file permissions, names and text from servers on screen, overwrites |
+| `unsafe` code | rse forbids `unsafe` except in functions that allow it by name | 8 blocks, each a call that has no safe form (into librclone, `setlocale`, `pre_exec`), each with the reason it is sound |
 | Dependencies | Sources, licenses, known vulnerabilities, abandoned and yanked crates (cargo-deny); an audit of every crate (cargo-vet); builds offline from checksummed sources | 216 crates audited: audits imported from Mozilla, Google and the Bytecode Alliance, and 188 of our own; no exemptions. Vulnerabilities are looked up again daily |
 | Tests | Unit, screen snapshot and integration tests, including ssh logins against a private `sshd` | 232 tests, reaching 93% of the lines and 80% of the branches |
 | Miri | The tests of the modules that need no process, socket or network, run under Miri, which detects undefined behaviour | 62 tests in 11 modules |
 | Fuzzing | Random input to every reader of untrusted text, checked against the invariants in SECURITY.md | 5 targets (addresses, ssh options, text shown on screen, the config file, passwords), an hour each: from 1 to 124 million inputs per target |
 | Kani proofs | Properties proved for every input within a bound | Mouse hit-testing never overflows, for all inputs (1 s, 95 MiB); key names are never cut inside a character, up to 7 bytes (31 s, 1009 MiB) |
-| Release build | `overflow-checks = true` | An integer overflow stops rext instead of wrapping |
+| Release build | `overflow-checks = true` | An integer overflow stops rse instead of wrapping |
 
 What this does not show:
 
-- Rust rules out memory errors in rext's own code, not logic errors; the review and the
+- Rust rules out memory errors in rse's own code, not logic errors; the review and the
   tests are what look for those.
 - 56 of the 123 crates in the default build use `unsafe` code. That code rests on its
-  authors and on the audits above, not on rext's tests, Miri or Kani.
-- The rclone compiled into rext is Go code, which none of these checks covers; Go checks
+  authors and on the audits above, not on rse's tests, Miri or Kani.
+- The rclone compiled into rse is Go code, which none of these checks covers; Go checks
   its modules against `go.sum` when it downloads them.
 - Kani proves a property only up to its bound, and fuzzing tries samples. Not proved: the
   decoding of obscured passwords, and the readers of addresses, ssh options, connection
@@ -122,16 +122,16 @@ What this does not show:
 ### From crates.io (Recommended)
 
 1. Install Rust, Go and a C toolchain (see [Prerequisites](#prerequisites)).
-2. Install `rext`:
+2. Install `rse`:
 
    ```bash
-   cargo install --locked rclone-explorer-tui
+   cargo install --locked remote-sync-explorer
    ```
 
 The first build compiles rclone, which takes a minute or more. The binary is around
 90–115 MB because it contains all of rclone. The build checks `librclone.h` against the
 hand-written bindings and fails if rclone ever changes the four exported functions; on
-glibc, it checks the one libintl function rext declares the same way.
+glibc, it checks the one libintl function rse declares the same way.
 
 ### Building from Source
 
@@ -144,10 +144,10 @@ Build-time environment variables, for either way of building:
 
 | Variable | Effect |
 |----------|--------|
-| `REXT_RCLONE_VERSION` | Build against another rclone version (default: the pinned `v1.75.2`) |
-| `REXT_LIBRCLONE_DIR` | Directory with a prebuilt `librclone.a` and `librclone.h`; skips the Go build entirely (offline builds, packaging) |
+| `RSE_RCLONE_VERSION` | Build against another rclone version (default: the pinned `v1.75.2`) |
+| `RSE_LIBRCLONE_DIR` | Directory with a prebuilt `librclone.a` and `librclone.h`; skips the Go build entirely (offline builds, packaging) |
 | `GO` | The Go binary to use |
-| `GOTOOLCHAIN` | Passed to Go as is; when unset, rext sets it to `local` so an old Go fails clearly instead of downloading a toolchain |
+| `GOTOOLCHAIN` | Passed to Go as is; when unset, rse sets it to `local` so an old Go fails clearly instead of downloading a toolchain |
 | `MACOSX_DEPLOYMENT_TARGET` | Oldest macOS the build runs on; `.cargo/config.toml` sets `13.0`, the oldest the embedded Go runtime supports |
 | `CC_<target>` / `TARGET_CC` | C compiler cgo uses for the target, e.g. `CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc` |
 
@@ -158,12 +158,12 @@ Rust and Go dependencies (needs `cargo-about` and `go-licenses`).
 ### Cross-Compiling
 
 `GOOS` and `GOARCH` follow cargo's target, so librclone is cross-compiled along with
-rext:
+rse:
 
 ```bash
 rustup target add aarch64-apple-darwin
 cargo build --release --locked --target aarch64-apple-darwin
-# → target/aarch64-apple-darwin/release/rext
+# → target/aarch64-apple-darwin/release/rse
 ```
 
 Between macOS architectures nothing else is needed: cgo uses `clang -arch <arch>`. For
@@ -173,7 +173,7 @@ otherwise, and rustc needs the same compiler as its linker
 binary:
 
 ```bash
-lipo -create -output rext <x86_64 rext> <arm64 rext>
+lipo -create -output rse <x86_64 rse> <arm64 rse>
 ```
 
 ### Without Go: The `rcd` Feature
@@ -183,7 +183,7 @@ This build talks to an `rclone rcd` you run yourself instead of embedding rclone
 ```bash
 cargo build --release --locked --no-default-features --features rcd
 rclone rcd --rc-user <user> --rc-pass <password> &
-RCLONE_RC_PASS=<password> rext --rcd http://localhost:5572 --rc-user <user>
+RCLONE_RC_PASS=<password> rse --rcd http://localhost:5572 --rc-user <user>
 ```
 
 Plain `http://` is accepted only to this machine (`localhost`, `127.0.0.1`, `[::1]`); an
@@ -192,7 +192,7 @@ rcd elsewhere needs `https://` (`rclone rcd --rc-cert … --rc-key …`).
 ## Usage
 
 ```text
-rext [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
+rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
      [--forget-password <LOGIN>] [--rcd <URL> --rc-user <USER> --rc-pass <PASS>]
      [--version] [-h] [LEFT] [RIGHT]
 ```
@@ -202,8 +202,8 @@ rext [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
 - `RIGHT`
     - Initial location of the right pane, e.g. `nas:backup`. Given alone, a remote opens
       here instead of on the left
-- `--config <PATH>` (default: `~/.config/rext/config.toml`)
-    - rclone-explorer-tui config file
+- `--config <PATH>` (default: `~/.config/rse/config.toml`)
+    - remote-sync-explorer config file
 - `--rclone-config <PATH>`
     - rclone config file
 - `--ask-password`
@@ -217,12 +217,12 @@ rext [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
     - User and password for `--rcd`; `RCLONE_RC_USER` and `RCLONE_RC_PASS` are read when
       they are not given, and keep the password out of `ps`
 - `--version`
-    - Print the rclone-explorer-tui and rclone versions
+    - Print the remote-sync-explorer and rclone versions
 - `-h, --help`
     - Print help
 
-An encrypted rclone config needs its password before rext starts: use
-`--ask-password`, or export `RCLONE_CONFIG_PASS` in the shell that starts rext.
+An encrypted rclone config needs its password before rse starts: use
+`--ask-password`, or export `RCLONE_CONFIG_PASS` in the shell that starts rse.
 
 ### Locations and Addresses
 
@@ -236,7 +236,7 @@ name that could lead out of the directory (`..`, or one with `/` in it) is left 
 and the status bar says how many were.
 
 With a single location, a remote or server address opens in the right pane and the left
-pane shows `left` from the config (`~` by default): `rext sftp://me@box` puts the local
+pane shows `left` from the config (`~` by default): `rse sftp://me@box` puts the local
 disk on the left and `box` on the right. A single local path opens on the left.
 
 A server can also be opened by its address, without a remote in `rclone.conf`:
@@ -252,7 +252,7 @@ A port goes after the host (`sftp://me@box:2222/srv`). sftp paths are absolute;
 `sftp://me@box/~/docs`, or no path at all, is in the home directory, and scp's
 `me@box:docs` means the same. Without a user, FTP logs in as `anonymous`.
 
-When a login needs a password and the address has none, rext asks for it (on the
+When a login needs a password and the address has none, rse asks for it (on the
 terminal before starting, for an address given on the command line) and keeps it in
 memory until it quits; a failed listing forgets it, so the next attempt asks again.
 `ftp://me:secret@box` also works, but leaves the password in your shell history.
@@ -350,7 +350,7 @@ Alt+click.
 
 ### Conflicts, Moves and Cancel
 
-- When the target already has an entry with the same name, rext asks: overwrite, skip,
+- When the target already has an entry with the same name, rse asks: overwrite, skip,
   overwrite all, skip all or cancel. Skip is the default, and names that differ only in
   case count as the same (many targets, such as macOS disks and cloud drives, do not
   tell them apart). The target is listed again for this check, even when a pane shows
@@ -376,7 +376,7 @@ Alt+click.
   different files are overwritten.
 - A move across remotes is a copy followed by deleting the source. If it is cancelled
   midway, the files copied so far are already gone from the source. After a directory
-  move rext removes the emptied source directory.
+  move rse removes the emptied source directory.
 - Cancelling a transfer stops the rclone job; rclone removes the partly written
   `.partial` file, so the target is left without a broken file.
 - On macOS, rclone clones files that are copied within one APFS volume instead of
@@ -384,7 +384,7 @@ Alt+click.
 
 ## Configuration
 
-`~/.config/rext/config.toml` (or `$XDG_CONFIG_HOME/rext/config.toml`). The file is
+`~/.config/rse/config.toml` (or `$XDG_CONFIG_HOME/rse/config.toml`). The file is
 optional; missing settings use these defaults. Unknown settings are errors, so typos do
 not go unnoticed.
 
@@ -419,31 +419,31 @@ move = ["F6", "m"]
 # Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn, Delete.
 ```
 
-rclone's own log messages go to `~/.cache/rext/rclone.log` (`~/Library/Caches/rext/` on
+rclone's own log messages go to `~/.cache/rse/rclone.log` (`~/Library/Caches/rse/` on
 macOS) while the interface is open.
 
 ## Languages
 
-rext speaks English or Simplified Chinese: `language` in `[ui]` picks one, and `auto`
+rse speaks English or Simplified Chinese: `language` in `[ui]` picks one, and `auto`
 (the default) follows the system locale, as gettext does (`LANGUAGE`, `LC_ALL`,
-`LC_MESSAGES`, `LANG`). This covers the interface, `rext --help` and its errors, and the
+`LC_MESSAGES`, `LANG`). This covers the interface, `rse --help` and its errors, and the
 errors and prompts at start-up; the config file's setting already applies to `--help`.
 System errors such as "No such file or directory" follow it too when glibc has the
 translations (Linux). What rclone, ssh and the TOML parser say stays in English, and so
 does the log file.
 
-The texts live in [Fluent](https://projectfluent.org) files, `locales/en/rext.ftl` and
-`locales/zh-CN/rext.ftl`, built into the binary.
+The texts live in [Fluent](https://projectfluent.org) files, `locales/en/rse.ftl` and
+`locales/zh-CN/rse.ftl`, built into the binary.
 
 ## SFTP Through OpenSSH
 
-rext reaches sftp servers through the system `ssh` by default, so everything in
+rse reaches sftp servers through the system `ssh` by default, so everything in
 `~/.ssh/config` applies (host aliases, ProxyJump, keys, …). Before the first use of a
 server it logs in once and keeps that OpenSSH master connection open; all the
 connections rclone makes go through it. A server therefore sees one login per session,
 not one for each of rclone's parallel connections, which keeps tools such as fail2ban
 from banning you. The connection is shared by every remote or address for the same
-account on the same server, closes when rext quits, and otherwise ends 15 minutes after
+account on the same server, closes when rse quits, and otherwise ends 15 minutes after
 its last use. Remotes reaching one account with different settings, such as their own
 `known_hosts_file`, get connections of their own. Whatever `~/.ssh/config` says, these
 connections forward no agent, X11 or ports and run no local or remote command, as
@@ -467,7 +467,7 @@ Logging in can need a password, a key passphrase or a one-time code. A password
 (`pass`) or key passphrase (`key_file_pass`) kept in `rclone.conf` is given to ssh
 without asking; anything else is asked in a dialog, such as `me@box's password:` or a
 verification code. A `pass` or `key_file_pass` not made by `rclone obscure` (written in
-plain text, say) is not used: rext asks for it instead, and a window under the dialog
+plain text, say) is not used: rse asks for it instead, and a window under the dialog
 says why, as it does when the server refuses the `pass` or the `key_file_pass` does not
 unlock the key. This needs OpenSSH 8.4 or newer (`ssh -V`); with an older one,
 remotes that need a password use rclone's built-in ssh as before. The password and
@@ -480,7 +480,7 @@ answer, is given up.
 ### Remembered Passwords
 
 The password dialog has a **Remember password** box (Tab or a click toggles it). When it
-is ticked and the login succeeds, rext keeps the password in `~/.ssh/rext-passwords` and
+is ticked and the login succeeds, rse keeps the password in `~/.ssh/rse-passwords` and
 gives it to ssh the next time that account logs in, after any password in
 `rclone.conf`. The file has one line per account:
 
@@ -493,10 +493,10 @@ The account is written as ssh resolves it (`ssh -G`): the real user and host nam
 rather than a host alias, with `:port` when it is not 22. The password is obscured the
 way `rclone.conf` keeps passwords: `rclone reveal` shows it, and a value made with
 `rclone obscure` can be written in by hand. Obscuring only keeps a password from being
-read at a glance, so, as ssh does with private keys, rext uses the file only while it is
+read at a glance, so, as ssh does with private keys, rse uses the file only while it is
 readable by you alone (`chmod 600`). Other lines, such as `#` comments, are left alone.
 
-When rext asks for a password although one was remembered, a window under the dialog
+When rse asks for a password although one was remembered, a window under the dialog
 says why: ssh refused the remembered password, the file cannot be used (for example
 because others can read it), or saving the password failed last time. When ssh asks
 again for another reason, the window shows what ssh said, such as
@@ -505,7 +505,7 @@ refused one, and one not remembered removes it. To forget a password, delete its
 or run:
 
 ```bash
-rext --forget-password <user>@<host>
+rse --forget-password <user>@<host>
 ```
 
 These problems also go to the rclone log.
@@ -515,7 +515,7 @@ These problems also go to the rclone log.
 rclone's built-in ssh is used instead (logging in once per connection, with rclone's own
 settings) when:
 
-- there is no `ssh` program, or `system_ssh = false` is set under `[rclone]` in rext's
+- there is no `ssh` program, or `system_ssh = false` is set under `[rclone]` in rse's
   config;
 - the remote needs something only the built-in ssh can do: an inline key (`key_pem`), a
   proxy or cipher setting;
@@ -525,7 +525,7 @@ settings) when:
   trusted. With `StrictHostKeyChecking no` or `accept-new` in your ssh config, a new
   server is let in as OpenSSH would; one listed in any file ssh reads, under any name
   ssh knows it by, must show the key listed there. A changed key is refused, where
-  OpenSSH with `no` would go on with password logins turned off. When rext cannot tell
+  OpenSSH with `no` would go on with password logins turned off. When rse cannot tell
   (a `%` token in the file's path, a `KnownHostsCommand`), it checks.
 
 The reason is written to the rclone log. Two failures are errors instead of reasons to
@@ -534,11 +534,11 @@ host keys), and a cancelled question (the built-in ssh would only fail again). A
 not seen before is shown with its key's fingerprint and added to `known_hosts` only if
 you answer Yes (No is the default); a `StrictHostKeyChecking` in your ssh config applies
 as set. If your ssh config already sets up `ControlMaster` and
-`ControlPath`, rext uses those; otherwise its sockets go in `$XDG_RUNTIME_DIR/rext`,
-where no other user can create anything, or in `/tmp/rext-<uid>` on systems without
+`ControlPath`, rse uses those; otherwise its sockets go in `$XDG_RUNTIME_DIR/rse`,
+where no other user can create anything, or in `/tmp/rse-<uid>` on systems without
 it, such as macOS. When that directory cannot be used, for example because another user
 created it first, sftp uses rclone's built-in ssh as above, still checking host keys,
-and rext shows why on startup. None of this applies with `--rcd`: that rclone runs on
+and rse shows why on startup. None of this applies with `--rcd`: that rclone runs on
 its own machine.
 
 ## Testing

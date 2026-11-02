@@ -7,22 +7,22 @@ expression: h.render()
 ╰───────╯╰────────────────────────╯╰───╯╰────────╯╰───────────────────────╯╰───╯
 ╭────────────────────────────[2] Local─╮╭───────────────────────────[4] Remote─╮
 │ ..                                   ││ ..                                   │
-│ rext/                           <DIR>││ photos/                         <DIR>│
-│*huge.bin                       1.5 GB││ notes.md                       4.1 KB│
-│*report-final-v3.pdf            2.4 MB││ report-final-v2.pdf            2.3 MB│
-│ very-long-file-n…ing.tar.gz     12 MB││                                      │
-│                                      ││                                      │
-│                                      ││                                      │
-│                                      ││                                      │
-│                                      ││                                      │
-│                                      ││                                      │
-│                                      ││                                      │
+│*rse/                            <DIR>││ photos/                         <DIR>│
+│*╭ Delete? ─────────────────────────────────────────────────────────────────╮B│
+│ │ Delete 2 items (1.5 GB in 1 file, 1 directory)                           │B│
+│ │ in    /home/sky/projects                                                 │ │
+│ │                                                                          │ │
+│ │   rse/                                                                   │ │
+│ │   huge.bin                                                               │ │
+│ │                                                                          │ │
+│ │ Directories are deleted including all subdirectories.                    │ │
+│ │ This cannot be undone.                                                   │ │
+│ │                                                                          │ │
+│ │                          [ Delete ]  [ Cancel ]                          │ │
+│ ╰──────────────────────────────────────────────────────────────────────────╯ │
 │                                      ││                                      │
 ╰───────────────────────────[2 marked]─╯╰──────────────────────────────────────╯
 ╭────────────────────────────────────────────────────────────────[5] Transfers─╮
-│ 1 running · 1 queued                                                         │
-│   copy huge.bin → nas:backup/2026       ██████░░░░░░  48%    52 MB/s   0:16 ✕│
-│   copy report-final-v3.pdf → nas:backup/2026                         queued ✕│
-│                                                                              │
+│ idle                                                                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
  F5 Copy  F6 Move  F7 Mkdir  F8 Delete  F10 Remote  / Filter  ? Help  q Quit

@@ -210,7 +210,7 @@ pub struct Plan {
 impl Plan {
     /// Bytes in the selected files (directory sizes are not known without a scan).
     pub fn file_bytes(&self) -> i64 {
-        // Sizes come from the server; a sum past i64::MAX must not stop rext.
+        // Sizes come from the server; a sum past i64::MAX must not stop rse.
         self.items.iter().filter(|e| !e.is_dir).fold(0, |n, e| n.saturating_add(e.size.max(0)))
     }
 
@@ -2072,7 +2072,7 @@ fn is_not_found(e: &RpcError) -> bool {
 }
 
 /// Adds a hint to errors from remotes that run the system ssh: the terminal belongs to
-/// rext, so ssh cannot ask for a password.
+/// rse, so ssh cannot ask for a password.
 pub fn with_hint(message: &str) -> String {
     let m = message.to_lowercase();
     let hint = tr!("ssh-hint");
