@@ -308,6 +308,9 @@ passwords-updating = updating { $path }
 passwords-forgotten = Forgot the password for { $login } (in { $path }).
 passwords-none-for = no password is remembered for { $login } in { $path }
 ssh-host-key = ssh refused the server's host key ({ $reason }); check it, and fix known_hosts if the change is expected
+rsync-stopped = rsync was stopped; the file it was in the middle of is kept, and the next run picks it up
+rsync-exit = rsync failed (exit code { $code })
+rsync-signal = rsync was ended by signal { $signal }
 internal-lock = internal lock poisoned
 
 ## Key bindings (the help screen), one per action in the keymap
