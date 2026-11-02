@@ -8,7 +8,7 @@
 [![CI](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/ci.yml/badge.svg)](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/ci.yml)
 [![Advisories](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/audit.yml/badge.svg)](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/audit.yml)
 
-remote-sync-explorer（命令为 `rse`）是一个双栏终端文件管理器，可以浏览本地磁盘、远程服务器和任何 [rclone](https://rclone.org) 远程。
+remote-sync-explorer（命令为 `rse`）是一个双栏终端文件管理器，可以浏览本地磁盘、远程服务器和任何 [rclone](https://rclone.org) 远程。在本地磁盘和装了 [rsync](https://rsync.samba.org) 的 sftp 服务器之间，它用 rsync 传输，改过的文件只传改动的部分；其余情况都用 rclone。只要目标端允许，中断的传输都会从停下的地方接着传。
 
 ## 目录
 
@@ -29,7 +29,7 @@ remote-sync-explorer（命令为 `rse`）是一个双栏终端文件管理器，
 
 ## 概述
 
-每个窗格显示一个位置，可以在两个窗格之间复制、移动、删除、重命名和新建目录，传输队列会实时显示进度。rclone 以静态库的形式编译进程序，所以发布版只有一个名为 `rse` 的二进制文件。
+每个窗格显示一个位置，可以在两个窗格之间复制、移动、删除、重命名和新建目录，传输队列会实时显示进度。rclone 以静态库的形式编译进程序，所以发布版只有一个名为 `rse` 的二进制文件；rsync 用的是服务器和你系统里自带的，rse 从不附带。
 
 ```text
 ╭───────╮╭────────────[1] Address─╮╭───╮╭────────╮╭───────────[3] Address─╮╭───╮
@@ -47,7 +47,7 @@ remote-sync-explorer（命令为 `rse`）是一个双栏终端文件管理器，
 │   copy huge.bin → nas:backup/2026       ██████░░░░░░  48%    52 MB/s   0:16 ✕│
 │   copy report-final-v3.pdf → nas:backup/2026                         queued ✕│
 ╰──────────────────────────────────────────────────────────────────────────────╯
- F5 Copy  F6 Move  F7 Mkdir  F8 Delete  F10 Remote  / Filter  ? Help  q Quit
+ F5 Copy  F6 Move  F7 Mkdir  F8 Delete  F10 Remote  / Filter  ? Help     rclone
 ```
 
 ## 功能特性
@@ -55,7 +55,9 @@ remote-sync-explorer（命令为 `rse`）是一个双栏终端文件管理器，
 - **远程**：浏览本地磁盘和 `rclone.conf` 里的所有远程，不需要往 rclone 配置里额外添加任何东西。
 - **按地址打开服务器**：`sftp://`、scp 风格的 `me@box:/path`、`ftp://`、`smb://` 和 `webdav://` 无需在 `rclone.conf` 里配置远程即可打开。
 - **文件操作**：复制、移动、删除、重命名、新建目录。移动和删除总会先确认，拖放也一样。覆盖已有文件前会询问，除非开启了覆写模式：加入队列时和每个传输开始前都会检查目标，两个传输也不会同时写同一个文件。
-- **传输队列**：多个任务并发执行，显示已传字节、速度和剩余时间，可以逐个取消或重试。有任务在运行时退出会先询问，并干净地停止它们。
+- **两种传输后端**：本地磁盘和经系统 ssh 连接、装了 `rsync` 的 sftp 服务器之间用 rsync（增量传输，走同一个登录），其余都用 rclone。底栏显示两个窗格之间复制用的后端。
+- **续传**：停下的文件会从停下的地方接着传。rsync 总是这样；rclone 在目标是本地磁盘或经系统 ssh 连接的 sftp 服务器时也是这样（下载到本地磁盘时，任何远程都能续传）。相同的文件会跳过。
+- **传输队列**：多个任务并发执行，显示已传字节、速度和剩余时间，可以逐个取消或重试。两个窗格显示着任务的两头时（删除只需要它删除的那一头），任务才运行；在窗格里打开别的地方会暂停它，回来后接着跑。没完成的任务会保留到下次启动。如果有不能续传的传输正在跑，离开或退出前会先列出哪些文件要从头重传。
 - **鼠标**：单击、双击、滚轮，Ctrl+单击或右键标记，拖动来复制或移动。
 - **通过 OpenSSH 使用 SFTP**：`~/.ssh/config`（ProxyJump、证书、硬件密钥）照常生效，每台服务器只登录一次。
 - **语言**：英文和简体中文，跟随系统语言。
@@ -79,7 +81,7 @@ rse 经手密码、ssh 登录和远端服务器上的文件，所以它的代码
 
 - Rust 排除的是 rse 自己代码里的内存错误，不排除逻辑错误；逻辑错误靠审查和测试去找。
 - 默认构建的 123 个 crate 里有 56 个用了 `unsafe` 代码。这些代码靠的是它们的作者和上面的审计，不在 rse 的测试、Miri 和 Kani 的范围内。
-- 编译进 rse 的 rclone 是 Go 代码，上面的审计都不覆盖它；Go 下载模块时会按 `go.sum` 校验。
+- 编译进 rse 的 rclone 是 Go 代码，上面的审计都不覆盖它，只有 `librse/` 里 rse 自己的 rc 调用有 `go vet` 和 `go test` 检查；Go 下载模块时会按 `librse/go.sum` 校验。
 - Kani 只在界限以内证明，fuzz 只是抽样。没有证明的：混淆密码的解码，以及地址、ssh 选项、连接字符串和配置文件的读取；它们由所有短输入的测试和 fuzz 检查。
 
 ## 前置要求
@@ -102,7 +104,7 @@ rse 经手密码、ssh 登录和远端服务器上的文件，所以它的代码
    cargo install --locked remote-sync-explorer
    ```
 
-首次构建会编译 rclone，需要一分钟以上。因为包含了整个 rclone，二进制文件约 90–115 MB。构建时会用 `librclone.h` 核对手写的绑定，rclone 导出的四个函数一旦变化，构建就会失败；在 glibc 上，rse 手写声明的那个 libintl 函数也会这样核对。
+首次构建会编译 rclone 和 `librse/` 里 rse 自己加的部分，需要一分钟以上。因为包含了整个 rclone，二进制文件约 90–115 MB。构建时会用 `librclone.h` 核对手写的绑定，rclone 导出的四个函数一旦变化，构建就会失败；在 glibc 上，rse 手写声明的那个 libintl 函数也会这样核对。
 
 ### 从源码构建
 
@@ -115,7 +117,7 @@ cargo build --release --locked
 
 | 变量 | 作用 |
 |----------|--------|
-| `RSE_RCLONE_VERSION` | 换用其他 rclone 版本构建（默认是固定的 `v1.75.2`） |
+| `RSE_RCLONE_VERSION` | 换用其他 rclone 版本构建（默认是 `librse/go.mod` 固定的 `v1.75.2`）；Go 会下载它 |
 | `RSE_LIBRCLONE_DIR` | 存放预先构建好的 `librclone.a` 和 `librclone.h` 的目录；完全跳过 Go 构建（离线构建、打包） |
 | `GO` | 使用的 Go 程序 |
 | `GOTOOLCHAIN` | 原样传给 Go；未设置时 rse 将其设为 `local`，这样 Go 版本过旧时会直接报错，而不是去下载工具链 |
@@ -275,9 +277,9 @@ rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
 - 每个任务开始时和重试时都会再列出一次目标，所以任务等待期间才出现的文件也不会被覆盖。列出目标时看不到正在进行的传输，所以同一目录中另有任务要写入、移走或删除同名（不区分大小写）的条目，且它正在进行或排在前面时，这个任务会等它结束：两个任务不会同时写同一个文件，后一个也能看到前一个写入的内容。发现名字已被占用的任务不会开始：它在队列和错误日志里显示为失败，并弹出对话框询问：覆盖、跳过，对所有因冲突等待的任务全部覆盖、全部跳过，以及取消（所有还没决定的任务都保持失败，重试其中一个时会再检查一次）。加入队列时已选择覆盖的条目不会再问第二次。在最后一次检查和传输开始之间由别的程序放进目标的文件，仍会被覆盖。
 - 重命名时会向服务器核对新名字，而不只是看窗格里的列表；已有别的条目用了这个名字（不区分大小写）时会拒绝。
 - 覆写模式（`O`）跳过以上检查：复制、移动和重命名直接覆盖目标中已有的内容，不再询问，但任务之间仍像上面那样互相等待。每次启动时它都是关闭的；开启期间，屏幕顶部有一行红色提示，复制和移动的确认对话框里也会再提醒一次。
-- 复制目录时会合并到已有的同名目录中：相同的文件跳过，不同的文件覆盖。
+- 覆盖时能接着传就接着传：相同的文件跳过（按大小和修改时间判断，设置 `checksum = true` 后按校验和），停下的传输留下的半个文件会续传，不同的文件被替换。复制目录也是这样合并到已有的目录里。
 - 跨远程移动是先复制再删除源文件。中途取消时，已经复制过去的文件在源端已被删除。移动目录后，rse 会删除清空了的源目录。
-- 取消传输会停止 rclone 任务；rclone 会删除写了一半的 `.partial` 文件，所以目标端不会留下损坏的文件。
+- 取消或暂停传输会保留正在传的文件已传的部分，重试时从那里接着传：rclone 把它存成目标旁边的 `<名称>.rse-partial`，rsync 存在那里的 `.rse-partial/` 目录里。rse 从不复制它们；放弃这次传输的话请自己删掉。不能续传的目标（S3 等云存储，或通过 rclone 内置 ssh 连接的 sftp）不会留下部分文件。
 - 在 macOS 上，同一 APFS 卷内复制的文件会被 rclone 克隆，而不是逐字节复制，所以这类复制会立即完成。
 
 ## 配置
@@ -304,6 +306,8 @@ language = "auto"               # "en", "zh-CN", or "auto": Chinese for a zh* lo
 [jobs]
 max_concurrent = 2              # jobs running at once; the rest wait
 poll_ms = 500                   # progress refresh
+engine = "auto"                 # or "rclone": never rsync
+checksum = false                # tell files apart by checksum, not size and time
 
 [keys]
 copy = ["F5", "c"]
@@ -315,7 +319,9 @@ move = ["F6", "m"]
 # Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn, Delete.
 ```
 
-界面打开期间，rclone 自己的日志写入 `~/.cache/rse/rclone.log`（macOS 上是 `~/Library/Caches/rse/`）。
+界面打开期间，rclone 自己的日志写入 `~/.cache/rse/rclone.log`（macOS 上是 `~/Library/Caches/rse/`）。没完成的任务保存在 `~/.local/state/rse/queue.json`（或 `$XDG_STATE_HOME/rse/queue.json`），只有你自己能读；按地址打开的服务器保存时不带密码，重新打开这台服务器时任务会拿回密码。
+
+rse 以前叫 rclone-explorer-tui（命令为 `rext`）。第一次启动时，如果新名字下还没有东西，它会把 `~/.config/rext/`、`~/.cache/rext/` 和 `~/.ssh/rext-passwords` 挪到新名字下。
 
 ## 语言
 
@@ -366,11 +372,14 @@ rse --forget-password <user>@<host>
 cargo test                       # unit, snapshot and integration tests
 cargo clippy --all-targets       # pedantic, unwrap_used and expect_used are errors
 cargo fmt --check
+(cd librse && go vet ./... && go test ./...)   # rse's own rc calls, built into librclone
 ```
 
 - 单元测试用假的后端驱动界面逻辑；界面快照用 [insta](https://insta.rs) 保存（有意修改后运行 `cargo insta review`）。
 - 界面快照用英文拍摄，其中几个用中文重拍，以检查宽字符是否对齐。
 - 集成测试在 local 和 memory 后端上运行内置的 rclone，中途取消传输，并通过一个私有的 `sshd` 浏览 sftp 远程（没有安装 `sshd` 时跳过）。
+- `tests/resume.rs` 中途停下传输，检查下一次能接着传：从远程到本地磁盘，以及经系统 ssh 到 sftp 服务器。
+- `tests/rsync.rs` 通过私有的 `sshd` 用 rsync 双向复制和移动，中途停下传输，检查下一次只传缺的部分（没有安装 `sshd` 或 `rsync` 时跳过）。
 - `tests/concurrency.rs` 检查 rclone 调用之间不会互相阻塞。
 - `cargo test` 还会检查两个语言文件定义了相同的消息，且每条消息都被用到。
 

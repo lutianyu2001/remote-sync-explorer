@@ -9,7 +9,10 @@
 [![Advisories](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/audit.yml/badge.svg)](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/audit.yml)
 
 remote-sync-explorer (`rse`) is a dual-pane terminal file manager for the local disk,
-remote servers and any [rclone](https://rclone.org) remote.
+remote servers and any [rclone](https://rclone.org) remote. Between the local disk and
+an sftp server that has [rsync](https://rsync.samba.org), it transfers with rsync, so
+changed files send only what changed; everything else goes through rclone. Interrupted
+transfers go on from where they stopped wherever the target allows it.
 
 ## Table of Contents
 
@@ -32,7 +35,8 @@ remote servers and any [rclone](https://rclone.org) remote.
 
 Each pane shows a location; copy, move, delete, rename and create directories between
 them, with a transfer queue that shows live progress. rclone is compiled in as a static
-library, so a release is a single binary called `rse`.
+library, so a release is a single binary called `rse`; rsync is the server's and your
+system's own, never shipped with rse.
 
 ```text
 ╭───────╮╭────────────[1] Address─╮╭───╮╭────────╮╭───────────[3] Address─╮╭───╮
@@ -50,7 +54,7 @@ library, so a release is a single binary called `rse`.
 │   copy huge.bin → nas:backup/2026       ██████░░░░░░  48%    52 MB/s   0:16 ✕│
 │   copy report-final-v3.pdf → nas:backup/2026                         queued ✕│
 ╰──────────────────────────────────────────────────────────────────────────────╯
- F5 Copy  F6 Move  F7 Mkdir  F8 Delete  F10 Remote  / Filter  ? Help  q Quit
+ F5 Copy  F6 Move  F7 Mkdir  F8 Delete  F10 Remote  / Filter  ? Help     rclone
 ```
 
 ## Features
@@ -63,9 +67,18 @@ library, so a release is a single binary called `rse`.
   always confirmed, including drag and drop. Overwrites are asked about unless overwrite
   mode is on: the target is checked when an operation is queued and again as each
   transfer starts, and two transfers never write one file at once.
+- **Two engines**: rsync between the local disk and an sftp server reached through the
+  system ssh that has `rsync` (delta transfer, through the same login), rclone for
+  everything else. The bottom row names the engine of copies between the two panes.
+- **Resumed transfers**: a stopped file goes on from where it stopped, with rsync, and
+  with rclone when the target is the local disk or an sftp server reached through the
+  system ssh (downloads to the local disk resume from any remote). Identical files are
+  skipped.
 - **Transfer queue**: jobs run concurrently with bytes, speed and time left, and can be
-  cancelled or retried one by one. Quitting with jobs running asks first and stops them
-  cleanly.
+  cancelled or retried one by one. A job runs while the panes show both of its ends
+  (the one it deletes in, for a delete); opening another place in a pane pauses it, and
+  coming back goes on. Unfinished jobs are kept for the next start. Leaving or quitting
+  while a transfer that cannot resume runs names the files that would start over first.
 - **Mouse**: click, double click, wheel, Ctrl+click or right click to mark, drag to copy
   or move.
 - **SFTP through OpenSSH**: `~/.ssh/config` (ProxyJump, certificates, hardware keys)
@@ -374,13 +387,18 @@ Alt+click.
   the target has without asking, though jobs still wait for one another as above. It is
   off at every start; while it is on, a red row across the top of the screen says so,
   and the copy and move confirmations repeat it.
-- Copying a directory merges it into an existing one: identical files are skipped and
-  different files are overwritten.
+- Overwriting goes on where it can: identical files are skipped (by size and
+  modification time, or by checksum with `checksum = true`), a file a stopped transfer
+  left half done is resumed, and different files are replaced. Copying a directory
+  merges it into an existing one this way.
 - A move across remotes is a copy followed by deleting the source. If it is cancelled
   midway, the files copied so far are already gone from the source. After a directory
   move rse removes the emptied source directory.
-- Cancelling a transfer stops the rclone job; rclone removes the partly written
-  `.partial` file, so the target is left without a broken file.
+- Cancelling or pausing a transfer keeps what it has done of the file under way, so that
+  a retry goes on from there: rclone keeps it as `<name>.rse-partial` beside the target,
+  rsync in a `.rse-partial/` directory there. They are never copied by rse; delete them
+  if you give the transfer up. A target that cannot resume (S3 and other cloud storage,
+  or sftp through rclone's built-in ssh) is left without a partial file.
 - On macOS, rclone clones files that are copied within one APFS volume instead of
   copying their bytes, so such copies finish at once.
 
@@ -410,6 +428,8 @@ language = "auto"               # "en", "zh-CN", or "auto": Chinese for a zh* lo
 [jobs]
 max_concurrent = 2              # jobs running at once; the rest wait
 poll_ms = 500                   # progress refresh
+engine = "auto"                 # or "rclone": never rsync
+checksum = false                # tell files apart by checksum, not size and time
 
 [keys]
 copy = ["F5", "c"]
@@ -422,7 +442,14 @@ move = ["F6", "m"]
 ```
 
 rclone's own log messages go to `~/.cache/rse/rclone.log` (`~/Library/Caches/rse/` on
-macOS) while the interface is open.
+macOS) while the interface is open. Unfinished jobs are saved in
+`~/.local/state/rse/queue.json` (or `$XDG_STATE_HOME/rse/queue.json`), readable by you
+alone; a server opened by address is saved without its password, which it gets back
+when you open the server again.
+
+rse was called rclone-explorer-tui (`rext`) before. At its first start it moves
+`~/.config/rext/`, `~/.cache/rext/` and `~/.ssh/rext-passwords` to the new names, where
+nothing of the new name is there yet.
 
 ## Languages
 
@@ -561,6 +588,9 @@ cargo fmt --check
   `sshd` is not installed).
 - `tests/resume.rs` stops transfers midway and checks that the next one resumes, from
   a remote to the local disk and to an sftp server through the system ssh.
+- `tests/rsync.rs` copies and moves with rsync both ways through a private `sshd`,
+  stops transfers midway and checks that the next run sends only what was missing
+  (skipped when `sshd` or `rsync` is not installed).
 - `tests/concurrency.rs` checks that rclone calls do not block each other.
 - `cargo test` also checks that both language files define the same messages and that
   every message is used.
