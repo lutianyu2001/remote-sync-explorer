@@ -98,13 +98,13 @@ of 2026-11-02.
 
 | Area | What was audited | Extent |
 |---|---|---|
-| Threat model | Every place where input from outside, or a secret, reaches rse, reviewed by hand, with each decision written down | 15 decisions in SECURITY.md: where passwords go, host keys (also after falling back to rclone's built-in ssh), what a server can make ssh do, options slipped into ssh, `--rcd` over plain http, file permissions, names and text from servers on screen, overwrites |
+| Threat model | Every place where input from outside, or a secret, reaches rse, reviewed by hand, with each decision written down | 18 decisions in SECURITY.md: where passwords go, host keys (also after falling back to rclone's built-in ssh), what a server can make ssh do, options slipped into ssh, `--rcd` over plain http, file permissions, names and text from servers on screen, overwrites, rsync's command line, resumed files, the saved queue |
 | `unsafe` code | rse forbids `unsafe` except in functions that allow it by name | 8 blocks, each a call that has no safe form (into librclone, `setlocale`, `pre_exec`), each with the reason it is sound |
 | Dependencies | Sources, licenses, known vulnerabilities, abandoned and yanked crates (cargo-deny); an audit of every crate (cargo-vet); builds offline from checksummed sources | 216 crates audited: audits imported from Mozilla, Google and the Bytecode Alliance, and 188 of our own; no exemptions. Vulnerabilities are looked up again daily |
-| Tests | Unit, screen snapshot and integration tests, including ssh logins against a private `sshd` | 232 tests, reaching 93% of the lines and 80% of the branches |
-| Miri | The tests of the modules that need no process, socket or network, run under Miri, which detects undefined behaviour | 62 tests in 11 modules |
-| Fuzzing | Random input to every reader of untrusted text, checked against the invariants in SECURITY.md | 5 targets (addresses, ssh options, text shown on screen, the config file, passwords), an hour each: from 1 to 124 million inputs per target |
-| Kani proofs | Properties proved for every input within a bound | Mouse hit-testing never overflows, for all inputs (1 s, 95 MiB); key names are never cut inside a character, up to 7 bytes (31 s, 1009 MiB) |
+| Tests | Unit, screen snapshot and integration tests, including ssh logins against a private `sshd` | 268 tests, reaching 93% of the lines and 80% of the branches |
+| Miri | The tests of the modules that need no process, socket or network, run under Miri, which detects undefined behaviour | 74 tests in 13 modules |
+| Fuzzing | Random input to every reader of untrusted text, checked against the invariants in SECURITY.md | 6 targets (addresses, ssh options, rsync's command line and output, text shown on screen, the config file, passwords), an hour each: from 1.6 to 65 million inputs per target |
+| Kani proofs | Properties proved for every input within a bound | Mouse hit-testing never overflows, for all inputs (3 s, 105 MiB); key names are never cut inside a character, up to 7 bytes (75 s, 1008 MiB) |
 | Release build | `overflow-checks = true` | An integer overflow stops rse instead of wrapping |
 
 What this does not show:

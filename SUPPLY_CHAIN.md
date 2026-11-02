@@ -79,7 +79,7 @@ of this `Cargo.lock` (cargo-geiger 0.14.0, run with `cargo xtask geiger`, which 
 full table to `audit/geiger/geiger.txt`):
 
 - 123 crates: 56 use `unsafe`, 53 use none, and 14 also declare `forbid(unsafe_code)`.
-- In all: 376 unsafe functions, 27,349 expressions, 432 impls, 56 traits and 970
+- In all: 392 unsafe functions, 28,221 expressions, 434 impls, 56 traits and 972
   methods used by the build.
 - rse itself has 8 `unsafe` blocks, each in a function that allows it by name: the
   calls into librclone (`src/rclone/ffi.rs`), `setlocale` and its text domain
@@ -93,9 +93,9 @@ The crates with the most unsafe expressions used by the build:
 |---|---|---|---|---|---|
 | memchr 2.8.3 | 34/48 | 1992/2440 | 2/2 | 110/148 | vectorised byte search |
 | hashbrown 0.17.1 | 1/1 | 1399/1612 | 20/23 | 86/99 | hash tables |
+| rustix 1.1.5 | 63/436 | 1245/7521 | 9/22 | 28/62 | system calls |
 | parking_lot_core 0.9.12 | 16/16 | 912/1343 | 0/0 | 8/58 | locks (crossterm, ratatui) |
 | allocator-api2 0.2.21 | 2/3 | 819/903 | 12/13 | 28/32 | allocator API for hashbrown |
-| rustix 1.1.5 | 55/436 | 809/7521 | 8/22 | 27/62 | system calls |
 | aes 0.8.4 | 18/43 | 765/1113 | 0/0 | 0/0 | AES with CPU instructions (obscured passwords) |
 | lock_api 0.4.14 | 0/0 | 669/669 | 32/32 | 24/24 | lock types |
 | zmij 1.0.23 | 3/3 | 620/620 | 0/0 | 6/6 | float formatting (serde_json) |
