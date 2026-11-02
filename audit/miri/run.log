@@ -1,9 +1,12 @@
-$ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -- cargo +nightly-2026-10-28 miri test --locked --no-default-features --lib -- rclone::obscure:: rclone::ssh_passwords:: config:: jobs:: event:: keymap:: location:: endpoint:: ui::text:: ui::panes::tests hitmap:: --skip base64_round_trips_every_short_input
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
-     Running unittests src/lib.rs (target/miri/x86_64-unknown-linux-gnu/debug/build/rclone-explorer-tui/799a3a173b10c8e2/out/rext-799a3a173b10c8e2)
+$ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -- cargo +nightly-2026-10-28 miri test --locked --no-default-features --lib -- rclone::obscure:: rclone::ssh_passwords:: config:: jobs:: event:: keymap:: location:: endpoint:: ui::text:: ui::panes::tests:: hitmap:: state:: engine:: --skip base64_round_trips_every_short_input
+   Compiling remote-sync-explorer v0.1.0 (.)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.27s
+     Running unittests src/lib.rs (target/miri/x86_64-unknown-linux-gnu/debug/build/remote-sync-explorer/f0ee306e6eccbcf0/out/rse-f0ee306e6eccbcf0)
 
-running 62 tests
+running 74 tests
 test config::tests::a_full_config_parses ... ok
+test config::tests::migrate_leaves_links_alone ... ok
+test config::tests::migrate_moves_only_to_a_free_name ... ok
 test config::tests::missing_file_gives_defaults ... ok
 test config::tests::save_is_atomic_and_round_trips ... ok
 test config::tests::typos_and_bad_values_are_errors ... ok
@@ -12,22 +15,28 @@ test endpoint::tests::fs_strings_per_backend ... ok
 test endpoint::tests::logins_and_ports ... ok
 test endpoint::tests::schemes_and_aliases ... ok
 test endpoint::tests::sftp_paths_follow_url_conventions ... ok
+test engine::tests::without_the_system_ssh_rclone_does_everything ... ok
 test hitmap::tests::dialog_captures_everything ... ok
 test hitmap::tests::rows_account_for_scroll_offset ... ok
 test hitmap::tests::title_queue_and_hints ... ok
+test jobs::tests::a_cancel_while_pausing_cancels ... ok
 test jobs::tests::a_cancelled_check_makes_room_and_its_answer_is_ignored ... ok
+test jobs::tests::a_paused_job_skips_the_check_and_a_retried_one_does_not ... ok
 test jobs::tests::a_retried_job_waits_for_a_later_one_under_way ... ok
 test jobs::tests::a_taken_target_fails_the_job_until_the_user_chooses ... ok
-test jobs::tests::cancel_all_stops_running_and_drops_queued ... ok
 test jobs::tests::cancel_queued_is_local_and_running_goes_through_rclone ... ok
 test jobs::tests::clear_removes_only_finished ... ok
 test jobs::tests::concurrency_limit_queues_the_rest ... ok
 test jobs::tests::copies_and_moves_use_the_right_rc_calls ... ok
 test jobs::tests::copy_without_target_fails_instead_of_deleting ... ok
 test jobs::tests::failure_keeps_the_error_and_retry_requeues ... ok
+test jobs::tests::interrupted_by_names_running_jobs_that_cannot_resume ... ok
+test jobs::tests::jobs_run_only_while_their_endpoints_are_shown ... ok
 test jobs::tests::jobs_that_change_one_entry_never_run_at_once ... ok
 test jobs::tests::overwrite_mode_starts_jobs_without_a_check ... ok
+test jobs::tests::pause_all_stops_running_and_keeps_every_job ... ok
 test jobs::tests::progress_updates_running_jobs ... ok
+test jobs::tests::shown_servers_lend_jobs_their_fs_strings ... ok
 test jobs::tests::the_target_is_checked_before_a_job_starts ... ok
 test jobs::tests::touched_directories ... ok
 test keymap::tests::bad_overrides_are_rejected ... ok
@@ -54,6 +63,10 @@ test rclone::ssh_passwords::tests::keeps_other_lines ... ok
 test rclone::ssh_passwords::tests::refuses_a_file_others_can_read ... ok
 test rclone::ssh_passwords::tests::remembers_and_forgets ... ok
 test rclone::ssh_passwords::tests::reports_a_damaged_entry ... ok
+test state::tests::a_file_of_another_version_is_an_error ... ok
+test state::tests::a_server_is_saved_without_its_password ... ok
+test state::tests::jobs_come_back_as_saved_and_no_jobs_remove_the_file ... ok
+test state::tests::the_queue_is_held_by_one_rse_at_a_time ... ok
 test ui::panes::tests::breadcrumb_joins_the_levels ... ok
 test ui::panes::tests::long_breadcrumb_shows_only_the_current_directory ... ok
 test ui::panes::tests::wrap_breaks_on_words_and_cuts_long_ones ... ok
@@ -66,6 +79,6 @@ test ui::text::tests::time_in_given_zone ... ok
 test ui::text::tests::what_cannot_be_seen_is_shown_as_a_mark ... ok
 test ui::text::tests::wide_characters_count_double ... ok
 
-test result: ok. 62 passed; 0 failed; 0 ignored; 0 measured; 138 filtered out; finished in 169.56s
+test result: ok. 74 passed; 0 failed; 0 ignored; 0 measured; 157 filtered out; finished in 388.08s
 
 xtask: miri: succeeded
