@@ -52,3 +52,10 @@ path = "fuzz_targets/secrets.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "rsync"
+path = "fuzz_targets/rsync.rs"
+test = false
+doc = false
+bench = false
