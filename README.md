@@ -40,7 +40,7 @@ library, so a release is a single binary called `rse`.
 ╰───────╯╰────────────────────────╯╰───╯╰────────╯╰───────────────────────╯╰───╯
 ╭────────────────────────────[2] Local─╮╭───────────────────────────[4] Remote─╮
 │ ..                                   ││ ..                                   │
-│ rse/                           <DIR>││ photos/                         <DIR>│
+│ rse/                            <DIR>││ photos/                         <DIR>│
 │*huge.bin                       1.5 GB││ notes.md                       4.1 KB│
 │*report-final-v3.pdf            2.4 MB││ report-final-v2.pdf            2.3 MB│
 │ very-long-file-n…ing.tar.gz     12 MB││                                      │
