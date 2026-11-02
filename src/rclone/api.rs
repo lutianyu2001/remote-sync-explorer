@@ -163,6 +163,16 @@ pub fn resumable(b: &dyn Backend, src_fs: &str, dst_fs: &str) -> Result<bool, Rp
     Ok(decode::<ResumableReply>("rse/resumable", v)?.resumable)
 }
 
+/// Removes the empty directories under `remote` in `fs`, and `remote` itself too when it
+/// ends up empty and `leave_root` is false.
+///
+/// # Errors
+/// Returns rclone's error.
+pub fn rmdirs(b: &dyn Backend, fs: &str, remote: &str, leave_root: bool) -> Result<(), RpcError> {
+    b.rpc("operations/rmdirs", json!({ "fs": fs, "remote": remote, "leaveRoot": leave_root }))
+        .map(drop)
+}
+
 /// # Errors
 /// Returns rclone's error.
 pub fn rmdir(b: &dyn Backend, fs: &str, remote: &str) -> Result<(), RpcError> {

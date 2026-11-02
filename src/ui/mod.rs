@@ -125,9 +125,20 @@ fn window(buf: &mut Buffer, area: Rect, window: Window) -> Rect {
     inner
 }
 
+/// The key hints, and on the right the engine of copies between the panes (`rsync`),
+/// which the hints make room for.
 fn draw_hints(buf: &mut Buffer, area: Rect, app: &App) -> Vec<(Rect, Action)> {
     let mut x = area.x + 1;
-    let end = area.x + area.width;
+    let mut end = area.x + area.width;
+    if let Some(engine) = app.pane_engine() {
+        let name = engine.name();
+        let w = u16::try_from(width(name) + 1).unwrap_or(u16::MAX);
+        if w < area.width / 2 {
+            end -= w;
+            buf.set_string(end, area.y, name, Style::new().add_modifier(Modifier::DIM));
+            end = end.saturating_sub(1);
+        }
+    }
     let mut out = Vec::new();
     for (action, label) in HINTS {
         let label = &label();

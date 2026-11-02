@@ -24,6 +24,7 @@ use ratatui::backend::CrosstermBackend;
 use rse::app::{App, AppInit, QuitState};
 use rse::config::{Config, Language, UiConfig};
 use rse::endpoint::Address;
+use rse::engine::Engines;
 use rse::event::Event;
 use rse::exec::Exec;
 use rse::hitmap::HitMap;
@@ -298,11 +299,13 @@ fn run(cli: &Cli) -> Result<()> {
             answer.recv().ok().flatten()
         }));
     }
-    let exec = Exec::spawn(
+    let engines = Engines::new(ssh.clone(), config.jobs.engine, config.jobs.checksum);
+    let exec = Exec::spawn_with(
         backend.clone(),
         tx.clone(),
         config.rclone.browse_threads,
         Duration::from_millis(config.jobs.poll_ms),
+        engines,
     );
     let queue_file = rse::state::queue_path();
     let (saved, unsaved) = saved_queue(queue_file.as_deref());

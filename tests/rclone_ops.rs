@@ -32,7 +32,9 @@ impl Rig {
     fn run_effects(&self, effects: Vec<Effect>) {
         for e in effects {
             match e {
-                Effect::Start { id, method, params } => self.exec.submit(id, method, params),
+                Effect::Start { id, transfer, method, params } => {
+                    self.exec.submit(id, *transfer, method, params);
+                }
                 Effect::Stop(id) => self.exec.stop(id),
                 Effect::Check { .. } => unreachable!("approved transfers start without a check"),
                 Effect::Finished { .. } => {}

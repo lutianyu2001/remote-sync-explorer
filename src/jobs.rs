@@ -209,8 +209,9 @@ impl Job {
 /// What the caller must do after the queue changed.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Effect {
-    /// Submit this job to rclone.
-    Start { id: JobId, method: &'static str, params: Value },
+    /// Start this job: `transfer`, with rsync where rsync carries it out, else as the
+    /// rclone call `method` with `params`.
+    Start { id: JobId, transfer: Box<Transfer>, method: &'static str, params: Value },
     /// List `dir`, the job's target, and tell `Queue::checked` whether it is free, with
     /// the number of this check.
     Check { id: JobId, check: u64, dir: Location },
@@ -557,7 +558,7 @@ fn start(job: &mut Job) -> Effect {
             job.state = JobState::Running;
             // From here on what the target has of this name is the job's own doing.
             job.transfer.overwrite = true;
-            Effect::Start { id: job.id, method, params }
+            Effect::Start { id: job.id, transfer: Box::new(job.transfer.clone()), method, params }
         }
         Err(e) => {
             job.state = JobState::Failed(e.clone());

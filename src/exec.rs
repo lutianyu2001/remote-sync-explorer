@@ -3,8 +3,9 @@
 //!
 //! - Browse workers (a small pool) run listings and other short calls. A slow remote only
 //!   occupies one worker, and listings nobody waits for any more are skipped.
-//! - One job worker submits transfers as async rclone jobs, polls `job/status` and
-//!   `core/stats` for each of them, and stops them on request.
+//! - One job worker starts transfers, as rsync runs where rsync carries them out (see
+//!   [`Engines`]) and as async rclone jobs otherwise, polls them (`job/status` and
+//!   `core/stats` for rclone), and stops them on request.
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
@@ -12,12 +13,15 @@ use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender, unbounded};
-use serde_json::Value;
+use serde_json::{Value, json};
 
+use crate::engine::Engines;
 use crate::event::{BrowseOp, Entry, Event, JobId, JobSnapshot, ReqId};
-use crate::location::Location;
+use crate::jobs::{Engine, OpKind, Transfer};
+use crate::location::{Location, endpoint_key};
 use crate::rclone::api::{self, Stats};
 use crate::rclone::{Backend, RpcError};
+use crate::rsync::Running;
 
 enum BrowseReq {
     List { generation: u64, loc: Location },
@@ -25,10 +29,11 @@ enum BrowseReq {
     Op { req: ReqId, op: BrowseOp },
     Remotes,
     Obscure { req: ReqId, clear: String },
+    Engine { a: Location, b: Location },
 }
 
 enum JobCmd {
-    Submit { id: JobId, method: String, params: Value },
+    Submit { id: JobId, transfer: Box<Transfer>, method: String, params: Value },
     Stop { id: JobId },
 }
 
@@ -40,25 +45,42 @@ pub struct Exec {
 }
 
 impl Exec {
+    /// Workers that leave every transfer to rclone.
     pub fn spawn(
         backend: Arc<dyn Backend>,
         events: Sender<Event>,
         browse_threads: usize,
         poll: Duration,
     ) -> Self {
+        Self::spawn_with(backend, events, browse_threads, poll, Engines::default())
+    }
+
+    pub fn spawn_with(
+        backend: Arc<dyn Backend>,
+        events: Sender<Event>,
+        browse_threads: usize,
+        poll: Duration,
+        engines: Engines,
+    ) -> Self {
+        let engines = Arc::new(engines);
         let (browse_tx, browse_rx) = unbounded();
         let (jobs_tx, jobs_rx) = unbounded();
         let wanted = Arc::new(Mutex::new([0; 2]));
         let mut handles = Vec::new();
         for _ in 0..browse_threads.max(1) {
-            let (backend, events, rx, wanted) =
-                (backend.clone(), events.clone(), browse_rx.clone(), wanted.clone());
+            let (backend, events, rx, wanted, engines) = (
+                backend.clone(),
+                events.clone(),
+                browse_rx.clone(),
+                wanted.clone(),
+                engines.clone(),
+            );
             handles.push(thread::spawn(move || {
-                browse_worker(&*backend, &rx, &events, &wanted);
+                browse_worker(&*backend, &engines, &rx, &events, &wanted);
             }));
         }
         handles.push(thread::spawn(move || {
-            job_worker(&*backend, &jobs_rx, &events, poll);
+            job_worker(&*backend, &engines, &jobs_rx, &events, poll);
         }));
         Self { browse: Some(browse_tx), jobs: Some(jobs_tx), wanted, handles }
     }
@@ -90,10 +112,18 @@ impl Exec {
         self.send_browse(BrowseReq::Obscure { req, clear });
     }
 
-    pub fn submit(&self, id: JobId, method: &str, params: Value) {
+    /// Starts `transfer` as job `id`: with rsync when rsync carries it out, else as the
+    /// rclone call `method` with `params`.
+    pub fn submit(&self, id: JobId, transfer: Transfer, method: &str, params: Value) {
         if let Some(tx) = &self.jobs {
-            let _ = tx.send(JobCmd::Submit { id, method: method.to_owned(), params });
+            let transfer = Box::new(transfer);
+            let _ = tx.send(JobCmd::Submit { id, transfer, method: method.to_owned(), params });
         }
+    }
+
+    /// Finds out which engine copies between `a` and `b`, answered by [`Event::Engine`].
+    pub fn engine(&self, a: Location, b: Location) {
+        self.send_browse(BrowseReq::Engine { a, b });
     }
 
     pub fn stop(&self, id: JobId) {
@@ -135,6 +165,7 @@ fn list_entries(backend: &dyn Backend, loc: &Location) -> Result<Vec<Entry>, Rpc
 
 fn browse_worker(
     backend: &dyn Backend,
+    engines: &Engines,
     rx: &Receiver<BrowseReq>,
     events: &Sender<Event>,
     wanted: &Mutex<[u64; 2]>,
@@ -157,6 +188,10 @@ fn browse_worker(
             BrowseReq::Obscure { req, clear } => {
                 Event::Obscured { req, result: api::obscure(backend, &clear) }
             }
+            BrowseReq::Engine { a, b } => Event::Engine {
+                endpoints: (endpoint_key(&a), endpoint_key(&b)),
+                engine: engines.between(&a, &b),
+            },
         };
         if events.send(event).is_err() {
             break;
@@ -195,13 +230,14 @@ fn is_not_found(e: &RpcError) -> bool {
     e.status == 404 || e.message.contains("not found") || e.message.contains("no such file")
 }
 
-struct Active {
-    rc_id: i64,
-    stop_sent: bool,
+enum Active {
+    Rclone { rc_id: i64, stop_sent: bool },
+    Rsync { run: Box<Running>, transfer: Transfer },
 }
 
 fn job_worker(
     backend: &dyn Backend,
+    engines: &Engines,
     rx: &Receiver<JobCmd>,
     events: &Sender<Event>,
     poll: Duration,
@@ -210,30 +246,31 @@ fn job_worker(
     let mut next_poll = Instant::now() + poll;
     loop {
         match rx.recv_deadline(next_poll) {
-            Ok(JobCmd::Submit { id, method, params }) => {
-                match api::submit(backend, &method, params) {
-                    Ok(rc_id) => {
-                        active.insert(id, Active { rc_id, stop_sent: false });
+            Ok(JobCmd::Submit { id, transfer, method, params }) => {
+                let (run, started) = start(backend, engines, *transfer, &method, params);
+                let event = match run {
+                    Ok(run) => {
+                        active.insert(id, run);
+                        Event::JobStarted { id, engine: started.0, resumable: started.1 }
                     }
                     Err(e) => {
-                        let snap = JobSnapshot {
-                            id,
-                            finished: Some(Err(e.message)),
-                            stats: Stats::default(),
-                        };
-                        if events.send(Event::Jobs(vec![snap])).is_err() {
-                            return;
-                        }
+                        let finished = Some(Err(e));
+                        Event::Jobs(vec![JobSnapshot { id, finished, stats: Stats::default() }])
                     }
+                };
+                if events.send(event).is_err() {
+                    return;
                 }
             }
-            Ok(JobCmd::Stop { id }) => {
-                if let Some(job) = active.get_mut(&id) {
+            Ok(JobCmd::Stop { id }) => match active.get_mut(&id) {
+                Some(Active::Rclone { rc_id, stop_sent }) => {
                     // An error here means the job already ended; the next poll reports it.
-                    let _ = api::job_stop(backend, job.rc_id);
-                    job.stop_sent = true;
+                    let _ = api::job_stop(backend, *rc_id);
+                    *stop_sent = true;
                 }
-            }
+                Some(Active::Rsync { run, .. }) => run.stop(),
+                None => {}
+            },
             Err(RecvTimeoutError::Timeout) => {
                 next_poll = Instant::now() + poll;
                 if active.is_empty() {
@@ -246,8 +283,14 @@ fn job_worker(
             }
             Err(RecvTimeoutError::Disconnected) => {
                 // Shutting down: stop whatever is still running.
-                for job in active.values().filter(|j| !j.stop_sent) {
-                    let _ = api::job_stop(backend, job.rc_id);
+                for job in active.values_mut() {
+                    match job {
+                        Active::Rclone { rc_id, stop_sent: false } => {
+                            let _ = api::job_stop(backend, *rc_id);
+                        }
+                        Active::Rsync { run, .. } => run.stop(),
+                        Active::Rclone { .. } => {}
+                    }
                 }
                 return;
             }
@@ -255,22 +298,52 @@ fn job_worker(
     }
 }
 
+/// Starts `transfer`, and tells which engine runs it and whether a stop keeps the file
+/// under way: rsync's partial files always do, rclone's copy where the target allows
+/// it, and a delete loses nothing.
+fn start(
+    backend: &dyn Backend,
+    engines: &Engines,
+    transfer: Transfer,
+    method: &str,
+    mut params: Value,
+) -> (Result<Active, String>, (Engine, bool)) {
+    if let Some(args) = engines.rsync_args(&transfer) {
+        let run = Running::spawn(args)
+            .map(|run| Active::Rsync { run: Box::new(run), transfer })
+            .map_err(|e| tr!("rsync-not-started", error = e.to_string()));
+        return (run, (Engine::Rsync, true));
+    }
+    let resumable = method != api::COPY || {
+        let fs = |key: &str| params[key].as_str().unwrap_or_default().to_owned();
+        api::resumable(backend, &fs("srcFs"), &fs("dstFs")).unwrap_or(false)
+    };
+    if method == api::COPY && engines.checksum {
+        params["checksum"] = json!(true);
+    }
+    let run = api::submit(backend, method, params)
+        .map(|rc_id| Active::Rclone { rc_id, stop_sent: false })
+        .map_err(|e| e.message);
+    (run, (Engine::Rclone, resumable))
+}
+
 fn poll_jobs(backend: &dyn Backend, active: &mut BTreeMap<JobId, Active>) -> Vec<JobSnapshot> {
     let mut snaps = Vec::with_capacity(active.len());
     let mut done = Vec::new();
-    for (&id, job) in active.iter() {
-        let group = api::job_group(job.rc_id);
-        let stats = api::stats(backend, &group).unwrap_or_default();
-        let finished = match api::job_status(backend, job.rc_id) {
-            Ok(s) if s.finished => {
-                Some(if s.success { Ok(()) } else { Err(job_error(&s.error, &stats)) })
+    for (&id, job) in active.iter_mut() {
+        let (stats, finished) = match job {
+            Active::Rclone { rc_id, .. } => poll_rclone(backend, *rc_id),
+            Active::Rsync { run, transfer } => {
+                let (stats, finished) = run.poll();
+                let finished = match finished {
+                    Some(Ok(())) => Some(after_rsync(backend, transfer)),
+                    other => other,
+                };
+                (stats, finished)
             }
-            Ok(_) => None,
-            Err(e) => Some(Err(tr!("job-lost", id = job.rc_id, error = e.to_string()))),
         };
         if finished.is_some() {
             done.push(id);
-            let _ = api::stats_delete(backend, &group);
         }
         snaps.push(JobSnapshot { id, finished, stats });
     }
@@ -278,6 +351,34 @@ fn poll_jobs(backend: &dyn Backend, active: &mut BTreeMap<JobId, Active>) -> Vec
         active.remove(&id);
     }
     snaps
+}
+
+fn poll_rclone(backend: &dyn Backend, rc_id: i64) -> (Stats, Option<Result<(), String>>) {
+    let group = api::job_group(rc_id);
+    let stats = api::stats(backend, &group).unwrap_or_default();
+    let finished = match api::job_status(backend, rc_id) {
+        Ok(s) if s.finished => {
+            Some(if s.success { Ok(()) } else { Err(job_error(&s.error, &stats)) })
+        }
+        Ok(_) => None,
+        Err(e) => Some(Err(tr!("job-lost", id = rc_id, error = e.to_string()))),
+    };
+    if finished.is_some() {
+        let _ = api::stats_delete(backend, &group);
+    }
+    (stats, finished)
+}
+
+/// rsync moves a directory's files but leaves its directories: they go once it is done,
+/// all but the moved directory itself, which the caller removes as after an rclone move.
+fn after_rsync(backend: &dyn Backend, t: &Transfer) -> Result<(), String> {
+    if t.kind != OpKind::Move || !t.is_dir {
+        return Ok(());
+    }
+    match api::rmdirs(backend, &t.src_dir.join(&t.name).fs_string(), "", true) {
+        Err(e) if !is_not_found(&e) => Err(e.message),
+        _ => Ok(()),
+    }
 }
 
 fn job_error(status_error: &str, stats: &Stats) -> String {
@@ -297,8 +398,26 @@ mod tests {
     use serde_json::json;
     use std::sync::atomic::{AtomicI64, Ordering};
 
+    /// The next event that is not a job's start.
     fn recv(rx: &Receiver<Event>) -> Event {
-        rx.recv_timeout(Duration::from_secs(5)).expect("event")
+        loop {
+            match rx.recv_timeout(Duration::from_secs(5)).expect("event") {
+                Event::JobStarted { .. } => {}
+                other => return other,
+            }
+        }
+    }
+
+    fn copy() -> Transfer {
+        Transfer {
+            kind: OpKind::Copy,
+            src_dir: Location::new("/", "a"),
+            name: "f".into(),
+            is_dir: false,
+            dst_dir: Some(Location::new("nas:", "")),
+            size: None,
+            overwrite: false,
+        }
     }
 
     #[test]
@@ -351,7 +470,7 @@ mod tests {
         }));
         let (tx, rx) = unbounded();
         let exec = Exec::spawn(b.clone(), tx, 1, Duration::from_millis(20));
-        exec.submit(7, "operations/copyfile", json!({"srcFs": "/"}));
+        exec.submit(7, copy(), "operations/copyfile", json!({"srcFs": "/"}));
         let Event::Jobs(first) = recv(&rx) else { panic!() };
         assert_eq!((first[0].id, first[0].finished.clone(), first[0].stats.bytes), (7, None, 50));
         let Event::Jobs(second) = recv(&rx) else { panic!() };
@@ -366,7 +485,7 @@ mod tests {
         let b = Arc::new(FakeBackend::new(|_, _| Err(RpcError::new(500, "no such remote"))));
         let (tx, rx) = unbounded();
         let exec = Exec::spawn(b, tx, 1, Duration::from_millis(20));
-        exec.submit(3, "sync/copy", json!({}));
+        exec.submit(3, copy(), "sync/copy", json!({}));
         let Event::Jobs(s) = recv(&rx) else { panic!() };
         assert_eq!(s[0].finished, Some(Err("no such remote".to_owned())));
         exec.shutdown();
@@ -381,7 +500,7 @@ mod tests {
         }));
         let (tx, rx) = unbounded();
         let exec = Exec::spawn(b.clone(), tx, 1, Duration::from_millis(20));
-        exec.submit(1, "sync/copy", json!({}));
+        exec.submit(1, copy(), "sync/copy", json!({}));
         let _ = recv(&rx);
         exec.stop(1);
         let _ = recv(&rx);

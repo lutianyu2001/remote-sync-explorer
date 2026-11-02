@@ -104,6 +104,19 @@ pub enum Event {
         result: Result<String, RpcError>,
     },
     Jobs(Vec<JobSnapshot>),
+    /// A job has started, run by `engine`; `resumable` when a stop keeps what it has done
+    /// of the file under way.
+    JobStarted {
+        id: JobId,
+        engine: crate::jobs::Engine,
+        resumable: bool,
+    },
+    /// Copies between these two endpoints (by `endpoint_key`, either way) run with
+    /// `engine`.
+    Engine {
+        endpoints: (String, String),
+        engine: crate::jobs::Engine,
+    },
 }
 
 /// Short operations run on the browse workers.

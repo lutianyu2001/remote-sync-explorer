@@ -1,7 +1,7 @@
 //! All interface state and the handling of keys, mouse events and worker results.
 //! Nothing here touches the terminal; drawing lives in `ui`.
 
-use std::collections::{BTreeSet, HashMap, VecDeque};
+use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
@@ -12,7 +12,7 @@ use crate::endpoint::{Address, Endpoint, Scheme};
 use crate::event::{BrowseOp, Entry, Event, JobId, JobSnapshot, Mark, PaneId, ReqId};
 use crate::exec::Exec;
 use crate::hitmap::{HitMap, Target};
-use crate::jobs::{Effect, JobState, OpKind, Queue, Transfer, same_name};
+use crate::jobs::{Effect, Engine, JobState, OpKind, Queue, Transfer, same_name};
 use crate::keymap::{Action, Keymap};
 use crate::location::{Destination, Location, endpoint_key, safe_name};
 use crate::rclone::RpcError;
@@ -558,6 +558,9 @@ pub struct App {
     queue_file: Option<PathBuf>,
     /// The unfinished jobs as last saved.
     saved: Vec<Transfer>,
+    /// The engine of copies between two endpoints, by [`pair`].
+    engines: HashMap<(String, String), Engine>,
+    engines_asked: HashSet<(String, String)>,
 }
 
 impl App {
@@ -600,6 +603,8 @@ impl App {
             dialog_since: None,
             queue_file: init.queue_file,
             saved: init.saved.clone(),
+            engines: HashMap::new(),
+            engines_asked: HashSet::new(),
         };
         app.navigate(0, init.left);
         app.navigate(1, init.right);
@@ -660,6 +665,26 @@ impl App {
             Event::Obscured { req, result } => self.on_obscured(req, result),
             Event::SshPrompt { question, reply } => self.ssh_prompts.push_back((question, reply)),
             Event::Jobs(snaps) => self.on_jobs(snaps, now),
+            Event::JobStarted { id, engine, resumable } => {
+                self.queue.started(id, engine, resumable);
+            }
+            Event::Engine { endpoints, engine } => {
+                self.engines.insert(pair(endpoints.0, endpoints.1), engine);
+            }
+        }
+    }
+
+    /// The engine of copies between the endpoints the panes show, once it is known.
+    pub fn pane_engine(&self) -> Option<Engine> {
+        let (a, b) = (&self.panes[0].loc, &self.panes[1].loc);
+        self.engines.get(&pair(endpoint_key(a), endpoint_key(b))).copied()
+    }
+
+    /// Asks which engine copies between the panes, once for each pair of endpoints.
+    fn ask_engine(&mut self) {
+        let (a, b) = (&self.panes[0].loc, &self.panes[1].loc);
+        if self.engines_asked.insert(pair(endpoint_key(a), endpoint_key(b))) {
+            self.exec.engine(a.clone(), b.clone());
         }
     }
 
@@ -711,6 +736,7 @@ impl App {
         self.request_listing(pane);
         let effects = self.queue.set_shown(self.shown());
         self.run_effects(effects);
+        self.ask_engine();
         self.queue_cursor = self.queue_cursor.min(self.queue.visible().len().saturating_sub(1));
     }
 
@@ -1592,7 +1618,9 @@ impl App {
     fn run_effects(&mut self, effects: Vec<Effect>) {
         for effect in effects {
             match effect {
-                Effect::Start { id, method, params } => self.exec.submit(id, method, params),
+                Effect::Start { id, transfer, method, params } => {
+                    self.exec.submit(id, *transfer, method, params);
+                }
                 Effect::Check { id, check, dir } => {
                     let req = self.req(Pending::JobCheck { id, check });
                     self.exec.probe(req, dir);
@@ -2174,6 +2202,11 @@ pub fn with_hint(message: &str) -> String {
 /// The drop menu's choices.
 pub fn drop_buttons() -> Vec<String> {
     vec![tr!("button-copy-here"), tr!("button-move-here"), tr!("button-cancel")]
+}
+
+/// Two endpoint keys in an order of their own, so that either way is one key.
+fn pair(a: String, b: String) -> (String, String) {
+    if a <= b { (a, b) } else { (b, a) }
 }
 
 /// `copy huge.bin → nas:backup/2026`

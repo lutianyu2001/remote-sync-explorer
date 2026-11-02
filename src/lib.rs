@@ -7,6 +7,7 @@ pub mod i18n;
 pub mod app;
 pub mod config;
 pub mod endpoint;
+pub mod engine;
 pub mod event;
 pub mod exec;
 #[cfg(fuzzing)]

@@ -1,5 +1,9 @@
 //! Cancelling transfers part-way. Its own test binary because it sets rclone's global
 //! bandwidth limit to keep transfers slow enough to interrupt.
+//!
+//! A cancelled copy to a target that resumes (the local disk here) leaves only its
+//! `.rse-partial` file, which a retry goes on from; one to a target that does not leaves
+//! nothing.
 #![cfg(feature = "embedded")]
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
@@ -43,7 +47,9 @@ fn setup() -> (Arc<dyn Backend>, Exec, Receiver<Event>) {
 fn run(exec: &Exec, effects: Vec<Effect>) {
     for e in effects {
         match e {
-            Effect::Start { id, method, params } => exec.submit(id, method, params),
+            Effect::Start { id, transfer, method, params } => {
+                exec.submit(id, *transfer, method, params);
+            }
             Effect::Stop(id) => exec.stop(id),
             Effect::Check { .. } => unreachable!("approved transfers start without a check"),
             Effect::Finished { .. } => {}
@@ -100,8 +106,13 @@ fn walk(dir: &Path) -> Vec<String> {
     out
 }
 
+/// Whether `left`, a listing, has nothing but partial files.
+fn only_partial(left: &[String]) -> bool {
+    left.iter().all(|n| n.ends_with(".rse-partial"))
+}
+
 #[test]
-fn cancelled_transfers_leave_no_partial_files() {
+fn cancelled_transfers_leave_only_partial_files() {
     let (backend, exec, rx) = setup();
     let src = tempfile::tempdir().unwrap();
     big_file(&src.path().join("big.bin"));
@@ -124,9 +135,10 @@ fn cancelled_transfers_leave_no_partial_files() {
     eprintln!("file copy: {state:?} after {seen} bytes; target: {:?}", listing(dst.path()));
     assert_eq!(state, JobState::Cancelled);
     assert!(seen < i64::try_from(SIZE).unwrap());
-    assert_eq!(listing(dst.path()), Vec::<String>::new(), "target not clean");
+    let left = listing(dst.path());
+    assert_eq!(left, ["big.bin.rse-partial"], "target not clean");
 
-    // Directory copy (sync/copy).
+    // Directory copy.
     let dst = tempfile::tempdir().unwrap();
     let t = Transfer {
         kind: OpKind::Copy,
@@ -141,10 +153,7 @@ fn cancelled_transfers_leave_no_partial_files() {
     let left = listing(dst.path());
     eprintln!("dir copy: {state:?}; target: {left:?}");
     assert_eq!(state, JobState::Cancelled);
-    assert!(
-        left.iter().all(|n| !n.contains("partial") && !n.ends_with("inner.bin")),
-        "target not clean: {left:?}"
-    );
+    assert!(only_partial(&left), "target not clean: {left:?}");
 
     // A cancelled move across backends keeps the source and leaves nothing at the target.
     // (A move within one local fs is a rename and cannot be caught midway.)
@@ -188,7 +197,10 @@ fn shutdown_stops_running_jobs() {
         }]),
     );
     // Wait until it is running, then drop the workers as rse does at exit.
-    let Ok(Event::Jobs(_)) = rx.recv_timeout(Duration::from_secs(5)) else { panic!("no progress") };
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while !matches!(rx.recv_timeout(Duration::from_secs(5)), Ok(Event::Jobs(_))) {
+        assert!(Instant::now() < deadline, "no progress");
+    }
     exec.shutdown();
     // The job worker stopped the job on its way out. Wait until rclone has ended it: every rc
     // call gets a job id, so look for the one that ended with a cancel.
@@ -208,6 +220,6 @@ fn shutdown_stops_running_jobs() {
         assert!(Instant::now() < deadline, "no cancelled job: {jobs}");
         std::thread::sleep(Duration::from_millis(100));
     }
-    assert_eq!(listing(dst.path()), Vec::<String>::new());
+    assert!(only_partial(&listing(dst.path())), "{:?}", listing(dst.path()));
     assert_eq!(fs::metadata(src.path().join("big.bin")).unwrap().len(), SIZE as u64);
 }

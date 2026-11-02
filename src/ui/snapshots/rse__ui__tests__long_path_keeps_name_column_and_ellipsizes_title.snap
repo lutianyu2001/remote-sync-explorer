@@ -25,4 +25,4 @@ expression: screen
 ╭────────────────────────────────────────────────────────────────[5] Transfers─╮
 │ idle                                                                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
- F5 Copy  F6 Move  F7 Mkdir  F8 Delete  F10 Remote  / Filter  ? Help  q Quit
+ F5 Copy  F6 Move  F7 Mkdir  F8 Delete  F10 Remote  / Filter  ? Help     rclone

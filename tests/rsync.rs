@@ -14,6 +14,12 @@ use std::process::Command;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use crossbeam_channel::unbounded;
+use rse::config::EngineChoice;
+use rse::engine::Engines;
+use rse::event::Event;
+use rse::exec::Exec;
+use rse::jobs::{Engine, OpKind, Transfer};
 use rse::location::Location;
 use rse::rclone::api::Stats;
 use rse::rclone::system_ssh::{SshAnswer, SystemSsh};
@@ -253,6 +259,7 @@ fn rsync_through_the_master_connection() {
     stopped_transfers_pick_up_again(&remote, &local, &server);
     moves(&remote, &local, &server);
     relative_paths(&ssh, &fs_name, &remote, &local, &server);
+    the_job_worker_chooses_rsync(&ssh, &fs_name, &local, &server);
     assert_eq!(logins(work.path()), 1, "every transfer through the one login");
 }
 
@@ -369,4 +376,45 @@ fn relative_paths(
             assert_eq!(names, ["c", "sub"]);
         }
     }
+}
+
+/// The job worker copies to and from the server with rsync, and between two places on the
+/// local disk with rclone, as `Engines` decides; `Engines::between` tells the same.
+fn the_job_worker_chooses_rsync(ssh: &Arc<SystemSsh>, fs_name: &str, local: &Path, server: &Path) {
+    let engines = Engines::new(Some(ssh.clone()), EngineChoice::Auto, false);
+    let here = Location::local(local);
+    let there = Location::new(fs_name, server.join("by-job").to_str().unwrap());
+    fs::create_dir_all(server.join("by-job")).unwrap();
+    assert_eq!(engines.between(&here, &there), Engine::Rsync);
+    assert_eq!(engines.between(&there, &here), Engine::Rsync);
+    assert_eq!(engines.between(&here, &Location::local(server)), Engine::Rclone);
+
+    let (tx, rx) = unbounded();
+    let exec = Exec::spawn_with(ssh.clone(), tx, 1, Duration::from_millis(50), engines);
+    let transfer = Transfer {
+        kind: OpKind::Copy,
+        src_dir: here,
+        name: "one file.txt".to_owned(),
+        is_dir: false,
+        dst_dir: Some(there),
+        size: None,
+        overwrite: true,
+    };
+    let (method, params) = transfer.rc_call().unwrap();
+    exec.submit(1, transfer, method, params);
+    let deadline = Instant::now() + Duration::from_secs(30);
+    let (mut engine, mut finished) = (None, None);
+    while finished.is_none() && Instant::now() < deadline {
+        match rx.recv_timeout(Duration::from_millis(200)) {
+            Ok(Event::JobStarted { engine: e, resumable, .. }) => {
+                assert!(resumable);
+                engine = Some(e);
+            }
+            Ok(Event::Jobs(snaps)) => finished.clone_from(&snaps[0].finished),
+            _ => {}
+        }
+    }
+    exec.shutdown();
+    assert_eq!((engine, finished), (Some(Engine::Rsync), Some(Ok(()))));
+    assert_eq!(fs::read_to_string(server.join("by-job/one file.txt")).unwrap(), "local file");
 }

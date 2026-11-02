@@ -208,8 +208,8 @@ fn browse_and_copy_over_openssh() {
     ]);
     let run = |effects: Vec<Effect>| {
         for e in effects {
-            if let Effect::Start { id, method, params } = e {
-                exec.submit(id, method, params);
+            if let Effect::Start { id, transfer, method, params } = e {
+                exec.submit(id, *transfer, method, params);
             }
         }
     };
