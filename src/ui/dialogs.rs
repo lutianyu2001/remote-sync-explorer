@@ -10,7 +10,7 @@ use super::panes::wrap;
 use super::text::{ellipsize_middle, ellipsize_name, fit, format_time, human_size, shown, width};
 use crate::app::{App, Dialog, InputPurpose, Plan, job_label};
 use crate::event::{Entry, JobId};
-use crate::jobs::{OpKind, same_name};
+use crate::jobs::{JobState, OpKind, same_name};
 
 /// What a drawn dialog occupies.
 #[derive(Default)]
@@ -41,10 +41,13 @@ pub fn draw(buf: &mut Buffer, screen: Rect, app: &App, dialog: &Dialog) -> Drawn
             let lines = job_conflict_text(app, conflicts, *index);
             boxed(buf, screen, &tr!("conflict-title"), &lines, &dialog.buttons(), Some(*focus))
         }
-        Dialog::Quit { focus } => {
-            let n = app.queue.unfinished_count();
-            let lines = vec![plain(tr!("quit-running", count = n)), plain(tr!("quit-note"))];
+        Dialog::Quit { jobs, focus } => {
+            let lines = interrupted_text(app, &tr!("quit-note"), jobs);
             boxed(buf, screen, &tr!("quit-title"), &lines, &dialog.buttons(), Some(*focus))
+        }
+        Dialog::Leave { jobs, focus, .. } => {
+            let lines = interrupted_text(app, &tr!("leave-note"), jobs);
+            boxed(buf, screen, &tr!("leave-title"), &lines, &dialog.buttons(), Some(*focus))
         }
         Dialog::Input { purpose, text, cursor } => input(buf, screen, app, purpose, text, *cursor),
         Dialog::Drop { plan, focus, at } => drop_menu(buf, screen, plan, *focus, *at),
@@ -72,6 +75,30 @@ pub fn draw(buf: &mut Buffer, screen: Rect, app: &App, dialog: &Dialog) -> Drawn
         }
         Dialog::Filter => Drawn::default(),
     }
+}
+
+/// `intro`, then each of `jobs` as it is now: the file it would send again, or that it
+/// has finished and nothing is lost.
+fn interrupted_text(app: &App, intro: &str, jobs: &[JobId]) -> Vec<(String, Style)> {
+    let mut lines = vec![plain(intro.to_owned())];
+    for job in jobs.iter().filter_map(|id| app.queue.jobs.iter().find(|j| j.id == *id)) {
+        let label = job_label(job);
+        if job.state.is_finished() || job.state == JobState::Queued {
+            let line = tr!("interrupted-done", job = label);
+            lines.push((format!("  {line}"), Style::new().add_modifier(Modifier::DIM)));
+            continue;
+        }
+        lines.push(plain(format!("  {}", tr!("interrupted-running", job = label))));
+        for t in &job.stats.transferring {
+            let (done, size) = (human_size(t.bytes), human_size(t.size));
+            let file = shown(&t.name).into_owned();
+            lines.push(note(&format!(
+                "    {}",
+                tr!("interrupted-file", file = file, done = done, size = size)
+            )));
+        }
+    }
+    lines
 }
 
 fn plain(s: String) -> (String, Style) {

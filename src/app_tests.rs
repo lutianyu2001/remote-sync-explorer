@@ -9,6 +9,7 @@ use serde_json::{Value, json};
 use super::*;
 use crate::config::{DropAction, UiConfig};
 use crate::endpoint::Scheme;
+use crate::jobs::Engine;
 use crate::rclone::FakeBackend;
 use crate::testutil::{Harness, Tree, dir, fake_fs, file};
 
@@ -929,8 +930,9 @@ fn transfer_queue_cancel_retry_clear() {
     assert_eq!(h.app.focus, Focus::Panes);
 }
 
-#[test]
-fn quit_with_running_jobs_asks_and_stops_them() {
+/// A backend with big.bin in /home/sky whose copy runs until it is stopped; the flag is
+/// set once `job/stop` has been called.
+fn stoppable_copy() -> (Arc<FakeBackend>, Arc<AtomicBool>) {
     let stopped = Arc::new(AtomicBool::new(false));
     let s = stopped.clone();
     let backend = Arc::new(FakeBackend::new(move |m, input| match m {
@@ -945,25 +947,82 @@ fn quit_with_running_jobs_asks_and_stops_them() {
         "job/status" => {
             Ok(json!({"id": 1, "finished": s.load(Ordering::SeqCst), "success": false}))
         }
+        "core/stats" => Ok(json!({"bytes": 4, "totalBytes": 10,
+            "transferring": [{"name": "big.bin", "bytes": 4, "size": 10}]})),
         _ => Ok(json!({})),
     }));
+    (backend, stopped)
+}
+
+fn copy_running(backend: Arc<FakeBackend>) -> Harness {
     let mut h = Harness::new(backend, home(), nas());
     select(&mut h, "big.bin");
     h.press(KeyCode::F(5));
     h.press(KeyCode::Enter);
     h.wait_until(|a| a.queue.jobs.first().is_some_and(|j| j.state == JobState::Running));
+    h
+}
+
+/// A job that would lose the file under way is named before quitting, as it is now; the
+/// quit key again quits, pausing it.
+#[test]
+fn quit_with_a_job_that_cannot_resume_asks_and_q_again_pauses_it() {
+    let (backend, stopped) = stoppable_copy();
+    let mut h = copy_running(backend);
+    h.wait_until(|a| a.queue.jobs[0].stats.bytes == 4);
 
     h.press(KeyCode::Char('q'));
-    assert!(matches!(h.app.dialog, Some(Dialog::Quit { focus: 1 })));
-    assert!(h.screen.contains("1 transfer in progress"), "{}", h.screen);
+    assert!(matches!(h.app.dialog, Some(Dialog::Quit { focus: 1, .. })));
+    h.render();
+    assert!(h.screen.contains("big.bin: 4 B of 10 B would be sent again"), "{}", h.screen);
     h.press(KeyCode::Enter); // "Back" is the default
     assert_eq!(h.app.quit, QuitState::Running);
 
     h.press(KeyCode::Char('q'));
-    h.press(KeyCode::Left);
-    h.press(KeyCode::Enter);
+    h.press(KeyCode::Char('q'));
     h.wait_until(|a| a.quit == QuitState::Done);
     assert!(stopped.load(Ordering::SeqCst));
+    assert_eq!(h.app.queue.jobs[0].state, JobState::Queued, "kept for the next start");
+}
+
+/// A job that goes on from where it stops is paused without a question.
+#[test]
+fn quit_with_jobs_that_resume_is_immediate() {
+    let (backend, stopped) = stoppable_copy();
+    let mut h = copy_running(backend);
+    h.app.queue.started(1, Engine::Rsync, true);
+    h.press(KeyCode::Char('q'));
+    assert!(h.app.dialog.is_none());
+    h.wait_until(|a| a.quit == QuitState::Done);
+    assert!(stopped.load(Ordering::SeqCst));
+}
+
+/// Leaving one of a job's endpoints pauses it, after asking when it would lose the file
+/// under way; it is not shown while away, and goes on when the pane comes back.
+#[test]
+fn leaving_an_endpoint_pauses_its_jobs_until_it_is_shown_again() {
+    let (backend, stopped) = stoppable_copy();
+    let mut h = copy_running(backend.clone());
+    h.app.active = 1;
+    goto(&mut h, "s3:");
+    assert!(matches!(h.app.dialog, Some(Dialog::Leave { .. })), "{:?}", h.app.dialog);
+    h.press(KeyCode::Esc);
+    assert_eq!(h.app.panes[1].loc, nas(), "Esc stays");
+
+    goto(&mut h, "s3:");
+    h.press(KeyCode::Left);
+    h.press(KeyCode::Enter);
+    assert_eq!(h.app.panes[1].loc, Location::new("s3:", ""));
+    h.wait_until(|a| a.queue.jobs[0].state == JobState::Queued);
+    assert!(stopped.load(Ordering::SeqCst));
+    assert_eq!(h.app.queue.visible().len(), 0);
+
+    stopped.store(false, Ordering::SeqCst);
+    goto(&mut h, "nas:backup");
+    assert!(h.app.dialog.is_none());
+    h.wait_until(|a| a.queue.jobs[0].state == JobState::Running);
+    assert_eq!(h.app.queue.visible().len(), 1);
+    assert_eq!(backend.calls_to("operations/copyfile").len(), 2);
 }
 
 #[test]

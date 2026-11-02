@@ -37,6 +37,13 @@ impl Hash for Location {
     }
 }
 
+/// What tells one endpoint (the local disk, a remote, a server opened by address) from
+/// another: the fs string, without the password of a server opened by address, so that
+/// the same login is the same endpoint whatever password was typed.
+pub fn endpoint_key(loc: &Location) -> String {
+    loc.endpoint.as_ref().map_or_else(|| loc.fs.clone(), |e| e.login().fs())
+}
+
 /// Where a typed address leads: a location, or a server that needs its password settled
 /// (asked for, or obscured for rclone) first.
 #[derive(Debug, Clone, PartialEq, Eq)]

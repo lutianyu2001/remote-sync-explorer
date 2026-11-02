@@ -14,7 +14,7 @@ use crate::exec::Exec;
 use crate::hitmap::{HitMap, Target};
 use crate::jobs::{Effect, JobState, OpKind, Queue, Transfer, same_name};
 use crate::keymap::{Action, Keymap};
-use crate::location::{Destination, Location, safe_name};
+use crate::location::{Destination, Location, endpoint_key, safe_name};
 use crate::rclone::RpcError;
 use crate::rclone::system_ssh::{SshAnswer, SshQuestion};
 use crate::ui::text::shown;
@@ -313,7 +313,17 @@ pub enum Dialog {
         focus: usize,
         at: (u16, u16),
     },
+    /// Quitting would stop `jobs`, running jobs that cannot go on from where they stop.
     Quit {
+        jobs: Vec<JobId>,
+        focus: usize,
+    },
+    /// Opening `loc` in `pane` leaves an endpoint `jobs` need, and they cannot go on from
+    /// where they stop.
+    Leave {
+        pane: PaneId,
+        loc: Box<Location>,
+        jobs: Vec<JobId>,
         focus: usize,
     },
     Help {
@@ -340,6 +350,7 @@ impl Dialog {
             }
             Self::Drop { .. } => drop_buttons(),
             Self::Quit { .. } => vec![tr!("button-stop-and-quit"), tr!("button-back")],
+            Self::Leave { .. } => vec![tr!("button-pause-and-leave"), tr!("button-stay")],
             Self::Input { .. } => vec![tr!("button-ok"), tr!("button-cancel")],
             Self::SshConfirm { .. } => vec![tr!("button-yes"), tr!("button-no")],
             Self::Remotes { .. } | Self::Help { .. } | Self::Errors { .. } | Self::Filter => {
@@ -355,7 +366,8 @@ impl Dialog {
             | Self::JobConflict { focus, .. }
             | Self::Drop { focus, .. }
             | Self::SshConfirm { focus, .. }
-            | Self::Quit { focus } => Some(focus),
+            | Self::Quit { focus, .. }
+            | Self::Leave { focus, .. } => Some(focus),
             _ => None,
         }
     }
@@ -367,7 +379,8 @@ impl Dialog {
             | Self::JobConflict { focus, .. }
             | Self::Drop { focus, .. }
             | Self::SshConfirm { focus, .. }
-            | Self::Quit { focus } => Some(*focus),
+            | Self::Quit { focus, .. }
+            | Self::Leave { focus, .. } => Some(*focus),
             _ => None,
         }
     }
@@ -497,6 +510,10 @@ pub struct AppInit {
     pub remotes: Vec<(String, String)>,
     pub home: PathBuf,
     pub cwd: PathBuf,
+    /// The jobs left unfinished last time, queued again.
+    pub saved: Vec<Transfer>,
+    /// Where the unfinished jobs are saved; `None` saves nothing.
+    pub queue_file: Option<PathBuf>,
 }
 
 pub struct App {
@@ -538,6 +555,9 @@ pub struct App {
     last_click: Option<((u16, u16), Instant)>,
     /// When the current dialog (or conflict step) appeared, for `CLICK_GUARD`.
     dialog_since: Option<Instant>,
+    queue_file: Option<PathBuf>,
+    /// The unfinished jobs as last saved.
+    saved: Vec<Transfer>,
 }
 
 impl App {
@@ -578,10 +598,29 @@ impl App {
             job_conflicts: Vec::new(),
             last_click: None,
             dialog_since: None,
+            queue_file: init.queue_file,
+            saved: init.saved.clone(),
         };
         app.navigate(0, init.left);
         app.navigate(1, init.right);
+        let effects = app.queue.push(init.saved);
+        app.run_effects(effects);
         app
+    }
+
+    /// Saves the unfinished jobs when they changed since they were last saved.
+    fn save_queue(&mut self) {
+        let unfinished = self.queue.unfinished();
+        if unfinished == self.saved {
+            return;
+        }
+        if let Some(path) = &self.queue_file
+            && let Err(e) = crate::state::save_queue(path, &unfinished)
+        {
+            let path = path.display().to_string();
+            self.log_error(tr!("queue-not-saved", path = path, error = e.to_string()));
+        }
+        self.saved = unfinished;
     }
 
     /// Hands the workers back for shutdown.
@@ -592,6 +631,7 @@ impl App {
     pub fn handle(&mut self, event: Event, now: Instant) {
         let before = dialog_identity(self.dialog.as_ref());
         self.dispatch(event, now);
+        self.save_queue();
         self.sync_ssh_prompt();
         self.sync_job_conflicts();
         let after = dialog_identity(self.dialog.as_ref());
@@ -637,7 +677,29 @@ impl App {
 
     // ----- navigation -------------------------------------------------------------
 
+    /// The panes' locations.
+    fn shown(&self) -> Vec<Location> {
+        self.panes.iter().map(|p| p.loc.clone()).collect()
+    }
+
+    /// Opens `loc` in `pane`. When that leaves an endpoint that running jobs need and they
+    /// cannot go on from where they stop, the user is asked first.
     fn navigate(&mut self, pane: PaneId, loc: Location) {
+        if endpoint_key(&loc) != endpoint_key(&self.panes[pane].loc) {
+            let mut shown = self.shown();
+            shown[pane] = loc.clone();
+            let jobs = self.queue.interrupted_by(&shown);
+            if !jobs.is_empty() {
+                self.dialog = Some(Dialog::Leave { pane, loc: Box::new(loc), jobs, focus: 1 });
+                return;
+            }
+        }
+        self.go(pane, loc);
+    }
+
+    /// Opens `loc` in `pane`, pausing the jobs that lose an endpoint and starting those
+    /// that have theirs now.
+    fn go(&mut self, pane: PaneId, loc: Location) {
         let p = &mut self.panes[pane];
         p.loc = loc;
         p.entries.clear();
@@ -647,6 +709,9 @@ impl App {
         p.cursor = 0;
         p.offset = 0;
         self.request_listing(pane);
+        let effects = self.queue.set_shown(self.shown());
+        self.run_effects(effects);
+        self.queue_cursor = self.queue_cursor.min(self.queue.visible().len().saturating_sub(1));
     }
 
     /// Lists the pane's location again, keeping what is shown until the result arrives.
@@ -817,9 +882,9 @@ impl App {
     }
 
     fn queue_action(&mut self, action: Action, now: Instant) {
-        let len = self.queue.jobs.len();
+        let len = self.queue.visible().len();
         let last = len.saturating_sub(1);
-        let id = self.queue.jobs.get(self.queue_cursor).map(|j| j.id);
+        let id = self.queue.visible().get(self.queue_cursor).map(|j| j.id);
         match action {
             Action::Up => self.queue_cursor = self.queue_cursor.saturating_sub(1),
             Action::Down => self.queue_cursor = (self.queue_cursor + 1).min(last),
@@ -841,7 +906,8 @@ impl App {
             }
             Action::QueueClear => {
                 self.queue.clear_finished();
-                self.queue_cursor = self.queue_cursor.min(self.queue.jobs.len().saturating_sub(1));
+                self.queue_cursor =
+                    self.queue_cursor.min(self.queue.visible().len().saturating_sub(1));
             }
             Action::Queue => self.focus = Focus::Panes,
             other => self.action(other, now),
@@ -849,7 +915,7 @@ impl App {
     }
 
     /// Runs an action from a key or a click on the key hints.
-    pub fn action(&mut self, action: Action, _now: Instant) {
+    pub fn action(&mut self, action: Action, now: Instant) {
         let pane = self.active;
         let rows_per_page = self.page(pane);
         match action {
@@ -924,15 +990,17 @@ impl App {
             }
             Action::Queue | Action::FocusQueue => {
                 self.focus = Focus::Queue;
-                self.queue_cursor = self.queue_cursor.min(self.queue.jobs.len().saturating_sub(1));
+                self.queue_cursor =
+                    self.queue_cursor.min(self.queue.visible().len().saturating_sub(1));
             }
             Action::ErrorLog => self.dialog = Some(Dialog::Errors { scroll: 0 }),
             Action::Help => self.dialog = Some(Dialog::Help { scroll: 0 }),
             Action::Quit => {
-                if self.queue.unfinished_count() > 0 {
-                    self.dialog = Some(Dialog::Quit { focus: 1 });
+                let jobs = self.queue.interrupted_by(&[]);
+                if jobs.is_empty() {
+                    self.stop_and_quit(now);
                 } else {
-                    self.quit = QuitState::Done;
+                    self.dialog = Some(Dialog::Quit { jobs, focus: 1 });
                 }
             }
             Action::FocusLeft | Action::FocusRight => {
@@ -1024,30 +1092,45 @@ impl App {
             | Dialog::JobConflict { .. }
             | Dialog::Drop { .. }
             | Dialog::SshConfirm { .. }
-            | Dialog::Quit { .. } => {
-                let n = dialog.buttons().len();
-                match key.code {
-                    KeyCode::Esc => return,
-                    KeyCode::Enter => {
-                        let focus = dialog.focus().unwrap_or(0);
-                        self.press_button(dialog, focus, now);
-                        return;
-                    }
-                    KeyCode::Left | KeyCode::BackTab | KeyCode::Up => {
-                        if let Some(f) = dialog.focus_mut() {
-                            *f = (*f + n - 1) % n;
-                        }
-                    }
-                    KeyCode::Right | KeyCode::Tab | KeyCode::Down => {
-                        if let Some(f) = dialog.focus_mut() {
-                            *f = (*f + 1) % n;
-                        }
-                    }
-                    _ => {}
+            | Dialog::Quit { .. }
+            | Dialog::Leave { .. } => {
+                if !self.button_key(&mut dialog, key, now) {
+                    return;
                 }
             }
         }
         self.dialog = Some(dialog);
+    }
+
+    /// A key for a dialog of buttons; whether the dialog stays open.
+    fn button_key(&mut self, dialog: &mut Dialog, key: KeyEvent, now: Instant) -> bool {
+        let n = dialog.buttons().len();
+        // The quit key again goes, as the first button does.
+        let leaves = matches!(dialog, Dialog::Quit { .. } | Dialog::Leave { .. });
+        if leaves && self.keymap.pane_action(&key) == Some(Action::Quit) {
+            self.press_button(std::mem::replace(dialog, Dialog::Filter), 0, now);
+            return false;
+        }
+        match key.code {
+            KeyCode::Esc => return false,
+            KeyCode::Enter => {
+                let focus = dialog.focus().unwrap_or(0);
+                self.press_button(std::mem::replace(dialog, Dialog::Filter), focus, now);
+                return false;
+            }
+            KeyCode::Left | KeyCode::BackTab | KeyCode::Up => {
+                if let Some(f) = dialog.focus_mut() {
+                    *f = (*f + n - 1) % n;
+                }
+            }
+            KeyCode::Right | KeyCode::Tab | KeyCode::Down => {
+                if let Some(f) = dialog.focus_mut() {
+                    *f = (*f + 1) % n;
+                }
+            }
+            _ => {}
+        }
+        true
     }
 
     /// The protocol a location is reached by (`sftp`, `s3`, …); `None` for local paths
@@ -1378,6 +1461,11 @@ impl App {
                     self.stop_and_quit(now);
                 }
             }
+            Dialog::Leave { pane, loc, .. } => {
+                if button == 0 {
+                    self.go(pane, *loc);
+                }
+            }
             Dialog::SshConfirm { .. } => {
                 self.ssh_prompt_shown = false;
                 if let Some((_, reply)) = self.ssh_prompts.pop_front() {
@@ -1637,7 +1725,7 @@ impl App {
     }
 
     fn stop_and_quit(&mut self, now: Instant) {
-        let effects = self.queue.cancel_all();
+        let effects = self.queue.pause_all();
         self.run_effects(effects);
         self.quit = QuitState::Stopping { deadline: now + QUIT_GRACE };
         self.check_quit(now);
@@ -1769,7 +1857,7 @@ impl App {
             Target::QueueRow { index, cancel } => {
                 self.focus = Focus::Queue;
                 self.queue_cursor = index;
-                if cancel && let Some(id) = self.queue.jobs.get(index).map(|j| j.id) {
+                if cancel && let Some(id) = self.queue.visible().get(index).map(|j| j.id) {
                     let effects = self.queue.cancel(id);
                     self.run_effects(effects);
                 }
@@ -1936,7 +2024,7 @@ impl App {
             return;
         }
         if self.hitmap.queue.contains(ratatui::layout::Position::new(at.0, at.1)) {
-            let last = self.queue.jobs.len().saturating_sub(1);
+            let last = self.queue.visible().len().saturating_sub(1);
             self.queue_cursor = if down {
                 (self.queue_cursor + 1).min(last)
             } else {

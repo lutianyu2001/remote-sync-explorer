@@ -103,12 +103,26 @@ pub enum Language {
 pub struct JobsConfig {
     pub max_concurrent: usize,
     pub poll_ms: u64,
+    /// What carries out copies and moves.
+    pub engine: EngineChoice,
+    /// Tell files apart by checksum instead of size and modification time.
+    pub checksum: bool,
 }
 
 impl Default for JobsConfig {
     fn default() -> Self {
-        Self { max_concurrent: 2, poll_ms: 500 }
+        Self { max_concurrent: 2, poll_ms: 500, engine: EngineChoice::Auto, checksum: false }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum EngineChoice {
+    /// rsync between the local disk and a server reached through the system ssh that has
+    /// it, rclone for everything else.
+    Auto,
+    /// rclone always.
+    Rclone,
 }
 
 /// The user's home directory.
@@ -281,6 +295,8 @@ language = "zh-CN"
 [jobs]
 max_concurrent = 3
 poll_ms = 500
+engine = "rclone"
+checksum = true
 
 [keys]
 copy = ["F5", "c"]
@@ -292,6 +308,7 @@ move = ["F6", "m"]
         assert_eq!(c.ui.drop_action, DropAction::Copy);
         assert_eq!(c.ui.language, Language::ZhCn);
         assert_eq!(c.jobs.max_concurrent, 3);
+        assert_eq!((c.jobs.engine, c.jobs.checksum), (EngineChoice::Rclone, true));
         assert_eq!(c.keys["move"], ["F6", "m"]);
     }
 

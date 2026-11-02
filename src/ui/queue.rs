@@ -19,9 +19,9 @@ const BAR_W: usize = 12;
 pub fn height(app: &App, screen_height: u16) -> u16 {
     let jobs = if app.focus == Focus::Queue {
         // One more row for the selected job's current file.
-        let want = u16::try_from(app.queue.jobs.len() + 1).unwrap_or(u16::MAX);
+        let want = u16::try_from(app.queue.visible().len() + 1).unwrap_or(u16::MAX);
         want.clamp(3, (screen_height / 2).saturating_sub(3).max(3))
-    } else if app.queue.jobs.is_empty() {
+    } else if app.queue.visible().is_empty() {
         0
     } else {
         3
@@ -30,7 +30,8 @@ pub fn height(app: &App, screen_height: u16) -> u16 {
 }
 
 /// Draws the transfer window, labelled (`[5] Transfers`) in its top right corner: counts
-/// and the status line on the first row, then one job per row.
+/// and the status line on the first row, then one job per row: the jobs of the endpoints
+/// the panes show.
 pub fn draw(buf: &mut Buffer, area: Rect, app: &App) -> Vec<(u16, usize, u16)> {
     let focused = app.focus == Focus::Queue;
     let border = if focused { super::FOCUSED } else { Style::new() };
@@ -43,7 +44,7 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App) -> Vec<(u16, usize, u16)> {
     let w = usize::from(area.width);
     draw_header(buf, area, app, focused);
 
-    let jobs = &app.queue.jobs;
+    let jobs = app.queue.visible();
     let rows = usize::from(area.height - 1);
     if rows == 0 || jobs.is_empty() {
         return Vec::new();
@@ -64,7 +65,7 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App) -> Vec<(u16, usize, u16)> {
 
     let mut hits = Vec::new();
     let mut y = area.y + 1;
-    for (index, job) in jobs.iter().enumerate().skip(start).take(job_rows) {
+    for (index, &job) in jobs.iter().enumerate().skip(start).take(job_rows) {
         if y >= area.y + area.height {
             break;
         }
@@ -95,16 +96,17 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App) -> Vec<(u16, usize, u16)> {
 
 fn draw_header(buf: &mut Buffer, area: Rect, app: &App, focused: bool) {
     let w = usize::from(area.width);
-    let q = &app.queue;
-    let done = q.jobs.iter().filter(|j| j.state == JobState::Done).count();
-    let failed = q.jobs.iter().filter(|j| matches!(j.state, JobState::Failed(_))).count();
+    let jobs = app.queue.visible();
+    let count = |f: fn(&JobState) -> bool| jobs.iter().filter(|j| f(&j.state)).count();
+    let done = count(|s| *s == JobState::Done);
+    let failed = count(|s| matches!(s, JobState::Failed(_)));
     let mut text = String::new();
-    if q.jobs.is_empty() {
+    if jobs.is_empty() {
         text.push_str(&tr!("queue-idle"));
     } else {
         let mut parts = vec![
-            tr!("queue-running", count = q.active_count()),
-            tr!("queue-queued", count = q.queued_count()),
+            tr!("queue-running", count = count(JobState::is_active)),
+            tr!("queue-queued", count = count(|s| *s == JobState::Queued)),
         ];
         if done > 0 {
             parts.push(tr!("queue-done", count = done));
@@ -140,7 +142,7 @@ fn draw_job(buf: &mut Buffer, area: Rect, app: &App, job: &Job, selected: bool) 
     let right = match &job.state {
         JobState::Queued => tr!("job-queued"),
         JobState::Checking => tr!("job-checking", spinner = SPINNER[app.spinner % SPINNER.len()]),
-        JobState::Running | JobState::Cancelling => running_text(app, job),
+        JobState::Running | JobState::Cancelling | JobState::Pausing => running_text(app, job),
         JobState::Done => tr!("job-done"),
         JobState::Failed(e) => tr!("job-failed", error = e.as_str()),
         JobState::Cancelled => tr!("job-cancelled"),
@@ -172,7 +174,7 @@ fn draw_job(buf: &mut Buffer, area: Rect, app: &App, job: &Job, selected: bool) 
 }
 
 fn running_text(app: &App, job: &Job) -> String {
-    if job.state == JobState::Cancelling {
+    if matches!(job.state, JobState::Cancelling | JobState::Pausing) {
         return tr!("job-stopping");
     }
     let Some(f) = job.fraction() else {

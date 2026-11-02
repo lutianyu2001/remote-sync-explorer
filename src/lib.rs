@@ -16,6 +16,7 @@ pub mod jobs;
 pub mod keymap;
 pub mod location;
 pub mod rclone;
+pub mod state;
 #[cfg(test)]
 mod testutil;
 pub mod ui;

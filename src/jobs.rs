@@ -1,13 +1,18 @@
 //! The transfer queue: one job per top-level item, a concurrency limit, and the job
 //! state machine (queued → checking the target → running → done / failed / cancelled).
+//!
+//! A job runs only while the panes show its endpoints: both for a copy or move, the one
+//! it deletes in for a delete. When a pane leaves for another endpoint, the jobs that no
+//! longer have theirs are paused, and they go on when the panes show them again.
 
 use serde_json::{Value, json};
 
 use crate::event::{JobId, JobSnapshot};
-use crate::location::Location;
+use crate::location::{Location, endpoint_key};
 use crate::rclone::api::{self, Stats};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum OpKind {
     Copy,
     Move,
@@ -45,9 +50,25 @@ pub struct Transfer {
     pub dst_dir: Option<Location>,
     /// Bytes, when known from the listing (files only).
     pub size: Option<i64>,
-    /// The user chose to replace what the target has of this name, so the job starts
-    /// without the target being checked again.
+    /// The user chose to replace what the target has of this name, or the job has been
+    /// writing it already, so it starts without the target being checked again.
     pub overwrite: bool,
+}
+
+/// The program that carries out a job.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Engine {
+    Rclone,
+    Rsync,
+}
+
+impl Engine {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Rclone => "rclone",
+            Self::Rsync => "rsync",
+        }
+    }
 }
 
 impl Transfer {
@@ -78,6 +99,11 @@ impl Transfer {
                 ));
             }
         })
+    }
+
+    /// The endpoints the job needs shown to run, by [`endpoint_key`].
+    pub fn endpoints(&self) -> impl Iterator<Item = String> + '_ {
+        std::iter::once(&self.src_dir).chain(&self.dst_dir).map(endpoint_key)
     }
 
     /// The directories whose listings change when this finishes.
@@ -132,6 +158,9 @@ pub enum JobState {
     Running,
     /// `job/stop` sent, waiting for rclone to report the end.
     Cancelling,
+    /// Stopped because the panes no longer show its endpoints: queued again once the end
+    /// is reported.
+    Pausing,
     Done,
     Failed(String),
     Cancelled,
@@ -146,7 +175,7 @@ impl JobState {
 
     /// Taking one of the places `max_concurrent` allows.
     pub fn is_active(&self) -> bool {
-        matches!(self, Self::Checking | Self::Running | Self::Cancelling)
+        matches!(self, Self::Checking | Self::Running | Self::Cancelling | Self::Pausing)
     }
 }
 
@@ -159,6 +188,11 @@ pub struct Job {
     /// Counts the checks of its target, so that the answer to one that was cancelled,
     /// and maybe retried since, is told apart.
     pub check: u64,
+    /// What runs it, once it has started.
+    pub engine: Option<Engine>,
+    /// Whether a stop keeps what it has transferred of the file under way, so that it
+    /// goes on from there; false until the engine says so.
+    pub resumable: bool,
 }
 
 impl Job {
@@ -199,6 +233,8 @@ pub enum Effect {
 #[derive(Debug)]
 pub struct Queue {
     pub jobs: Vec<Job>,
+    /// The panes' locations, whose endpoints jobs need; `None` shows every endpoint.
+    shown: Option<Vec<Location>>,
     /// Overwrite mode: jobs start without their target being checked, replacing what it
     /// has. Off at every start.
     pub overwrite: bool,
@@ -210,6 +246,7 @@ impl Queue {
     pub fn new(max_concurrent: usize) -> Self {
         Self {
             jobs: Vec::new(),
+            shown: None,
             overwrite: false,
             max_concurrent: max_concurrent.max(1),
             next_id: 1,
@@ -221,11 +258,95 @@ impl Queue {
         for transfer in transfers {
             let id = self.next_id;
             self.next_id += 1;
-            let job =
-                Job { id, transfer, state: JobState::Queued, stats: Stats::default(), check: 0 };
+            let job = Job {
+                id,
+                transfer,
+                state: JobState::Queued,
+                stats: Stats::default(),
+                check: 0,
+                engine: None,
+                resumable: false,
+            };
             self.jobs.push(job);
         }
+        self.refresh_endpoints();
         self.start_ready()
+    }
+
+    /// Whether the panes show every endpoint `transfer` needs.
+    fn present(&self, transfer: &Transfer) -> bool {
+        let Some(shown) = &self.shown else { return true };
+        transfer.endpoints().all(|e| shown.iter().any(|l| endpoint_key(l) == e))
+    }
+
+    /// The panes show `locations` now: jobs that lost an endpoint pause, a check under
+    /// way given up, and jobs whose endpoints are all shown go on.
+    pub fn set_shown(&mut self, locations: Vec<Location>) -> Vec<Effect> {
+        self.shown = Some(locations);
+        self.refresh_endpoints();
+        let mut out = Vec::new();
+        for index in 0..self.jobs.len() {
+            if self.present(&self.jobs[index].transfer) {
+                continue;
+            }
+            let job = &mut self.jobs[index];
+            match job.state {
+                JobState::Running => {
+                    job.state = JobState::Pausing;
+                    out.push(Effect::Stop(job.id));
+                }
+                JobState::Checking => job.state = JobState::Queued,
+                _ => {}
+            }
+        }
+        out.extend(self.start_ready());
+        out
+    }
+
+    /// Running jobs that showing `locations` would stop with what they have done of the
+    /// file under way lost.
+    pub fn interrupted_by(&self, locations: &[Location]) -> Vec<JobId> {
+        let keys: Vec<String> = locations.iter().map(endpoint_key).collect();
+        self.jobs
+            .iter()
+            .filter(|j| j.state == JobState::Running && !j.resumable)
+            .filter(|j| !j.transfer.endpoints().all(|e| keys.contains(&e)))
+            .map(|j| j.id)
+            .collect()
+    }
+
+    /// Gives the jobs of shown endpoints the panes' fs strings, which carry what a saved
+    /// queue leaves out, such as an obscured password.
+    fn refresh_endpoints(&mut self) {
+        let Some(shown) = &self.shown else { return };
+        for job in &mut self.jobs {
+            let t = &mut job.transfer;
+            for dir in std::iter::once(&mut t.src_dir).chain(t.dst_dir.as_mut()) {
+                if let Some(l) = shown.iter().find(|l| endpoint_key(l) == endpoint_key(dir)) {
+                    dir.fs.clone_from(&l.fs);
+                    dir.endpoint.clone_from(&l.endpoint);
+                }
+            }
+        }
+    }
+
+    /// The jobs of the endpoints shown, in order.
+    pub fn visible(&self) -> Vec<&Job> {
+        self.jobs.iter().filter(|j| self.present(&j.transfer)).collect()
+    }
+
+    /// The engine that runs job `id` and whether it can resume, as reported once it has
+    /// started.
+    pub fn started(&mut self, id: JobId, engine: Engine, resumable: bool) {
+        if let Some(job) = self.jobs.iter_mut().find(|j| j.id == id) {
+            job.engine = Some(engine);
+            job.resumable = resumable;
+        }
+    }
+
+    /// The jobs still to do, to be saved for the next start.
+    pub fn unfinished(&self) -> Vec<Transfer> {
+        self.jobs.iter().filter(|j| !j.state.is_finished()).map(|j| j.transfer.clone()).collect()
     }
 
     /// Starts queued jobs, in order, while the limit allows, passing over those `held`.
@@ -239,7 +360,10 @@ impl Queue {
             if free == 0 {
                 break;
             }
-            if self.jobs[index].state != JobState::Queued || self.held(index) {
+            if self.jobs[index].state != JobState::Queued
+                || self.held(index)
+                || !self.present(&self.jobs[index].transfer)
+            {
                 continue;
             }
             let job = &mut self.jobs[index];
@@ -305,7 +429,7 @@ impl Queue {
                 continue;
             };
             // Only jobs given to rclone report.
-            if !matches!(job.state, JobState::Running | JobState::Cancelling) {
+            if !matches!(job.state, JobState::Running | JobState::Cancelling | JobState::Pausing) {
                 continue;
             }
             if snap.stats != Stats::default() || snap.finished.is_none() {
@@ -322,6 +446,11 @@ impl Queue {
                 (Err(_), JobState::Cancelling) => {
                     job.state = JobState::Cancelled;
                     None
+                }
+                (Err(_), JobState::Pausing) => {
+                    job.state = JobState::Queued;
+                    job.stats = Stats::default();
+                    continue;
                 }
                 (Err(e), _) => {
                     job.state = JobState::Failed(e.clone());
@@ -360,11 +489,22 @@ impl Queue {
         }
     }
 
-    /// Stops everything and starts nothing: used when quitting.
-    pub fn cancel_all(&mut self) -> Vec<Effect> {
-        let ids: Vec<JobId> =
-            self.jobs.iter().filter(|j| !j.state.is_finished()).map(|j| j.id).collect();
-        ids.into_iter().flat_map(|id| self.cancel_only(id)).collect()
+    /// Pauses everything and starts nothing: used when quitting, as the jobs left are
+    /// saved for the next start.
+    pub fn pause_all(&mut self) -> Vec<Effect> {
+        let mut out = Vec::new();
+        for job in &mut self.jobs {
+            match job.state {
+                JobState::Running => {
+                    job.state = JobState::Pausing;
+                    out.push(Effect::Stop(job.id));
+                }
+                JobState::Checking => job.state = JobState::Queued,
+                _ => {}
+            }
+        }
+        self.shown = Some(Vec::new());
+        out
     }
 
     /// Puts a failed, cancelled or skipped job back in the queue. Its target is checked
@@ -399,9 +539,11 @@ impl Queue {
         }
     }
 
-    /// Removes finished jobs (done, failed, cancelled, skipped) from the list.
+    /// Removes the finished jobs (done, failed, cancelled, skipped) of the endpoints shown.
     pub fn clear_finished(&mut self) {
-        self.jobs.retain(|j| !j.state.is_finished());
+        let gone: Vec<JobId> =
+            self.visible().iter().filter(|j| j.state.is_finished()).map(|j| j.id).collect();
+        self.jobs.retain(|j| !gone.contains(&j.id));
     }
 
     pub fn active_count(&self) -> usize {
@@ -423,6 +565,8 @@ fn start(job: &mut Job) -> Effect {
     match job.transfer.rc_call() {
         Ok((method, params)) => {
             job.state = JobState::Running;
+            // From here on what the target has of this name is the job's own doing.
+            job.transfer.overwrite = true;
             Effect::Start { id: job.id, method, params }
         }
         Err(e) => {
@@ -557,12 +701,72 @@ mod tests {
         assert_eq!(q.jobs[0].id, 2);
     }
 
+    /// Quitting pauses: the running job is stopped and comes back queued, as do the
+    /// others, and nothing starts any more.
     #[test]
-    fn cancel_all_stops_running_and_drops_queued() {
+    fn pause_all_stops_running_and_keeps_every_job() {
         let mut q = Queue::new(1);
         q.push(vec![t(OpKind::Copy, "a", false), t(OpKind::Copy, "b", false)]);
-        assert_eq!(q.cancel_all(), vec![Effect::Stop(1)]);
-        assert_eq!(q.queued_count(), 0);
+        assert_eq!(q.pause_all(), vec![Effect::Stop(1)]);
+        assert_eq!(q.jobs[0].state, JobState::Pausing);
+        assert_eq!(q.apply(vec![snap(1, Some(Err("context canceled".into())))]), vec![]);
+        assert_eq!(q.queued_count(), 2);
+        assert_eq!(q.unfinished().len(), 2);
+    }
+
+    fn shown(fs: &[&str]) -> Vec<Location> {
+        fs.iter().map(|f| Location::new(*f, "")).collect()
+    }
+
+    /// A copy needs both endpoints shown, a delete the one it deletes in; the directory
+    /// shown does not matter, nor which pane shows which.
+    #[test]
+    fn jobs_run_only_while_their_endpoints_are_shown() {
+        let mut q = Queue::new(3);
+        q.set_shown(shown(&["/", "s3:"]));
+        let nas_delete =
+            Transfer { src_dir: Location::new("nas:", "x"), ..t(OpKind::Delete, "d", false) };
+        let effects = q.push(vec![t(OpKind::Copy, "a", false), nas_delete]);
+        assert_eq!(effects, vec![]);
+        assert_eq!(q.visible().len(), 0);
+        let effects = q.set_shown(vec![Location::new("nas:", "deep/down"), Location::new("/", "")]);
+        assert!(matches!(effects[..], [Effect::Start { id: 1, .. }, Effect::Start { id: 2, .. }]));
+        assert_eq!(q.visible().len(), 2);
+        // Only the delete keeps its endpoint.
+        let effects = q.set_shown(shown(&["nas:", "s3:"]));
+        assert_eq!(effects, vec![Effect::Stop(1)]);
+        assert_eq!(q.jobs[0].state, JobState::Pausing);
+        assert_eq!(q.visible().iter().map(|j| j.id).collect::<Vec<_>>(), vec![2]);
+        // A paused job that finished all the same is done.
+        q.apply(vec![snap(1, Some(Ok(())))]);
+        assert_eq!(q.jobs[0].state, JobState::Done);
+    }
+
+    /// Only running jobs that lose the file under way are named before leaving.
+    #[test]
+    fn interrupted_by_names_running_jobs_that_cannot_resume() {
+        let mut q = Queue::new(1);
+        q.push(vec![t(OpKind::Copy, "a", false), t(OpKind::Copy, "b", false)]);
+        assert_eq!(q.interrupted_by(&shown(&["/", "nas:"])), Vec::<JobId>::new());
+        assert_eq!(q.interrupted_by(&shown(&["/", "s3:"])), vec![1]);
+        q.started(1, Engine::Rsync, true);
+        assert_eq!(q.interrupted_by(&[]), Vec::<JobId>::new());
+    }
+
+    /// A job saved without the password of its server gets the pane's back.
+    #[test]
+    fn shown_servers_lend_jobs_their_fs_strings() {
+        let mut server = crate::endpoint::Endpoint::ssh("me@box");
+        server.scheme = crate::endpoint::Scheme::Ftp;
+        let saved = Location::on(server.clone(), "srv");
+        server.pass = Some("obscured".into());
+        let pane = Location::on(server, "elsewhere");
+        let mut q = Queue::new(1);
+        q.set_shown(vec![Location::new("/", ""), pane.clone()]);
+        q.push(vec![Transfer { dst_dir: Some(saved), ..t(OpKind::Copy, "a", false) }]);
+        let dst = q.jobs[0].transfer.dst_dir.as_ref().unwrap();
+        assert_eq!((&dst.fs, dst.path.as_str()), (&pane.fs, "srv"));
+        assert_eq!(q.jobs[0].state, JobState::Running);
     }
 
     #[test]

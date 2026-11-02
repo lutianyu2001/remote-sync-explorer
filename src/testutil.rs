@@ -131,6 +131,8 @@ impl Harness {
             remotes: vec![("nas".to_owned(), "smb".to_owned()), ("s3".to_owned(), "s3".to_owned())],
             home: PathBuf::from("/home/sky"),
             cwd: PathBuf::from("/home/sky"),
+            saved: Vec::new(),
+            queue_file: None,
         };
         let mut app = App::new(init, exec);
         app.display_tz = chrono::FixedOffset::east_opt(0);

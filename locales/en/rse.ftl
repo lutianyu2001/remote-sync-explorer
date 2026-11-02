@@ -128,7 +128,9 @@ button-overwrite = Overwrite
 button-skip = Skip
 button-overwrite-all = Overwrite all
 button-skip-all = Skip all
-button-stop-and-quit = Stop and quit
+button-stop-and-quit = Pause and quit
+button-pause-and-leave = Pause and leave
+button-stay = Stay
 button-copy-here = Copy here
 button-move-here = Move here
 confirm-title = { $op }?
@@ -164,11 +166,14 @@ note-overwrite-mode = Overwrite mode is on: what the target has of these names i
 entry-dir = directory
 entry-modified = { $size }, modified { $time }
 quit-title = Quit
-quit-running = { $count ->
-    [one] 1 transfer in progress.
-   *[other] { $count } transfers in progress.
-}
-quit-note = Quitting stops them; partly copied files are not kept.
+quit-note = Quitting pauses the transfers; they go on at the next start. These cannot go on from where they stop, so the file under way starts over:
+leave-title = Leave
+leave-note = Leaving pauses the transfers between these two places; they go on when you come back. These cannot go on from where they stop, so the file under way starts over:
+interrupted-file = { $file }: { $done } of { $size } would be sent again
+interrupted-done = { $job }: done, nothing is lost
+interrupted-running = { $job }: running
+queue-not-saved = The unfinished transfers could not be saved in { $path }: { $error }
+queue-not-loaded = The transfers left unfinished last time could not be read from { $path }: { $error }
 mkdir-title = New directory
 mkdir-prompt = Name of the new directory in { $dir }:
 rename-title = Rename

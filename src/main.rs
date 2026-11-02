@@ -304,6 +304,8 @@ fn run(cli: &Cli) -> Result<()> {
         config.rclone.browse_threads,
         Duration::from_millis(config.jobs.poll_ms),
     );
+    let queue_file = rse::state::queue_path();
+    let (saved, unsaved) = saved_queue(queue_file.as_deref());
     let init = AppInit {
         ui: config.ui.clone(),
         keymap,
@@ -313,8 +315,13 @@ fn run(cli: &Cli) -> Result<()> {
         remotes,
         home,
         cwd,
+        saved,
+        queue_file: queue_file.clone(),
     };
     let mut app = App::new(init, exec);
+    if let Some(e) = unsaved {
+        app.log_error(e);
+    }
     if let Some(warning) = ssh.as_ref().and_then(|s| s.warning()) {
         app.log_error(warning.to_owned());
         app.status = Some(warning.to_owned());
@@ -388,6 +395,19 @@ fn setup_rclone(
             }
         )
     })
+}
+
+/// The jobs left unfinished last time, and why they could not be read when they could
+/// not.
+fn saved_queue(path: Option<&Path>) -> (Vec<rse::jobs::Transfer>, Option<String>) {
+    let Some(path) = path else { return (Vec::new(), None) };
+    match rse::state::load_queue(path) {
+        Ok(jobs) => (jobs, None),
+        Err(e) => {
+            let path = path.display().to_string();
+            (Vec::new(), Some(tr!("queue-not-loaded", path = path, error = e.to_string())))
+        }
+    }
 }
 
 /// `--forget-password`: deletes a remembered ssh password.
