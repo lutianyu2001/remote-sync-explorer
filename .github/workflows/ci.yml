@@ -61,6 +61,13 @@ jobs:
       - name: Build librclone
         if: steps.librclone.outputs.cache-hit != 'true'
         run: scripts/build-librclone.sh ~/librclone
+      # rse's own rc calls, which the archive adds to rclone's.
+      - name: Go checks and tests of librse
+        working-directory: librse
+        run: |
+          test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+          go vet ./...
+          go test ./...
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --check
       - run: cargo clippy --all-targets --locked

@@ -1,9 +1,9 @@
-// Command librse is rclone's librclone, built from remote-sync-explorer's own module so
-// that rc calls of its own can be added.
+// Command librse is rclone's librclone with remote-sync-explorer's own rc calls added.
 //
 // It builds into the same C archive as github.com/rclone/rclone/librclone, with the same
 // four exported functions, which wrap the same internal package; package main cannot be
-// imported, so this file repeats its cgo shims.
+// imported, so this file repeats its cgo shims. The rc calls in package resume register
+// themselves when it is imported.
 //
 //	go build -buildmode=c-archive -o librclone.a .
 package main
@@ -23,8 +23,9 @@ import (
 
 	"github.com/rclone/rclone/librclone/librclone"
 
-	_ "github.com/rclone/rclone/backend/all" // all backends
-	_ "github.com/rclone/rclone/cmd/cmount"  // as librclone imports them
+	_ "github.com/lutianyu2001/remote-sync-explorer/librse/resume" // rse/* rc calls
+	_ "github.com/rclone/rclone/backend/all"                       // all backends
+	_ "github.com/rclone/rclone/cmd/cmount"                        // as librclone imports them
 	_ "github.com/rclone/rclone/cmd/mount"
 	_ "github.com/rclone/rclone/cmd/mount2"
 	_ "github.com/rclone/rclone/fs/operations" // operations/* rc calls

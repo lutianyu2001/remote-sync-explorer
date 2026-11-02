@@ -4,7 +4,11 @@ go 1.26.0
 
 godebug x509negativeserial=1
 
-require github.com/rclone/rclone v1.75.2
+require (
+	github.com/pkg/sftp v1.13.11
+	github.com/rclone/rclone v1.75.2
+	github.com/stretchr/testify v1.12.1
+)
 
 require (
 	bazil.org/fuse v0.0.0-20230120002735-62a210ff1fd5 // indirect
@@ -156,7 +160,6 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.28 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/pkg/sftp v1.13.11 // indirect
 	github.com/pkg/xattr v0.4.12 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/pquerna/otp v1.5.0 // indirect
@@ -179,7 +182,6 @@ require (
 	github.com/spacemonkeygo/monkit/v3 v3.0.25-0.20251022131615-eb24eb109368 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/stretchr/testify v1.12.1 // indirect
 	github.com/t3rm1n4l/go-mega v0.0.0-20260717075258-c6acd6a5bd04 // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
 	github.com/tklauser/numcpus v0.12.0 // indirect

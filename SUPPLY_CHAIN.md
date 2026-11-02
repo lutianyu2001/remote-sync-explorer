@@ -28,7 +28,7 @@
   ```
 - The Rust side ends there. The default build also compiles rclone with Go, from the
   module in `librse/`: librclone's four C functions, as rclone builds them, and rse's
-  own rc calls. Its `go.mod` pins rclone (build.rs checks that it is
+  own rc calls (see SECURITY.md). Its `go.mod` pins rclone (build.rs checks that it is
   the version build.rs names) and its committed `go.sum` holds the checksums of every
   module, so Go downloads exactly those from the Go module proxy on the first build,
   and builds with `-mod=readonly`, never changing either file. `RSE_RCLONE_VERSION`

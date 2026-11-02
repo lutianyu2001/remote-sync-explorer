@@ -100,8 +100,9 @@ What this does not show:
   tests are what look for those.
 - 56 of the 123 crates in the default build use `unsafe` code. That code rests on its
   authors and on the audits above, not on rse's tests, Miri or Kani.
-- The rclone compiled into rse is Go code, which none of these checks covers; Go checks
-  its modules against `librse/go.sum` when it downloads them.
+- The rclone compiled into rse is Go code, which none of these checks covers but for
+  rse's own rc calls in `librse/`, which `go vet` and `go test` check; Go checks its
+  modules against `librse/go.sum` when it downloads them.
 - Kani proves a property only up to its bound, and fuzzing tries samples. Not proved: the
   decoding of obscured passwords, and the readers of addresses, ssh options, connection
   strings and the config file; tests of every short input and fuzzing check them.
@@ -548,6 +549,7 @@ its own machine.
 cargo test                       # unit, snapshot and integration tests
 cargo clippy --all-targets       # pedantic, unwrap_used and expect_used are errors
 cargo fmt --check
+(cd librse && go vet ./... && go test ./...)   # rse's own rc calls, built into librclone
 ```
 
 - Unit tests drive the interface logic with a fake backend; screen snapshots are kept

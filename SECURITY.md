@@ -15,6 +15,7 @@ a known vulnerability in it; nothing is updated without the user's choice.
 |---|---|---|
 | Lints | `unsafe` only in functions that allow it by name, one unsafe operation per block, each with a `// SAFETY:` comment; no `unwrap`/`expect` | `cargo clippy --all-targets` |
 | Unit and integration tests | Exhaustive checks of the parsers on short inputs; ssh logins against a private `sshd` | `cargo test` |
+| Go vet and tests | rse's own rc calls in `librse/` (resumed transfers), against the local backend and an sftp server in the test binary | `cd librse && go vet ./... && go test ./...` |
 | Fuzzing | The parsers of untrusted text (below), against panics, hangs and broken invariants; `fuzz/` is a workspace of its own | `cargo xtask fuzz` |
 | Kani | Proofs for every input: mouse hit-testing never overflows (1 s, 95 MiB); key names are never cut inside a character, up to 7 bytes (31 s, 1009 MiB) | `cargo xtask kani` |
 | Miri | Undefined behaviour in the tests of the pure modules, dependencies included | `cargo xtask miri` |
@@ -206,6 +207,15 @@ names.
   Verify workflow after each push to main, only the tasks whose committed results no longer
   stand; its last job, which runs none of the code, is the other that may write: it
   commits the results to `audit/` and nothing else.
+- **Resumed transfers** (`rse/copy`). A file is written under its name plus
+  `.rse-partial` and renamed over the target only once complete, of the source's size,
+  and with the same hash as the source wherever both sides have one in common (on sftp,
+  `md5sum` or `sha1sum` run by rclone); a mismatch copies it again from the start once,
+  then fails. A partial file is resumed only if it is no larger than the source and its
+  last 64 KiB (before the point resumed from) are the source's, and on sftp from 2 MiB
+  before its end, where concurrent writes cut short may have left a hole. The sftp
+  sessions for this run the remote's own `ssh` command with the sftp subsystem, as
+  rclone does, so they are bound by the same ssh settings as rclone's.
 - **Conflicts.** Before a copy or move the target is listed again, even when a pane shows
   it, so a file that appeared there since the pane listed it is not overwritten without
   asking. The check is made when the operation is queued and again as each job starts
