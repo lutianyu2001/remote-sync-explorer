@@ -212,11 +212,19 @@ names.
   `.rse-partial` and renamed over the target only once complete, of the source's size,
   and with the same hash as the source wherever both sides have one in common (on sftp,
   `md5sum` or `sha1sum` run by rclone); a mismatch copies it again from the start once,
-  then fails. A partial file is resumed only if it is no larger than the source and its
-  last 64 KiB (before the point resumed from) are the source's, and on sftp from 2 MiB
-  before its end, where concurrent writes cut short may have left a hole. The sftp
-  sessions for this run the remote's own `ssh` command with the sftp subsystem, as
-  rclone does, so they are bound by the same ssh settings as rclone's.
+  then fails. A job that leaves a partial file behind gives it the source's
+  modification time; it is resumed only if the source still has that time (to the
+  target's precision), it is no larger than the source, and its last 64 KiB (before the
+  point resumed from) are the source's. So a source changed since, even in the middle
+  at the same size, or a partial file left by a crash, with the time of its last write,
+  is copied again from the start. Without a hash in common, a resumed file cannot be
+  checked as a whole, and rclone's log says so. On sftp a partial file is resumed from
+  2 MiB before its end, where concurrent writes cut short may have left a hole. A
+  partial file that is not a regular file, such as a link to some other file, is never
+  written through: the copy fails (locally it is opened with `O_NOFOLLOW`; on sftp it
+  is checked with `lstat` first). The sftp sessions for this run the remote's own `ssh`
+  command with the sftp subsystem, as rclone does, so they are bound by the same ssh
+  settings as rclone's.
 - **Conflicts.** Before a copy or move the target is listed again, even when a pane shows
   it, so a file that appeared there since the pane listed it is not overwritten without
   asking. The check is made when the operation is queued and again as each job starts

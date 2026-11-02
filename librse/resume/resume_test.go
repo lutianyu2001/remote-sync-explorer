@@ -110,10 +110,74 @@ func assertFile(t *testing.T, name string, want []byte) {
 
 const mib = 1024 * 1024
 
+// leavePartial writes data as the partial file of target, as a stopped copy of src
+// leaves it: with src's modification time.
+func leavePartial(t *testing.T, target string, data []byte, src string) {
+	t.Helper()
+	stat, err := os.Stat(src)
+	require.NoError(t, err)
+	leavePartialAt(t, target, data, stat.ModTime())
+}
+
+// leavePartialAt writes data as the partial file of target, with modification time at.
+func leavePartialAt(t *testing.T, target string, data []byte, at time.Time) {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(filepath.Dir(target), 0o755))
+	require.NoError(t, os.WriteFile(target+PartialSuffix, data, 0o644))
+	require.NoError(t, os.Chtimes(target+PartialSuffix, at, at))
+}
+
+// A partial file is resumed only while its source keeps the time it had: one changed
+// since, before the end that is compared, is copied again, as is a partial file with
+// the time of its last write, which a crash leaves.
+func TestChangedSourceStartsOver(t *testing.T) {
+	src, dst := t.TempDir(), t.TempDir()
+	name := filepath.Join(src, "big")
+	data := randomFile(t, name, 4*mib)
+	leavePartial(t, filepath.Join(dst, "big"), data[:3*mib], name)
+	data[100] ^= 1
+	require.NoError(t, os.WriteFile(name, data, 0o644))
+	later := time.Now().Add(time.Hour)
+	require.NoError(t, os.Chtimes(name, later, later))
+	n, err := call(t, "rse/copy", copyParams(src, "big", dst, "big"))
+	require.NoError(t, err)
+	assert.Equal(t, int64(4*mib), n)
+	assertFile(t, filepath.Join(dst, "big"), data)
+
+	require.NoError(t, os.WriteFile(filepath.Join(dst, "big"+PartialSuffix), data[:3*mib], 0o644))
+	require.NoError(t, os.Remove(filepath.Join(dst, "big")))
+	n, err = call(t, "rse/copy", copyParams(src, "big", dst, "big"))
+	require.NoError(t, err)
+	assert.Equal(t, int64(4*mib), n)
+	assertFile(t, filepath.Join(dst, "big"), data)
+}
+
+// A partial file that is a link, or anything but a regular file, is never written
+// through: the copy fails, and what it points to stays as it was.
+func TestLinkedPartialIsRefused(t *testing.T) {
+	src, home := t.TempDir(), t.TempDir()
+	randomFile(t, filepath.Join(src, "f"), 1000)
+	outside := filepath.Join(t.TempDir(), "outside")
+	require.NoError(t, os.WriteFile(outside, []byte("keep me"), 0o644))
+	require.NoError(t, os.Symlink(outside, filepath.Join(home, "f"+PartialSuffix)))
+	require.NoError(t, os.Mkdir(filepath.Join(home, "d"+PartialSuffix), 0o755))
+	randomFile(t, filepath.Join(src, "d"), 1000)
+	for name, dst := range map[string]string{"local": home, "sftp": sftpRemote(t, home, home)} {
+		for _, file := range []string{"f", "d"} {
+			_, err := call(t, "rse/copy", copyParams(src, file, dst, file))
+			require.Error(t, err, name)
+			assert.Contains(t, err.Error(), "not a regular file", name)
+		}
+		kept, err := os.ReadFile(outside)
+		require.NoError(t, err)
+		assert.Equal(t, "keep me", string(kept), name)
+	}
+}
+
 func TestLocalResumesAPrefix(t *testing.T) {
 	src, dst := t.TempDir(), t.TempDir()
 	data := randomFile(t, filepath.Join(src, "big"), 5*mib)
-	require.NoError(t, os.WriteFile(filepath.Join(dst, "big"+PartialSuffix), data[:3*mib], 0o644))
+	leavePartial(t, filepath.Join(dst, "big"), data[:3*mib], filepath.Join(src, "big"))
 
 	n, err := call(t, "rse/copy", copyParams(src, "big", dst, "big"))
 	require.NoError(t, err)
@@ -148,7 +212,7 @@ func TestCorruptPartialIsCopiedAgain(t *testing.T) {
 	bad := bytes.Clone(data[:4*mib])
 	bad[100] ^= 1
 	for name, dst := range map[string]string{"local": home, "sftp": sftpRemote(t, home, home)} {
-		require.NoError(t, os.WriteFile(filepath.Join(home, "big"+PartialSuffix), bad, 0o644))
+		leavePartial(t, filepath.Join(home, "big"), bad, filepath.Join(src, "big"))
 		n, err := call(t, "rse/copy", copyParams(src, "big", dst, "big"))
 		require.NoError(t, err, name)
 		assert.Greater(t, n, int64(len(data)), name)
@@ -218,6 +282,11 @@ func TestStoppedJobLeavesThePartial(t *testing.T) {
 	assert.Less(t, len(part), len(data))
 	assert.True(t, bytes.Equal(part, data[:len(part)]))
 	assert.NoFileExists(t, filepath.Join(dst, "big"))
+	srcStat, err := os.Stat(filepath.Join(src, "big"))
+	require.NoError(t, err)
+	partStat, err := os.Stat(filepath.Join(dst, "big"+PartialSuffix))
+	require.NoError(t, err)
+	assert.True(t, srcStat.ModTime().Equal(partStat.ModTime()), "marked with the source's time")
 
 	setBwlimit(t, "off")
 	n, err := call(t, "rse/copy", copyParams(src, "big", dst, "big"))
@@ -232,7 +301,7 @@ func TestUploadToSftpResumes(t *testing.T) {
 	remote := sftpRemote(t, home, "up")
 	data := randomFile(t, filepath.Join(src, "big"), 5*mib)
 	require.NoError(t, os.MkdirAll(filepath.Join(home, "up", "in"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(home, "up", "in", "big"+PartialSuffix), data[:4*mib], 0o644))
+	leavePartial(t, filepath.Join(home, "up", "in", "big"), data[:4*mib], filepath.Join(src, "big"))
 
 	n, err := call(t, "rse/copy", copyParams(src, "big", remote, "in/big"))
 	require.NoError(t, err)
@@ -250,7 +319,10 @@ func TestUploadToSftpResumes(t *testing.T) {
 func TestDownloadFromSftpResumes(t *testing.T) {
 	home, dst := t.TempDir(), t.TempDir()
 	data := randomFile(t, filepath.Join(home, "srv", "big"), 3*mib)
-	require.NoError(t, os.WriteFile(filepath.Join(dst, "big"+PartialSuffix), data[:mib], 0o644))
+	// As a stopped job marks it: sftp gives times to the second.
+	stat, err := os.Stat(filepath.Join(home, "srv", "big"))
+	require.NoError(t, err)
+	leavePartialAt(t, filepath.Join(dst, "big"), data[:mib], stat.ModTime().Truncate(time.Second))
 
 	n, err := call(t, "rse/copy", copyParams(sftpRemote(t, home, filepath.Join(home, "srv")), "big", dst, "big"))
 	require.NoError(t, err)
@@ -271,6 +343,9 @@ func TestDirectories(t *testing.T) {
 	a := randomFile(t, filepath.Join(src, "d", "a"), 1000)
 	b := randomFile(t, filepath.Join(src, "d", "sub", "b"), 2000)
 	randomFile(t, filepath.Join(src, "d", "sub", "c"+PartialSuffix), 10)
+	// rsync's partial directory, and a file of the user's own in one.
+	randomFile(t, filepath.Join(src, "d", PartialSuffix, "a"), 10)
+	randomFile(t, filepath.Join(src, "d", "sub", PartialSuffix, "x", "y"), 10)
 	require.NoError(t, os.MkdirAll(filepath.Join(src, "d", "empty"), 0o755))
 
 	// Copy to the local disk, with empty directories.
@@ -282,6 +357,8 @@ func TestDirectories(t *testing.T) {
 	assertFile(t, filepath.Join(dst, "d", "a"), a)
 	assertFile(t, filepath.Join(dst, "d", "sub", "b"), b)
 	assert.NoFileExists(t, filepath.Join(dst, "d", "sub", "c"+PartialSuffix), "partial files are not copied")
+	assert.NoDirExists(t, filepath.Join(dst, "d", PartialSuffix))
+	assert.NoDirExists(t, filepath.Join(dst, "d", "sub", PartialSuffix))
 	assert.DirExists(t, filepath.Join(dst, "d", "empty"))
 
 	// Move to sftp, addressed by a remote within the fs: the emptied directories go,
@@ -297,6 +374,8 @@ func TestDirectories(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(src, "d", "a"))
 	assert.NoDirExists(t, filepath.Join(src, "d", "empty"))
 	assert.FileExists(t, filepath.Join(src, "d", "sub", "c"+PartialSuffix))
+	assert.FileExists(t, filepath.Join(src, "d", "sub", PartialSuffix, "x", "y"))
+	assert.NoDirExists(t, filepath.Join(home, "moved", PartialSuffix))
 }
 
 func TestMoveWithinTheLocalDisk(t *testing.T) {

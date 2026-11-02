@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/pkg/sftp"
@@ -83,11 +84,24 @@ type localTarget struct {
 	enc  encoder.MultiEncoder
 }
 
+// open refuses a partial file that is not a regular file, such as a link to another
+// file, which writing would change instead.
 func (t *localTarget) open(_ context.Context, remote string, off int64) (io.WriteCloser, error) {
 	name := filepath.Join(t.root, filepath.FromSlash(t.enc.FromStandardPath(remote)))
-	f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0o666)
+	if info, err := os.Lstat(name); err == nil && !info.Mode().IsRegular() {
+		return nil, notRegular(name, info.Mode())
+	}
+	// O_NONBLOCK: a FIFO put there since fails to open instead of waiting for a reader.
+	f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0o666)
 	if err != nil {
 		return nil, err
+	}
+	if info, serr := f.Stat(); serr != nil || !info.Mode().IsRegular() {
+		_ = f.Close()
+		if serr != nil {
+			return nil, serr
+		}
+		return nil, notRegular(name, info.Mode())
 	}
 	if err = f.Truncate(off); err == nil {
 		_, err = f.Seek(off, io.SeekStart)
@@ -127,6 +141,10 @@ func (t *sftpTarget) open(_ context.Context, remote string, off int64) (io.Write
 		t.put(c, err)
 		return nil, err
 	}
+	if info, err := c.client.Lstat(name); err == nil && !info.Mode().IsRegular() {
+		t.put(c, nil)
+		return nil, notRegular(name, info.Mode())
+	}
 	f, err := c.client.OpenFile(name, os.O_WRONLY|os.O_CREATE)
 	if err != nil {
 		t.put(c, err)
@@ -141,6 +159,11 @@ func (t *sftpTarget) open(_ context.Context, remote string, off int64) (io.Write
 		return nil, fmt.Errorf("sftp truncate %q: %w", name, err)
 	}
 	return &sftpFile{File: f, conn: c, target: t}, nil
+}
+
+// notRegular is the error for a partial file that is not a regular file.
+func notRegular(name string, mode os.FileMode) error {
+	return fmt.Errorf("refusing to write %q: not a regular file (%v); remove it to copy the file again", name, mode.Type())
 }
 
 // get takes an idle session, or starts one.
