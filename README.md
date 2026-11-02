@@ -396,9 +396,10 @@ Alt+click.
   move rse removes the emptied source directory.
 - Cancelling or pausing a transfer keeps what it has done of the file under way, so that
   a retry goes on from there: rclone keeps it as `<name>.rse-partial` beside the target,
-  rsync in a `.rse-partial/` directory there. They are never copied by rse; delete them
-  if you give the transfer up. A target that cannot resume (S3 and other cloud storage,
-  or sftp through rclone's built-in ssh) is left without a partial file.
+  rsync in a `.rse-partial/` directory there. They are never copied by rse, nor are your
+  own files and directories of those names; delete them if you give the transfer up. A
+  target that cannot resume (S3 and other cloud storage, or sftp through rclone's
+  built-in ssh) is left without a partial file.
 - On macOS, rclone clones files that are copied within one APFS volume instead of
   copying their bytes, so such copies finish at once.
 

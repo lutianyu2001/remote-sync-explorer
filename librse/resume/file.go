@@ -7,15 +7,18 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"time"
 
 	"github.com/rclone/rclone/fs"
 	"github.com/rclone/rclone/fs/accounting"
 	"github.com/rclone/rclone/fs/fserrors"
+	"github.com/rclone/rclone/fs/hash"
 	"github.com/rclone/rclone/fs/operations"
 )
 
 const (
-	// PartialSuffix ends the name a file is written under until it is complete.
+	// PartialSuffix ends the name a file is written under until it is complete. rsync,
+	// rse's other engine, keeps its partial files in a directory of this name.
 	PartialSuffix = ".rse-partial"
 	// tailSize is how much of a partial file's end is compared with the source before
 	// resuming it.
@@ -102,17 +105,29 @@ func (j *job) resumableCopy(ctx context.Context, remote string, src fs.Object, s
 	part := remote + PartialSuffix
 	size := src.Size()
 	partial, err := j.fdst.NewObject(ctx, part)
-	if errors.Is(err, fs.ErrorObjectNotFound) {
+	switch {
+	case errors.Is(err, fs.ErrorObjectNotFound):
 		partial = nil
-	} else if err != nil {
+	case errors.Is(err, fs.ErrorIsDir) || errors.Is(err, fs.ErrorNotAFile):
+		return fmt.Errorf("refusing to write %q: not a regular file: %w", part, err)
+	case err != nil:
 		return err
 	}
 	var off int64
 	if partial != nil {
-		if off, err = j.resumeAt(ctx, partial, src); err != nil {
+		if off, err = j.resumeAt(ctx, partial, src, false); err != nil {
 			return err
 		}
 	}
+	resumedAt := off
+	// A partial file this job wrote and leaves, stopped or failing, is marked as a copy
+	// of this source.
+	wrote := false
+	defer func() {
+		if err != nil && wrote {
+			j.markPartial(ctx, part, src)
+		}
+	}()
 
 	tr := accounting.Stats(ctx).NewTransferRemoteSize(src.Remote(), size-off, j.fsrc, j.fdst)
 	defer func() { tr.Done(ctx, err) }()
@@ -129,6 +144,7 @@ func (j *job) resumableCopy(ctx context.Context, remote string, src fs.Object, s
 	}
 	for retried := false; ; retried = true {
 		if !written {
+			wrote = true
 			if err = j.write(ctx, tr, part, src, off); err != nil {
 				return err
 			}
@@ -147,6 +163,8 @@ func (j *job) resumableCopy(ctx context.Context, remote string, src fs.Object, s
 			}
 			if !equal {
 				why = fmt.Errorf("%v hashes differ", ht)
+			} else if ht == hash.None && resumedAt > 0 {
+				fs.Infof(src, "Resumed at %d bytes, unverified: no hash in common with %v", resumedAt, j.fdst)
 			}
 		}
 		if why == nil {
@@ -176,11 +194,17 @@ func (j *job) resumableCopy(ctx context.Context, remote string, src fs.Object, s
 
 // resumeAt returns where to resume partial, a partial copy of src: back by the
 // target's slack from its end, if what it has there is what src has. Otherwise 0, to
-// start over.
-func (j *job) resumeAt(ctx context.Context, partial, src fs.Object) (int64, error) {
+// start over. Unless this job wrote it (own), partial must have src's modification
+// time, which markPartial gave it: one whose source has changed since, or which a
+// crash left with the time of its last write, is not resumed.
+func (j *job) resumeAt(ctx context.Context, partial, src fs.Object, own bool) (int64, error) {
 	have := partial.Size()
 	if have > src.Size() {
 		fs.Infof(src, "Starting over: %s is larger than the source", partial)
+		return 0, nil
+	}
+	if !own && !sameTime(partial.ModTime(ctx), src.ModTime(ctx), j.fdst.Precision()) {
+		fs.Infof(src, "Starting over: %s was not left by a copy of this source", partial)
 		return 0, nil
 	}
 	off := have - j.target.slack()
@@ -190,7 +214,8 @@ func (j *job) resumeAt(ctx context.Context, partial, src fs.Object) (int64, erro
 	n := min(int64(tailSize), off)
 	ours, err := readRange(ctx, partial, off-n, n)
 	if err != nil {
-		return 0, err
+		fs.Infof(src, "Starting over: %v", err)
+		return 0, nil
 	}
 	theirs, err := readRange(ctx, src, off-n, n)
 	if err != nil {
@@ -202,6 +227,28 @@ func (j *job) resumeAt(ctx context.Context, partial, src fs.Object) (int64, erro
 	}
 	fs.Infof(src, "Resuming at %d of %d bytes", off, src.Size())
 	return off, nil
+}
+
+// sameTime says whether a and b are one time, as a file system of precision keeps it.
+func sameTime(a, b time.Time, precision time.Duration) bool {
+	if precision == fs.ModTimeNotSupported {
+		return false
+	}
+	d := a.Sub(b)
+	return d <= precision && -d <= precision
+}
+
+// markPartial gives a partial file the job leaves the modification time of its source,
+// which resumeAt asks for, even when the job was stopped.
+func (j *job) markPartial(ctx context.Context, part string, src fs.Object) {
+	ctx = context.WithoutCancel(ctx)
+	partial, err := j.fdst.NewObject(ctx, part)
+	if err == nil {
+		err = partial.SetModTime(ctx, src.ModTime(ctx))
+	}
+	if err != nil {
+		fs.Debugf(src, "Cannot mark %s as its partial copy: %v", part, err)
+	}
 }
 
 // readRange reads n bytes of o from off.
@@ -237,7 +284,7 @@ func (j *job) write(ctx context.Context, tr *accounting.Transfer, part string, s
 		if perr != nil {
 			return err
 		}
-		if off, perr = j.resumeAt(ctx, partial, src); perr != nil {
+		if off, perr = j.resumeAt(ctx, partial, src, true); perr != nil {
 			return err
 		}
 	}

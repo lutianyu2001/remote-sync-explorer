@@ -4,7 +4,9 @@
 //
 // A file is written to its name plus PartialSuffix, next to its target, and renamed
 // once complete and checked. A partial file that is left, by a stopped job or a failed
-// one, is resumed by the next copy of the same file if its end matches the source.
+// one, gets the source's modification time, and is resumed by the next copy of the
+// same file if the source still has that time and its end matches the source.
+// Directory copies leave out such files, and rsync's partial directories.
 // This needs a target that can be appended to, which rclone's backends cannot do:
 // local disks, and sftp servers reached through an ssh command, which this package
 // runs itself for an sftp session of its own. Anything else is copied by rclone.
@@ -45,7 +47,9 @@ func init() {
 
 Files that are already the same on the destination are skipped. Files are written to
 their name plus ".rse-partial" and renamed when complete; a partial file left by a
-stopped or failed job is resumed. Run with _async=true and stop with job/stop as any
+stopped or failed job is resumed if its source has not changed since. A directory
+copy leaves out files whose names end in ".rse-partial" and directories named
+".rse-partial" (rsync's), whoever made them. Run with _async=true and stop with job/stop as any
 other job; core/stats for its group reports its progress.
 `,
 	})
@@ -193,11 +197,13 @@ func (j *job) dir(ctx context.Context, srcDir, dstDir string) error {
 		for _, entry := range entries {
 			switch x := entry.(type) {
 			case fs.Object:
-				if !strings.HasSuffix(x.Remote(), PartialSuffix) {
+				if !strings.HasSuffix(x.Remote(), PartialSuffix) && !inPartialDir(x.Remote()) {
 					files = append(files, x)
 				}
 			case fs.Directory:
-				dirs = append(dirs, x.Remote())
+				if !inPartialDir(x.Remote()) {
+					dirs = append(dirs, x.Remote())
+				}
 			}
 		}
 		return nil
@@ -243,6 +249,12 @@ func (j *job) dir(ctx context.Context, srcDir, dstDir string) error {
 		}
 	}
 	return nil
+}
+
+// inPartialDir says whether remote is, or is in, a directory named PartialSuffix: where
+// rsync keeps its partial files.
+func inPartialDir(remote string) bool {
+	return slices.Contains(strings.Split(remote, "/"), PartialSuffix)
 }
 
 // files copies or moves files to their target remotes, as many at once as rclone's
