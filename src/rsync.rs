@@ -168,6 +168,9 @@ pub fn args(op: Op, src_dir: &Side, dst_dir: &Side, name: &str, checksum: bool) 
         // Paths reach the server's rsync as they are, not through its shell.
         "-s",
         &format!("--partial-dir={PARTIAL_DIR}"),
+        // What rclone keeps of a file it was stopped in the middle of, as rclone skips
+        // rsync's: never copied as if it were a file of the user's.
+        "--exclude=*.rse-partial",
         "--info=progress2,stats1",
         "--no-human-readable",
         &format!("--out-format={FILE_TAG}%l %n"),
@@ -498,6 +501,8 @@ pub struct Running {
     /// How rsync ended, and when that was seen.
     exit: Option<(ExitStatus, Instant)>,
     stopped: bool,
+    /// When a rsync asked to stop and still running is killed.
+    kill_at: Option<Instant>,
 }
 
 #[derive(Default)]
@@ -524,7 +529,7 @@ impl Running {
             .process_group(0)
             .spawn()?;
         let output = Arc::new(Mutex::new(Output::default()));
-        let mut running = Self { child, output, exit: None, stopped: false };
+        let mut running = Self { child, output, exit: None, stopped: false, kill_at: None };
         let (stdout, stderr) = (running.child.stdout.take(), running.child.stderr.take());
         if let Some(pipe) = stdout {
             read_into(pipe, &running.output, 0, |o, data| o.progress.feed(data))?;
@@ -542,10 +547,15 @@ impl Running {
     /// The progress so far, and how rsync ended once it has: `Err` with what it said, or
     /// that it was stopped.
     pub fn poll(&mut self) -> (Stats, Option<Result<(), String>>) {
-        if self.exit.is_none()
-            && let Ok(Some(status)) = self.child.try_wait()
-        {
-            self.exit = Some((status, Instant::now()));
+        if self.exit.is_none() {
+            match self.child.try_wait() {
+                Ok(Some(status)) => self.exit = Some((status, Instant::now())),
+                _ if self.kill_at.is_some_and(|at| Instant::now() >= at) => {
+                    self.signal(rustix::process::Signal::KILL);
+                    self.kill_at = None;
+                }
+                _ => {}
+            }
         }
         let Ok(output) = self.output.lock() else {
             return (Stats::default(), Some(Err(tr!("internal-lock"))));
@@ -564,10 +574,11 @@ impl Running {
     }
 
     fn result(&self, status: ExitStatus, said: &[String]) -> Result<(), String> {
-        if self.stopped {
-            Err(tr!("rsync-stopped"))
-        } else if status.success() {
+        // Finished before the stop reached it: done all the same.
+        if status.success() {
             Ok(())
+        } else if self.stopped {
+            Err(tr!("rsync-stopped"))
         } else if !said.is_empty() {
             Err(said.join("\n"))
         } else if let Some(code) = status.code() {
@@ -580,6 +591,20 @@ impl Running {
     /// Bytes sent and received over the connection, once rsync has finished and said.
     pub fn wire(&self) -> Option<(u64, u64)> {
         self.output.lock().ok()?.progress.wire()
+    }
+
+    /// Asks rsync to stop with SIGTERM, without waiting: [`poll`] kills it if it is still
+    /// running `STOP_TIME` later, and reports the end as for [`stop`].
+    ///
+    /// [`poll`]: Self::poll
+    /// [`stop`]: Self::stop
+    pub fn terminate(&mut self) {
+        if self.exit.is_some() || self.stopped {
+            return;
+        }
+        self.stopped = true;
+        self.signal(rustix::process::Signal::TERM);
+        self.kill_at = Some(Instant::now() + STOP_TIME);
     }
 
     /// Stops rsync with SIGTERM, on which it keeps the file it is in the middle of in
@@ -595,9 +620,11 @@ impl Running {
             self.exit = Some((status, Instant::now()));
             return;
         }
-        self.stopped = true;
-        self.signal(rustix::process::Signal::TERM);
-        let deadline = Instant::now() + STOP_TIME;
+        if !self.stopped {
+            self.stopped = true;
+            self.signal(rustix::process::Signal::TERM);
+        }
+        let deadline = self.kill_at.unwrap_or_else(|| Instant::now() + STOP_TIME);
         let status = loop {
             match self.child.try_wait() {
                 Ok(Some(status)) => break Some(status),
@@ -705,11 +732,12 @@ mod tests {
         args.iter().map(|a| a.to_str().unwrap()).collect()
     }
 
-    const OPTIONS: [&str; 7] = [
+    const OPTIONS: [&str; 8] = [
         "-rlt",
         "--no-inc-recursive",
         "-s",
         "--partial-dir=.rse-partial",
+        "--exclude=*.rse-partial",
         "--info=progress2,stats1",
         "--no-human-readable",
         "--out-format=rse-file:%l %n",

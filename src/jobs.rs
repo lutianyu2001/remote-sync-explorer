@@ -50,8 +50,8 @@ pub struct Transfer {
     pub dst_dir: Option<Location>,
     /// Bytes, when known from the listing (files only).
     pub size: Option<i64>,
-    /// The user chose to replace what the target has of this name, or the job has been
-    /// writing it already, so it starts without the target being checked again.
+    /// The user chose to replace what the target has of this name, so the job starts
+    /// without the target being checked again.
     pub overwrite: bool,
 }
 
@@ -183,6 +183,10 @@ pub struct Job {
     /// Whether a stop keeps what it has transferred of the file under way, so that it
     /// goes on from there; false until the engine says so.
     pub resumable: bool,
+    /// Started since it was queued or last retried: what the target has of its name is
+    /// its own doing, so a paused job goes on without the target being checked again.
+    /// Not saved: at the next start the target is checked as for a new job.
+    pub started: bool,
 }
 
 impl Job {
@@ -257,6 +261,7 @@ impl Queue {
                 check: 0,
                 engine: None,
                 resumable: false,
+                started: false,
             };
             self.jobs.push(job);
         }
@@ -335,9 +340,19 @@ impl Queue {
         }
     }
 
-    /// The jobs still to do, to be saved for the next start.
+    /// The jobs still to do, to be saved for the next start: not those cancelled, even
+    /// before their end is reported.
     pub fn unfinished(&self) -> Vec<Transfer> {
-        self.jobs.iter().filter(|j| !j.state.is_finished()).map(|j| j.transfer.clone()).collect()
+        self.jobs
+            .iter()
+            .filter(|j| !j.state.is_finished() && j.state != JobState::Cancelling)
+            .map(|j| j.transfer.clone())
+            .collect()
+    }
+
+    /// Unfinished jobs whose endpoints the panes do not show.
+    pub fn elsewhere(&self) -> usize {
+        self.jobs.iter().filter(|j| !j.state.is_finished() && !self.present(&j.transfer)).count()
     }
 
     /// Starts queued jobs, in order, while the limit allows, passing over those `held`.
@@ -359,7 +374,7 @@ impl Queue {
             }
             let job = &mut self.jobs[index];
             match &job.transfer.dst_dir {
-                Some(dir) if !job.transfer.overwrite && !self.overwrite => {
+                Some(dir) if !job.transfer.overwrite && !job.started && !self.overwrite => {
                     job.state = JobState::Checking;
                     job.check += 1;
                     out.push(Effect::Check { id: job.id, check: job.check, dir: dir.clone() });
@@ -476,6 +491,11 @@ impl Queue {
                 job.state = JobState::Cancelling;
                 vec![Effect::Stop(id)]
             }
+            // Stopped already, for a pause: the end it reports now ends it.
+            JobState::Pausing => {
+                job.state = JobState::Cancelling;
+                Vec::new()
+            }
             _ => Vec::new(),
         }
     }
@@ -506,6 +526,7 @@ impl Queue {
         {
             job.state = JobState::Queued;
             job.stats = Stats::default();
+            job.started = false;
         }
         self.start_ready()
     }
@@ -556,8 +577,7 @@ fn start(job: &mut Job) -> Effect {
     match job.transfer.rc_call() {
         Ok((method, params)) => {
             job.state = JobState::Running;
-            // From here on what the target has of this name is the job's own doing.
-            job.transfer.overwrite = true;
+            job.started = true;
             Effect::Start { id: job.id, transfer: Box::new(job.transfer.clone()), method, params }
         }
         Err(e) => {
@@ -729,6 +749,37 @@ mod tests {
         // A paused job that finished all the same is done.
         q.apply(vec![snap(1, Some(Ok(())))]);
         assert_eq!(q.jobs[0].state, JobState::Done);
+    }
+
+    /// A paused job goes on without its target checked, as what is there is its own; a
+    /// retried one is checked again, as is one queued again at the next start.
+    #[test]
+    fn a_paused_job_skips_the_check_and_a_retried_one_does_not() {
+        let mut q = Queue::new(1);
+        q.set_shown(shown(&["/", "nas:"]));
+        q.push(vec![checked_copy("a")]);
+        q.checked(1, 1, Ok(()));
+        q.set_shown(shown(&["/", "s3:"]));
+        q.apply(vec![snap(1, Some(Err("context canceled".into())))]);
+        assert!(matches!(q.set_shown(shown(&["/", "nas:"]))[..], [Effect::Start { id: 1, .. }]));
+        q.apply(vec![snap(1, Some(Err("broken pipe".into())))]);
+        assert!(matches!(q.retry(1)[..], [Effect::Check { id: 1, .. }]));
+        assert!(!q.unfinished()[0].overwrite);
+    }
+
+    /// Cancelling a job that is pausing ends it once the stop is reported, and it is not
+    /// saved meanwhile.
+    #[test]
+    fn a_cancel_while_pausing_cancels() {
+        let mut q = Queue::new(1);
+        q.push(vec![t(OpKind::Copy, "a", false)]);
+        q.set_shown(shown(&["/", "s3:"]));
+        q.set_shown(shown(&["/", "nas:"]));
+        assert_eq!(q.jobs[0].state, JobState::Pausing);
+        assert_eq!(q.cancel(1), vec![]);
+        assert_eq!(q.unfinished(), vec![]);
+        q.apply(vec![snap(1, Some(Err("context canceled".into())))]);
+        assert_eq!(q.jobs[0].state, JobState::Cancelled);
     }
 
     /// Only running jobs that lose the file under way are named before leaving.

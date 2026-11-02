@@ -130,6 +130,30 @@ pub fn queue_path() -> Option<PathBuf> {
     Some(base.join("rse").join("queue.json"))
 }
 
+/// Holds the saved queue for this rse alone while it runs, so that a second one started
+/// meanwhile neither takes the same jobs nor overwrites the file: `None` when another
+/// holds it. The lock goes with the returned file.
+///
+/// # Errors
+/// Fails when the lock file cannot be opened.
+pub fn lock_queue(path: &Path) -> io::Result<Option<fs::File>> {
+    use rustix::fs::{FlockOperation, flock};
+    let dir = path.parent().ok_or_else(|| io::Error::other("no directory"))?;
+    fs::DirBuilder::new().recursive(true).mode(0o700).create(dir)?;
+    let file = fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .mode(0o600)
+        .custom_flags(rustix::fs::OFlags::NOFOLLOW.bits().cast_signed())
+        .open(path.with_extension("lock"))?;
+    match flock(&file, FlockOperation::NonBlockingLockExclusive) {
+        Ok(()) => Ok(Some(file)),
+        Err(e) if e == rustix::io::Errno::WOULDBLOCK => Ok(None),
+        Err(e) => Err(e.into()),
+    }
+}
+
 /// The jobs saved at `path`; none when there is no file.
 ///
 /// # Errors
@@ -233,6 +257,17 @@ mod tests {
         assert_eq!(back_dst.fs, server.login().fs());
         assert_eq!(back_dst.endpoint.as_deref(), Some(&server.login()));
         assert_eq!(back_dst.path, dst.path);
+    }
+
+    #[test]
+    fn the_queue_is_held_by_one_rse_at_a_time() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("rse/queue.json");
+        let first = lock_queue(&path).unwrap();
+        assert!(first.is_some());
+        assert!(lock_queue(&path).unwrap().is_none(), "held");
+        drop(first);
+        assert!(lock_queue(&path).unwrap().is_some(), "free again");
     }
 
     #[test]

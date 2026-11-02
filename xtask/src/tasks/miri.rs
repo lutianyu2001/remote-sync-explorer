@@ -19,6 +19,8 @@ const MODULES: &[&str] = &[
     "ui::text::",
     "ui::panes::tests::",
     "hitmap::",
+    "state::",
+    "engine::",
 ];
 /// What the tests are built with: here without the default features, which bring in
 /// librclone.

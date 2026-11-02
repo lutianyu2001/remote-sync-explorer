@@ -268,7 +268,7 @@ fn job_worker(
                     let _ = api::job_stop(backend, *rc_id);
                     *stop_sent = true;
                 }
-                Some(Active::Rsync { run, .. }) => run.stop(),
+                Some(Active::Rsync { run, .. }) => run.terminate(),
                 None => {}
             },
             Err(RecvTimeoutError::Timeout) => {
@@ -314,10 +314,20 @@ fn start(
             .map_err(|e| tr!("rsync-not-started", error = e.to_string()));
         return (run, (Engine::Rsync, true));
     }
-    let resumable = method != api::COPY || {
+    let mut resumable = true;
+    let mut method = method;
+    if method == api::COPY {
         let fs = |key: &str| params[key].as_str().unwrap_or_default().to_owned();
-        api::resumable(backend, &fs("srcFs"), &fs("dstFs")).unwrap_or(false)
-    };
+        match api::resumable(backend, &fs("srcFs"), &fs("dstFs")) {
+            Ok(r) => resumable = r,
+            // An rclone without rse's additions (an external rcd) copies as rclone does.
+            Err(e) if api::is_unknown_method(&e) => {
+                (method, params) = api::plain_copy(&params);
+                resumable = false;
+            }
+            Err(_) => resumable = false,
+        }
+    }
     if method == api::COPY && engines.checksum {
         params["checksum"] = json!(true);
     }
@@ -478,6 +488,29 @@ mod tests {
         exec.shutdown();
         assert_eq!(b.calls_to("core/stats")[0], json!({"group": "job/42"}));
         assert_eq!(b.calls_to("core/stats-delete"), vec![json!({"group": "job/42"})]);
+    }
+
+    /// An rclone without rse's own calls, such as an external rcd, copies as rclone does.
+    #[test]
+    fn without_rse_copy_rclone_copies_by_itself() {
+        let b = Arc::new(FakeBackend::new(|m, _| match m {
+            "rse/resumable" => Err(RpcError::new(404, "couldn't find method \"rse/resumable\"")),
+            "operations/copyfile" => Ok(json!({"jobid": 4})),
+            "job/status" => Ok(json!({"id": 4, "finished": true, "success": true})),
+            _ => Ok(json!({})),
+        }));
+        let (tx, rx) = unbounded();
+        let exec = Exec::spawn(b.clone(), tx, 1, Duration::from_millis(20));
+        let (method, params) = copy().rc_call().unwrap();
+        exec.submit(2, copy(), method, params);
+        let Event::Jobs(s) = recv(&rx) else { panic!() };
+        assert_eq!(s[0].finished, Some(Ok(())));
+        exec.shutdown();
+        assert_eq!(
+            b.calls_to("operations/copyfile")[0],
+            json!({"srcFs": "/a", "srcRemote": "f", "dstFs": "nas:", "dstRemote": "f", "_async": true})
+        );
+        assert_eq!(b.calls_to("rse/copy").len(), 0);
     }
 
     #[test]

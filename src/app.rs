@@ -21,6 +21,8 @@ use crate::ui::text::shown;
 
 const DOUBLE_CLICK: Duration = Duration::from_millis(400);
 const QUIT_GRACE: Duration = Duration::from_secs(5);
+/// How often the unfinished jobs are saved at most while they change.
+const SAVE_EVERY: Duration = Duration::from_secs(1);
 const ERROR_LOG_LEN: usize = 100;
 const WHEEL_STEP: usize = 3;
 /// Default button of the conflict dialog: a stray Enter or double click must not overwrite.
@@ -556,8 +558,11 @@ pub struct App {
     /// When the current dialog (or conflict step) appeared, for `CLICK_GUARD`.
     dialog_since: Option<Instant>,
     queue_file: Option<PathBuf>,
-    /// The unfinished jobs as last saved.
+    /// The unfinished jobs as last saved, and when.
     saved: Vec<Transfer>,
+    saved_at: Option<Instant>,
+    /// Asking about leaving an endpoint, waiting for the dialog open now to close.
+    leave_pending: Option<Dialog>,
     /// The engine of copies between two endpoints, by [`pair`].
     engines: HashMap<(String, String), Engine>,
     engines_asked: HashSet<(String, String)>,
@@ -603,6 +608,8 @@ impl App {
             dialog_since: None,
             queue_file: init.queue_file,
             saved: init.saved.clone(),
+            saved_at: None,
+            leave_pending: None,
             engines: HashMap::new(),
             engines_asked: HashSet::new(),
         };
@@ -613,8 +620,15 @@ impl App {
         app
     }
 
-    /// Saves the unfinished jobs when they changed since they were last saved.
-    fn save_queue(&mut self) {
+    /// Saves the unfinished jobs when they changed since they were last saved: at most
+    /// every `SAVE_EVERY` unless `now` is `None`, as when quitting.
+    pub fn save_queue(&mut self, now: Option<Instant>) {
+        if let (Some(now), Some(at)) = (now, self.saved_at)
+            && now.saturating_duration_since(at) < SAVE_EVERY
+        {
+            return;
+        }
+        self.saved_at = now;
         let unfinished = self.queue.unfinished();
         if unfinished == self.saved {
             return;
@@ -636,7 +650,10 @@ impl App {
     pub fn handle(&mut self, event: Event, now: Instant) {
         let before = dialog_identity(self.dialog.as_ref());
         self.dispatch(event, now);
-        self.save_queue();
+        self.save_queue(Some(now));
+        if self.dialog.is_none() {
+            self.dialog = self.leave_pending.take();
+        }
         self.sync_ssh_prompt();
         self.sync_job_conflicts();
         let after = dialog_identity(self.dialog.as_ref());
@@ -715,7 +732,13 @@ impl App {
             shown[pane] = loc.clone();
             let jobs = self.queue.interrupted_by(&shown);
             if !jobs.is_empty() {
-                self.dialog = Some(Dialog::Leave { pane, loc: Box::new(loc), jobs, focus: 1 });
+                let leave = Dialog::Leave { pane, loc: Box::new(loc), jobs, focus: 1 };
+                // A login or a question of ssh's may be open: it waits for that.
+                if self.dialog.is_some() {
+                    self.leave_pending = Some(leave);
+                } else {
+                    self.dialog = Some(leave);
+                }
                 return;
             }
         }
@@ -1764,6 +1787,7 @@ impl App {
             && (self.queue.active_count() == 0 || now >= deadline)
         {
             self.quit = QuitState::Done;
+            self.save_queue(None);
         }
     }
 

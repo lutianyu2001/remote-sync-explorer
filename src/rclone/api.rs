@@ -147,6 +147,35 @@ pub fn copy_params(
     })
 }
 
+/// rclone's own call for [`COPY`] with `params`, for an rclone without rse's additions
+/// (an external `rclone rcd`): the same copy or move, without resuming.
+pub fn plain_copy(params: &Value) -> (&'static str, Value) {
+    let s = |key: &str| params[key].clone();
+    let moving = params["move"].as_bool().unwrap_or(false);
+    if params["isDir"].as_bool().unwrap_or(false) {
+        let (src, dst) = (s("srcFs"), s("dstFs"));
+        if moving {
+            (
+                "sync/move",
+                json!({ "srcFs": src, "dstFs": dst, "createEmptySrcDirs": true, "deleteEmptySrcDirs": true }),
+            )
+        } else {
+            ("sync/copy", json!({ "srcFs": src, "dstFs": dst, "createEmptySrcDirs": true }))
+        }
+    } else {
+        let method = if moving { "operations/movefile" } else { "operations/copyfile" };
+        let pair = json!({
+            "srcFs": s("srcFs"), "srcRemote": s("srcRemote"), "dstFs": s("dstFs"), "dstRemote": s("dstRemote"),
+        });
+        (method, pair)
+    }
+}
+
+/// Whether `e` says the rclone answering has no such rc call.
+pub fn is_unknown_method(e: &RpcError) -> bool {
+    e.message.contains("couldn't find method")
+}
+
 #[derive(Deserialize)]
 struct ResumableReply {
     resumable: bool,

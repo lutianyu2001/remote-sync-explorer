@@ -307,7 +307,7 @@ fn run(cli: &Cli) -> Result<()> {
         Duration::from_millis(config.jobs.poll_ms),
         engines,
     );
-    let queue_file = rse::state::queue_path();
+    let (queue_file, _queue_lock, held) = queue_file();
     let (saved, unsaved) = saved_queue(queue_file.as_deref());
     let init = AppInit {
         ui: config.ui.clone(),
@@ -322,7 +322,7 @@ fn run(cli: &Cli) -> Result<()> {
         queue_file: queue_file.clone(),
     };
     let mut app = App::new(init, exec);
-    if let Some(e) = unsaved {
+    if let Some(e) = unsaved.or(held) {
         app.log_error(e);
     }
     if let Some(warning) = ssh.as_ref().and_then(|s| s.warning()) {
@@ -398,6 +398,18 @@ fn setup_rclone(
             }
         )
     })
+}
+
+/// Where the unfinished jobs are saved, with the lock that keeps them to this rse; no
+/// file, and why, while another rse holds it.
+fn queue_file() -> (Option<PathBuf>, Option<std::fs::File>, Option<String>) {
+    let Some(path) = rse::state::queue_path() else { return (None, None, None) };
+    let shown = path.display().to_string();
+    match rse::state::lock_queue(&path) {
+        Ok(Some(lock)) => (Some(path), Some(lock), None),
+        Ok(None) => (None, None, Some(tr!("queue-held", path = shown))),
+        Err(e) => (None, None, Some(tr!("queue-not-loaded", path = shown, error = e.to_string()))),
+    }
 }
 
 /// The jobs left unfinished last time, and why they could not be read when they could

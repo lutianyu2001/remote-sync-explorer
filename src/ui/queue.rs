@@ -101,7 +101,7 @@ fn draw_header(buf: &mut Buffer, area: Rect, app: &App, focused: bool) {
     let done = count(|s| *s == JobState::Done);
     let failed = count(|s| matches!(s, JobState::Failed(_)));
     let mut text = String::new();
-    if jobs.is_empty() {
+    if jobs.is_empty() && app.queue.elsewhere() == 0 {
         text.push_str(&tr!("queue-idle"));
     } else {
         let mut parts = vec![
@@ -113,6 +113,10 @@ fn draw_header(buf: &mut Buffer, area: Rect, app: &App, focused: bool) {
         }
         if failed > 0 {
             parts.push(tr!("queue-failed", count = failed));
+        }
+        let elsewhere = app.queue.elsewhere();
+        if elsewhere > 0 {
+            parts.push(tr!("queue-elsewhere", count = elsewhere));
         }
         text.push_str(&parts.join(" · "));
     }
