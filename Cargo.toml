@@ -8,9 +8,13 @@ license = "Apache-2.0"
 repository = "https://github.com/lutianyu2001/remote-sync-explorer"
 readme = "README.md"
 # Only for working in this repository: the offline vendor/ setup does not apply to an
-# install from crates.io, which downloads the dependencies itself, and the results of the
-# security audit in audit/ are read in the repository.
-exclude = [".cargo/", ".github/", "supply-chain/", "scripts/cargo-online.sh", "fuzz/", "xtask/", "audit/"]
+# install from crates.io, which downloads the dependencies itself; the results of the
+# security audit in audit/, its records and documents are read in the repository, and the
+# other files listed only by the repository's tools.
+exclude = [
+    ".cargo/", ".github/", ".gitignore", "audit/", "clippy.toml", "deny.toml", "fuzz/", "rustfmt.toml",
+    "scripts/cargo-online.sh", "SECURITY.md", "SUPPLY_CHAIN.md", "supply-chain/", "xtask/",
+]
 keywords = ["rsync", "rclone", "sftp", "tui", "file-manager"]
 categories = ["command-line-utilities"]
 build = "build.rs"

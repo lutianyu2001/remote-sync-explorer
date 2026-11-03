@@ -66,9 +66,8 @@ one in `src/i18n.rs` against glibc's `libintl.h`.
 ## Running the Audit
 
 These are kept apart from building and testing: none of them runs in `cargo build` or
-`cargo test`. In CI the dependency checks run on every push, and the rest in the Verify
-workflow after each push to main (see below). README's Security Audit section sums up
-what they cover.
+`cargo test`, and none on a push: in CI they run in the Verify workflow, at each release
+(see below). README's Security Audit section sums up what they cover.
 
 They run through `cargo xtask`, a small program in `xtask/` that uses no crate rse
 does not already depend on. It pins the tools and the nightly toolchain that fuzzing,
@@ -90,17 +89,38 @@ on are taken out. When the latest run failed, the last that succeeded is in
 `audit/<task>/last_succeeded/`. A run needs a working tree without uncommitted changes,
 since its result stands for a commit; `--no-record` runs on any tree, into
 `target/audit/<task>/`, recording nothing; it is also needed to run some of the proofs
-(`kani <proof>...`) or to fuzz for other than an hour, since such a run cannot stand for
-the task. Each task ends with a line `xtask: <task>: succeeded`, `failed: ...`,
+(`kani <proof>...`) or to fuzz for less than an hour, since such a run cannot stand for
+the task (a longer one does, as CI's four hours). Each task ends with a line `xtask: <task>: succeeded`, `failed: ...`,
 `skipped: ...` or `refused: ...` (a check before the run did not pass, and nothing ran or
 was recorded). A result stands while the task succeeded with
 the same tools and arguments on the same files it reads (documentation changes none, nor
 do comments and layout: Rust files are compared as their tokens, doc comments included,
 and TOML files as their values), and for `deny`, whose advisories are published daily, for
 a day. `cargo xtask status` shows
-which results stand, and `--if-needed` skips a task whose result does. After each push to
-main the Verify workflow runs the tasks whose results do not stand, a newer push cancelling
-it, and commits their results to `audit/` (failures too, beside the last success).
+which results stand, and `--if-needed` skips a task whose result does; `cargo xtask needed
+<task> [args]` says why one needs a run (exit 0), or that it does not (exit 1).
+
+### CI
+
+The Verify workflow runs at each release (the release job starts it once the release is
+published) the tasks whose length is known before they start: deny, vet, geiger,
+coverage and fuzz, four hours a target (`FUZZ_SECONDS`), all at once on a runner's four
+cores, going on from the corpus of the last run. Kani and Miri never start by themselves:
+one new proof or test can take them from seconds to hours, so try them with
+`--no-record` first, then run them on a workstation, or start Verify by hand with the
+tasks `kani miri`. Nothing in the audit runs on a push. Each task runs in a job of its
+own, and only if its committed result does not stand; the last job commits the results to
+`audit/` on main (failures too, beside the last success), as results for the release's
+commit, keeping any committed there since. As CI pushes to main, pull with
+`git pull --rebase` before pushing, and never amend and force push what is published.
+
+The Advisories workflow (`audit.yml`) runs `cargo xtask deny --no-record` and `cargo xtask
+outdated --vulns` daily, and the full `outdated` weekly. It also writes the badges at the
+top of README, to the `badges` branch (replaced each time): daily, after each run of
+Verify, and when started by hand. Each task's badge says whether its result in `audit/`
+still stands for the code on main (green), is out of date (yellow), failed (red) or never
+ran (grey); deny's shows that day's check; `audit` is the worst of them, and `pins` how
+many pinned versions are due.
 
 ```bash
 cargo xtask setup        # install the pinned tools and toolchain (once)
@@ -131,8 +151,11 @@ lacking a component the tasks need gives way to the latest of the week before it
 has them all). Other tasks look by
 themselves and say so in one line: for vulnerabilities daily, for releases weekly
 (`RUST_XTASK_VULNS_EVERY` and `RUST_XTASK_RELEASES_EVERY`, in days; 0 looks every
-run). In CI, the Advisories workflow fails daily on a vulnerability in a pinned
-tool, and weekly while any update is due.
+run). The actions the workflows use are pinned to commits (`uses: owner/repo@<sha> #
+vX.Y.Z`), and `outdated` checks them too, from their GitHub releases and OSV's GitHub
+Actions advisories: one not pinned to a commit is due at once, and so, marked urgent, is
+one whose tag no longer names the commit pinned. In CI, the Advisories workflow fails
+daily on a vulnerability in a pinned tool or action, and weekly while any update is due.
 
 Each Kani proof runs alone in its own scope; its time and peak memory (with the crate
 already built) are in `audit/kani/harnesses.txt`, and README gives those of the run it
@@ -202,12 +225,15 @@ names.
 - **The rclone log** is created in a directory of the user's own, never through a link,
   and only if it is a file of theirs. Without a log, rclone's messages go to /dev/null
   rather than onto the screen, where text from a server would arrive unmarked.
-- **CI** runs with a read-only token; only the release job may write, and it downloads
-  the dependencies itself instead of taking them from a cache other jobs fill. Actions
-  are still named by tag, not pinned by commit. The security audit runs in its own
-  Verify workflow after each push to main, only the tasks whose committed results no longer
-  stand; its last job, which runs none of the code, is the other that may write: it
-  commits the results to `audit/` and nothing else.
+- **CI** runs with a read-only token. Jobs that run the project's code (building runs
+  dependencies' build scripts and macros) cannot write and keep no credentials from the
+  checkout; each workflow has one job that may write, which runs none of the code and
+  restores no cache: in CI, publish creates the release from the archives the read-only
+  release jobs built, which download the dependencies themselves instead of taking them
+  from a cache other jobs fill; in Verify, record commits the results to `audit/` and
+  nothing else; in Advisories, badges pushes only the badge files, each checked for the
+  words and colours a badge can have. Actions are pinned to commits, and only GitHub's
+  own are used.
 - **Resumed transfers** (`rse/copy`). A file is written under its name plus
   `.rse-partial` and renamed over the target only once complete, of the source's size,
   and with the same hash as the source wherever both sides have one in common (on sftp,

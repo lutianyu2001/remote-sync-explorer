@@ -6,7 +6,15 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/ci.yml/badge.svg)](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/ci.yml)
-[![Advisories](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/audit.yml/badge.svg)](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/audit.yml)
+[![audit](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Faudit.json)](../SECURITY.md#running-the-audit)
+[![deny](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fdeny.json)](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/audit.yml)
+[![vet](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fvet.json)](../audit/vet)
+[![geiger](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fgeiger.json)](../audit/geiger)
+[![miri](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fmiri.json)](../audit/miri)
+[![coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fcoverage.json)](../audit/coverage)
+[![kani](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fkani.json)](../audit/kani)
+[![fuzz](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Ffuzz.json)](../audit/fuzz)
+[![pins](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fpins.json)](../xtask/src/pins.rs)
 
 remote-sync-explorer（命令为 `rse`）是一个双栏终端文件管理器，可以浏览本地磁盘、远程服务器和任何 [rclone](https://rclone.org) 远程。在本地磁盘和装了 [rsync](https://rsync.samba.org) 的 sftp 服务器之间，它用 rsync 传输，改过的文件只传改动的部分；其余情况都用 rclone。只要目标端允许，中断的传输都会从停下的地方接着传。
 
@@ -64,7 +72,7 @@ remote-sync-explorer（命令为 `rse`）是一个双栏终端文件管理器，
 
 ## 安全审计
 
-rse 经手密码、ssh 登录和远端服务器上的文件，所以它的代码做过安全审计。审计是项目维护者自己做的，不是独立第三方的审计：它让人对代码更有把握，但不是保证。审计不是做一次就完，而是反复跑：最近一次的结果和代码一起提交在 [`audit/`](../audit/)，每次 push 之后 CI 会重跑结果已经失效的部分。审计的每一项是什么、怎么跑，见 [SECURITY.md](../SECURITY.md)；依赖见 [SUPPLY_CHAIN.md](../SUPPLY_CHAIN.md)。下面的数字来自 2026-11-02 的运行。
+rse 经手密码、ssh 登录和远端服务器上的文件，所以它的代码做过安全审计。审计是项目维护者自己做的，不是独立第三方的审计：它让人对代码更有把握，但不是保证。审计不是做一次就完，而是反复跑：最近一次的结果和代码一起提交在 [`audit/`](../audit/)，上面的 badge 显示每一项对 main 上现在的代码是否仍然有效。每次发版时，CI 重跑结果已经失效、耗时事先可知的部分（fuzz 每个 target 四小时）；Kani 和 Miri 手动重跑。审计的每一项是什么、怎么跑，见 [SECURITY.md](../SECURITY.md)；依赖见 [SUPPLY_CHAIN.md](../SUPPLY_CHAIN.md)。下面的数字来自 2026-11-02 的运行。
 
 | 方面 | 审计了什么 | 范围 |
 |---|---|---|
