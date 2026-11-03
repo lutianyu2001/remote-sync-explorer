@@ -24,7 +24,7 @@ warning: Found the following unsupported constructs:
          Verification will fail if one or more of these constructs is reachable.
          See https://model-checking.github.io/kani/rust-feature-support.html for more details.
 
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.11s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.05s
 Checking harness keymap::proofs::prefixes_are_cut_at_character_boundaries...
 CBMC 6.11.0 (cbmc-6.11.0)
 CBMC version 6.11.0 (cbmc-6.11.0) 64-bit x86_64 linux
@@ -539,76 +539,76 @@ Unwinding loop memcmp.0 iteration 6 file <builtin-library-memcmp> line 25 functi
 Unwinding loop memcmp.0 iteration 7 file <builtin-library-memcmp> line 25 function memcmp thread 0
 Unwinding loop memcmp.0 iteration 8 file <builtin-library-memcmp> line 25 function memcmp thread 0
 Not unwinding loop memcmp.0 iteration 9 file <builtin-library-memcmp> line 25 function memcmp thread 0
-Runtime Symex: 25.8482s
+Runtime Symex: 14.7084s
 size of program expression: 173824 steps
 slicing removed 132977 assignments
 Generated 3681 VCC(s), 2259 remaining after simplification
-Runtime Postprocess Equation: 0.700853s
+Runtime Postprocess Equation: 0.338781s
 Passing problem to propositional reduction
 converting SSA
-Runtime Convert SSA: 2.73567s
+Runtime Convert SSA: 1.64994s
 Running propositional reduction
 Post-processing
-Runtime Post-process: 0.0446953s
+Runtime Post-process: 0.0216426s
 Solving with CaDiCaL 3.0.0
 573410 variables, 1908161 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 14.8723s
-Runtime decision procedure: 17.6594s
+Runtime Solver: 4.5723s
+Runtime decision procedure: 6.24575s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573411 variables, 1908162 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.947047s
-Runtime decision procedure: 0.988097s
+Runtime Solver: 0.156583s
+Runtime decision procedure: 0.16844s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573412 variables, 1908163 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.485748s
-Runtime decision procedure: 0.506246s
+Runtime Solver: 0.102803s
+Runtime decision procedure: 0.110804s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573413 variables, 1908164 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.258253s
-Runtime decision procedure: 0.282772s
+Runtime Solver: 0.0545768s
+Runtime decision procedure: 0.0626045s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573414 variables, 1908165 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.274701s
-Runtime decision procedure: 0.298464s
+Runtime Solver: 0.0533244s
+Runtime decision procedure: 0.0611758s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573415 variables, 1908166 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 1.28295s
-Runtime decision procedure: 1.30756s
+Runtime Solver: 0.216536s
+Runtime decision procedure: 0.224391s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573416 variables, 1908167 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.585372s
-Runtime decision procedure: 0.609847s
+Runtime Solver: 0.115689s
+Runtime decision procedure: 0.123579s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573417 variables, 1908168 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 1.35696s
-Runtime decision procedure: 1.38069s
+Runtime Solver: 0.27522s
+Runtime decision procedure: 0.282518s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573418 variables, 1908169 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.522556s
-Runtime decision procedure: 0.536108s
+Runtime Solver: 0.093881s
+Runtime decision procedure: 0.0993425s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573419 variables, 1908170 clauses
 SAT checker: instance is UNSATISFIABLE
-Runtime Solver: 13.3144s
-Runtime decision procedure: 13.3187s
+Runtime Solver: 3.12899s
+Runtime decision procedure: 3.13005s
 
 RESULTS:
 Check 1: core::slice::index::slice_index_fail::do_panic::runtime.assertion.1
@@ -1911,8 +1911,8 @@ SUMMARY:
  ** 0 of 259 failed (17 unreachable)
 
 VERIFICATION:- SUCCESSFUL
-Verification Time: 72.71978s
+Verification Time: 28.909725s
 
 Manual Harness Summary:
 Complete - 1 successfully verified harnesses, 0 failures, 1 total.
-xtask: peak memory in bytes: 1056317440
+xtask: peak memory in bytes: 1056071680

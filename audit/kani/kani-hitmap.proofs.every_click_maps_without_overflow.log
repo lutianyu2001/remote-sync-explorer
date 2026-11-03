@@ -17,14 +17,14 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
-warning: Found the following unsupported constructs:
+    Finishedwarning: Found the following unsupported constructs:
              - caller_location (1)
              - foreign function (1)
          
          Verification will fail if one or more of these constructs is reachable.
          See https://model-checking.github.io/kani/rust-feature-support.html for more details.
 
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.11s
+ `dev` profile [unoptimized + debuginfo] target(s) in 0.06s
 Checking harness hitmap::proofs::every_click_maps_without_overflow...
 CBMC 6.11.0 (cbmc-6.11.0)
 CBMC version 6.11.0 (cbmc-6.11.0) 64-bit x86_64 linux
@@ -38,52 +38,52 @@ Starting Bounded Model Checking
 Unwinding loop _RNvMNtCsjxNDDgMkXw4_3rse6hitmapNtB2_6HitMap3hit.0 iteration 1 file src/hitmap.rs line 89 column 9 function hitmap::HitMap::hit thread 0
 Unwinding loop _RNvMNtCsjxNDDgMkXw4_3rse6hitmapNtB2_6HitMap3hit.0 iteration 2 file src/hitmap.rs line 89 column 9 function hitmap::HitMap::hit thread 0
 aborting path on assume(false) at file src/hitmap.rs line 89 column 29 function hitmap::HitMap::hit thread 0
-Runtime Symex: 0.54107s
+Runtime Symex: 0.25037s
 size of program expression: 10934 steps
 slicing removed 7934 assignments
 Generated 509 VCC(s), 41 remaining after simplification
-Runtime Postprocess Equation: 0.0135893s
+Runtime Postprocess Equation: 0.00304831s
 Passing problem to propositional reduction
 converting SSA
-Runtime Convert SSA: 0.0660365s
+Runtime Convert SSA: 0.0249439s
 Running propositional reduction
 Post-processing
-Runtime Post-process: 1.324e-05s
+Runtime Post-process: 5.51e-06s
 Solving with CaDiCaL 3.0.0
 27092 variables, 39758 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.306506s
-Runtime decision procedure: 0.373511s
+Runtime Solver: 0.0935314s
+Runtime decision procedure: 0.119089s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 27093 variables, 39759 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.00271319s
-Runtime decision procedure: 0.00450646s
+Runtime Solver: 0.000853794s
+Runtime decision procedure: 0.00123257s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 27094 variables, 39760 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.0680351s
-Runtime decision procedure: 0.0690318s
+Runtime Solver: 0.0273583s
+Runtime decision procedure: 0.0275643s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 27095 variables, 39761 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.0205668s
-Runtime decision procedure: 0.0212646s
+Runtime Solver: 0.00893998s
+Runtime decision procedure: 0.00910217s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 27096 variables, 39762 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.00348083s
-Runtime decision procedure: 0.00419345s
+Runtime Solver: 0.000631213s
+Runtime decision procedure: 0.000790424s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 27097 variables, 39763 clauses
 SAT checker: instance is UNSATISFIABLE
-Runtime Solver: 0.00369433s
-Runtime decision procedure: 0.00412902s
+Runtime Solver: 0.00161075s
+Runtime decision procedure: 0.00168106s
 
 RESULTS:
 Check 1: alloc::raw_vec::RawVecInner::deallocate.unreachable.1
@@ -2932,8 +2932,8 @@ SUMMARY:
  ** 0 of 568 failed (7 unreachable)
 
 VERIFICATION:- SUCCESSFUL
-Verification Time: 2.017797s
+Verification Time: 0.75245905s
 
 Manual Harness Summary:
 Complete - 1 successfully verified harnesses, 0 failures, 1 total.
-xtask: peak memory in bytes: 109101056
+xtask: peak memory in bytes: 104230912

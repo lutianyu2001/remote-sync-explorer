@@ -10,28 +10,36 @@ CBMC 6.11.0
    Compiling cfg-if v1.0.5
    Compiling heck v0.5.0
    Compiling rustversion v1.0.23
-   Compiling strsim v0.11.1
-   Compiling smallvec v1.16.3
-   Compiling ident_case v1.0.1
-   Compiling bitflags v2.13.2
-   Compiling foldhash v0.2.0
-   Compiling equivalent v1.0.3
-   Compiling unicode-width v0.2.2
    Compiling allocator-api2 v0.2.21
-   Compiling serde_core v1.0.229
-   Compiling log v0.4.34
-   Compiling parking_lot_core v0.9.12
-   Compiling version_check v0.9.5
-   Compiling either v1.19.0
-   Compiling itoa v1.0.18
+   Compiling strsim v0.11.1
+   Compiling ident_case v1.0.1
+   Compiling foldhash v0.2.0
+   Compiling unicode-width v0.2.2
+   Compiling equivalent v1.0.3
+   Compiling smallvec v1.16.3
+   Compiling bitflags v2.13.2
    Compiling unicode-segmentation v1.13.3
    Compiling signal-hook v0.3.18
+   Compiling log v0.4.34
+   Compiling either v1.19.0
+   Compiling serde_core v1.0.229
+   Compiling version_check v0.9.5
+   Compiling parking_lot_core v0.9.12
+   Compiling itoa v1.0.18
    Compiling static_assertions v1.1.0
    Compiling ryu v1.0.23
-   Compiling rustix v1.1.5
    Compiling scopeguard v1.2.0
-   Compiling typenum v1.20.1
+   Compiling rustix v1.1.5
    Compiling litrs v1.0.1
+   Compiling indoc v2.0.8
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -49,6 +57,7 @@ warning: use of an unstable feature
   = note: requested on the command line with `--force-warn unstable-features`
 
    Compiling linux-raw-sys v0.12.1
+   Compiling typenum v1.20.1
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -57,17 +66,50 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
-   Compiling indoc v2.0.8
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-   Compiling utf8parse v0.2.2
    Compiling lock_api v0.4.14
+   Compiling rustc-hash v2.1.3
+   Compiling memchr v2.8.3
+   Compiling utf8parse v0.2.2
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -85,37 +127,6 @@ warning: use of an unstable feature
   = note: requested on the command line with `--force-warn unstable-features`
 
    Compiling autocfg v1.5.1
-   Compiling itertools v0.14.0
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-   Compiling rustc-hash v2.1.3
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-   Compiling memchr v2.8.3
-   Compiling line-clipping v0.3.8
-   Compiling anstyle-parse v1.0.0
-   Compiling zmij v1.0.23
-   Compiling anstyle v1.0.14
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -125,16 +136,10 @@ warning: use of an unstable feature
   = note: requested on the command line with `--force-warn unstable-features`
 
    Compiling type-map v0.5.1
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-   Compiling is_terminal_polyfill v1.70.2
+   Compiling anstyle-parse v1.0.0
    Compiling same-file v1.0.6
+   Compiling zmij v1.0.23
+   Compiling line-clipping v0.3.8
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -143,6 +148,9 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
+   Compiling crossbeam-utils v0.8.23
+   Compiling anstyle v1.0.14
+   Compiling is_terminal_polyfill v1.70.2
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -151,23 +159,8 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
+   Compiling itertools v0.14.0
    Compiling colorchoice v1.0.5
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -185,8 +178,31 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
-   Compiling hashbrown v0.17.1
-   Compiling crossbeam-utils v0.8.23
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+   Compiling walkdir v2.5.0
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -205,7 +221,19 @@ warning: use of an unstable feature
 
    Compiling clap_lex v1.1.1
    Compiling anyhow v1.0.104
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+   Compiling self_cell v1.3.0
    Compiling winnow v1.0.4
+   Compiling serde v1.0.229
+   Compiling unicase v2.10.0
+   Compiling serde_json v1.0.154
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -222,30 +250,7 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
+   Compiling hashbrown v0.17.1
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -255,6 +260,8 @@ warning: use of an unstable feature
   = note: requested on the command line with `--force-warn unstable-features`
 
    Compiling convert_case v0.10.0
+   Compiling anstream v1.0.0
+   Compiling cpufeatures v0.2.17
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -263,17 +270,34 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
-   Compiling walkdir v2.5.0
-   Compiling anstream v1.0.0
-   Compiling serde v1.0.229
-   Compiling self_cell v1.3.0
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
    Compiling generic-array v0.14.7
-   Compiling unicase v2.10.0
-   Compiling serde_json v1.0.154
-   Compiling remote-sync-explorer v0.1.0 (.)
-   Compiling cpufeatures v0.2.17
    Compiling iana-time-zone v0.1.65
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+   Compiling remote-sync-explorer v0.1.0 (.)
    Compiling toml_writer v1.1.3+spec-1.1.0
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
    Compiling sys-locale v0.3.2
 warning: use of an unstable feature
  --> <crate attribute>:1:12
@@ -331,39 +355,16 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
    Compiling clap_builder v4.6.7
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
+   Compiling document-features v0.2.12
    Compiling num-traits v0.2.19
 warning: use of an unstable feature
  --> <crate attribute>:1:12
@@ -372,6 +373,29 @@ warning: use of an unstable feature
   |            ^^^^^^^^^^^^^
   |
   = note: requested on the command line with `--force-warn unstable-features`
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+   Compiling toml_parser v1.1.5+spec-1.1.0
+warning: use of an unstable feature
+   --> ./vendor/anyhow-1.0.104/src/lib.rs:210:50
+    |
+210 | #![cfg_attr(error_generic_member_access, feature(error_generic_member_access))]
+    |                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: requested on the command line with `--force-warn unstable-features`
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
 
 warning: use of an unstable feature
  --> <crate attribute>:1:12
@@ -390,48 +414,34 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
    Compiling compact_str v0.9.1
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
-   --> ./vendor/anyhow-1.0.104/src/lib.rs:210:50
-    |
-210 | #![cfg_attr(error_generic_member_access, feature(error_generic_member_access))]
-    |                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    |
-    = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-
-   Compiling toml_parser v1.1.5+spec-1.1.0
-   Compiling document-features v0.2.12
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
    Compiling crossbeam-channel v0.5.17
+   Compiling syn v3.0.9
+   Compiling syn v2.0.119
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
    Compiling lru v0.18.5
 warning: use of an unstable feature
  --> <crate attribute>:1:12
@@ -441,26 +451,41 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
-   Compiling syn v3.0.9
-   Compiling syn v2.0.119
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
    Compiling inout v0.1.4
    Compiling crypto-common v0.1.7
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
+   Compiling chrono v0.4.45
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -494,48 +519,15 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
    Compiling aes v0.8.4
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-   Compiling chrono v0.4.45
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
    Compiling errno v0.3.14
    Compiling mio v1.2.4
    Compiling rtoolbox v0.0.6
@@ -555,9 +547,9 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
-   Compiling rpassword v7.5.4
-   Compiling signal-hook-registry v1.4.8
    Compiling unicode-truncate v2.0.1
+   Compiling signal-hook-registry v1.4.8
+   Compiling rpassword v7.5.4
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -648,6 +640,14 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
    Compiling toml_datetime v1.1.2+spec-1.1.0
    Compiling serde_spanned v1.1.2
 warning: use of an unstable feature
@@ -666,7 +666,6 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
-   Compiling toml v1.1.8+spec-1.1.0
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -675,6 +674,7 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
+   Compiling toml v1.1.8+spec-1.1.0
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -726,6 +726,7 @@ warning: use of an unstable feature
   = note: requested on the command line with `--force-warn unstable-features`
 
    Compiling unic-langid-impl v0.9.6
+   Compiling strum v0.28.0
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -734,7 +735,6 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
-   Compiling strum v0.28.0
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -760,7 +760,31 @@ warning: use of an unstable feature
 
    Compiling kasuari v0.4.13
    Compiling fluent-syntax v0.12.0
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
    Compiling unic-langid-macros v0.9.6
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
    Compiling unic-langid v0.9.6
 warning: use of an unstable feature
  --> <crate attribute>:1:12
@@ -770,51 +794,19 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
+   Compiling intl-memoizer v0.5.3
    Compiling fluent-langneg v0.13.1
    Compiling intl_pluralrules v7.0.2
-   Compiling intl-memoizer v0.5.3
    Compiling fluent-template-macros v0.15.1
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
-warning: use of an unstable feature
- --> <crate attribute>:1:12
-  |
-1 | #![feature(register_tool)]
-  |            ^^^^^^^^^^^^^
-  |
-  = note: requested on the command line with `--force-warn unstable-features`
-
    Compiling ratatui-core v0.1.2
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
    Compiling clap v4.6.7
 warning: use of an unstable feature
  --> <crate attribute>:1:12
@@ -832,8 +824,6 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
-   Compiling fluent-bundle v0.16.0
-   Compiling darling_macro v0.24.1
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -842,9 +832,19 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
-   Compiling fluent-templates v0.15.1
+   Compiling darling_macro v0.24.1
+   Compiling fluent-bundle v0.16.0
+warning: use of an unstable feature
+ --> <crate attribute>:1:12
+  |
+1 | #![feature(register_tool)]
+  |            ^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `--force-warn unstable-features`
+
    Compiling darling v0.24.1
    Compiling instability v0.3.14
+   Compiling fluent-templates v0.15.1
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -928,7 +928,7 @@ warning: Found the following unsupported constructs:
          Verification will fail if one or more of these constructs is reachable.
          See https://model-checking.github.io/kani/rust-feature-support.html for more details.
 
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 20.98s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.53s
 Wrote list results to ./kani-list.json
 $ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -- cargo kani --no-default-features --lib --harness hitmap::proofs::every_click_maps_without_overflow --exact -Z unstable-options --harness-timeout 1800s --only-codegen
 Kani Rust Verifier 0.68.0 (cargo plugin)
@@ -957,9 +957,9 @@ warning: Found the following unsupported constructs:
          Verification will fail if one or more of these constructs is reachable.
          See https://model-checking.github.io/kani/rust-feature-support.html for more details.
 
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.94s
-$ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue -- /proc/3741200/exe __kani-harness hitmap::proofs::every_click_maps_without_overflow --peak > kani-hitmap.proofs.every_click_maps_without_overflow.log
-hitmap::proofs::every_click_maps_without_overflow: succeeded, 3 s, peak memory 105 MiB
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.03s
+$ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue -- /proc/372111/exe __kani-harness hitmap::proofs::every_click_maps_without_overflow --peak > kani-hitmap.proofs.every_click_maps_without_overflow.log
+hitmap::proofs::every_click_maps_without_overflow: succeeded, 1 s, peak memory 100 MiB
 $ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -- cargo kani --no-default-features --lib --harness keymap::proofs::prefixes_are_cut_at_character_boundaries --exact -Z unstable-options --harness-timeout 1800s --only-codegen
 Kani Rust Verifier 0.68.0 (cargo plugin)
 CBMC 6.11.0
@@ -987,7 +987,7 @@ warning: Found the following unsupported constructs:
          Verification will fail if one or more of these constructs is reachable.
          See https://model-checking.github.io/kani/rust-feature-support.html for more details.
 
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.42s
-$ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue -- /proc/3741200/exe __kani-harness keymap::proofs::prefixes_are_cut_at_character_boundaries --peak > kani-keymap.proofs.prefixes_are_cut_at_character_boundaries.log
-keymap::proofs::prefixes_are_cut_at_character_boundaries: succeeded, 75 s, peak memory 1008 MiB
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.21s
+$ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue -- /proc/372111/exe __kani-harness keymap::proofs::prefixes_are_cut_at_character_boundaries --peak > kani-keymap.proofs.prefixes_are_cut_at_character_boundaries.log
+keymap::proofs::prefixes_are_cut_at_character_boundaries: succeeded, 29 s, peak memory 1008 MiB
 xtask: kani: succeeded
