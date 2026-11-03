@@ -9,7 +9,8 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
-# Read-only unless a job says otherwise; only release writes.
+# Read-only unless a job says otherwise; only publish writes, and it runs none of the
+# project's code.
 permissions:
   contents: read
 
@@ -26,12 +27,11 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          components: rustfmt, clippy
+          persist-credentials: false
       - id: vendor-cache
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: vendor
           key: vendor-fuzz-${{ hashFiles('Cargo.lock', 'fuzz/Cargo.lock') }}
@@ -40,7 +40,7 @@ jobs:
         run: >
           cargo --config net.offline=false vendor --locked --versioned-dirs
           --sync fuzz/Cargo.toml vendor
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26"
           cache: false
@@ -54,7 +54,7 @@ jobs:
       # the Go module it is built from.
       - name: Cache librclone
         id: librclone
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/librclone
           key: librclone-${{ runner.os }}-${{ steps.rclone.outputs.version }}-${{ hashFiles('scripts/build-librclone.sh', 'librse/**') }}
@@ -68,7 +68,12 @@ jobs:
           test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
           go vet ./...
           go test ./...
-      - uses: Swatinem/rust-cache@v2
+      # The build directory, per OS, toolchain and Cargo.lock; release builds without it.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: target
+          key: target-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'Cargo.lock') }}
+          restore-keys: target-${{ runner.os }}-
       - run: cargo fmt --check
       - run: cargo clippy --all-targets --locked
       - run: cargo clippy --locked -p xtask
@@ -82,10 +87,11 @@ jobs:
     name: build without network (rcd feature)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - id: vendor-cache
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: vendor
           key: vendor-fuzz-${{ hashFiles('Cargo.lock', 'fuzz/Cargo.lock') }}
@@ -104,37 +110,16 @@ jobs:
                    cargo test --locked --offline --no-default-features --features rcd'
       # Keeps the dependencies this build used, in case a crate is ever taken off crates.io.
       - run: tar czf vendor-${{ hashFiles('Cargo.lock') }}.tar.gz vendor
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: vendor-${{ hashFiles('Cargo.lock') }}
           path: vendor-*.tar.gz
           retention-days: 90
 
-  supply-chain:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - id: vendor-cache
-        uses: actions/cache@v4
-        with:
-          path: vendor
-          key: vendor-fuzz-${{ hashFiles('Cargo.lock', 'fuzz/Cargo.lock') }}
-      # Both workspaces: cargo xtask deny also checks fuzz/'s advisories and sources.
-      - name: Download dependencies per Cargo.lock and fuzz/Cargo.lock
-        if: steps.vendor-cache.outputs.cache-hit != 'true'
-        run: >
-          cargo --config net.offline=false vendor --locked --versioned-dirs
-          --sync fuzz/Cargo.toml vendor
-      # The versions pinned in xtask/src/pins.rs, as on any machine. Quick checks that
-      # record nothing; verify.yml records them.
-      - run: cargo xtask setup deny vet
-      - run: cargo xtask deny --no-record
-      - run: cargo xtask vet --no-record
-
+  # Builds the release archives, read-only.
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [test, build-offline, supply-chain]
+    needs: [test, build-offline]
     strategy:
       matrix:
         include:
@@ -143,16 +128,15 @@ jobs:
           - os: macos-latest
             name: macos-arm64
     runs-on: ${{ matrix.os }}
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Download dependencies per Cargo.lock and fuzz/Cargo.lock
         run: >
           cargo --config net.offline=false vendor --locked --versioned-dirs
           --sync fuzz/Cargo.toml vendor
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26"
           cache: false
@@ -171,6 +155,32 @@ jobs:
           PATH="$(go env GOPATH)/bin:$PATH" scripts/third-party-licenses.sh "$dir/third-party"
           ./target/release/rse --version > "$dir/VERSIONS"
           tar czf "$dir.tar.gz" "$dir"
-      - uses: softprops/action-gh-release@v2
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          files: rse-*.tar.gz
+          name: release-${{ matrix.name }}
+          path: rse-*.tar.gz
+          if-no-files-found: error
+
+  # Publishes the release from the archives built above, and starts the security audit for
+  # it. A release published with this job's token starts no workflow by itself, so the
+  # audit's release trigger in verify.yml would never fire; a workflow_dispatch does, and
+  # runs the tasks verify.yml runs at a release by default.
+  publish:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" \
+            --notes "" dist/rse-*.tar.gz
+          gh workflow run verify.yml --repo "$GITHUB_REPOSITORY" --ref "$TAG"

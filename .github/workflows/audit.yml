@@ -1,13 +1,23 @@
 name: Advisories
 
-# Fails when a dependency in Cargo.lock, or a tool pinned in xtask, gets a known
-# vulnerability (daily), or when a pinned tool is due for an update (weekly). Quick checks
-# that record nothing; the security audit itself runs in verify.yml.
+# Fails when a dependency in Cargo.lock, or a tool or action pinned here, gets a known
+# vulnerability, or when an action is not pinned to a commit as it should be (daily); or when
+# a pinned version is due for an update (weekly). Quick checks that record nothing; the
+# security audit itself runs in verify.yml.
+#
+# It also keeps the README's badges: whether each task's latest result in audit/ stands for
+# the code on the default branch, how this deny check went, and whether a pinned version is
+# due. Daily, after each run of Verify (which may have committed results), and when started
+# by hand, to see them at once. They go to the badges branch, which holds nothing else and
+# is replaced each time.
 on:
   schedule:
     - cron: "0 6 * * *"
     - cron: "17 3 * * 1"
   workflow_dispatch:
+  workflow_run:
+    workflows: [Verify]
+    types: [completed]
 
 permissions:
   contents: read
@@ -16,13 +26,15 @@ jobs:
   audit:
     if: github.event.schedule != '17 3 * * 1'
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       # Per project: with vendor/ (an application), restore it first; a library has no
       # such steps.
       - id: vendor-cache
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: vendor
           key: vendor-fuzz-${{ hashFiles('Cargo.lock', 'fuzz/Cargo.lock') }}
@@ -33,22 +45,96 @@ jobs:
           cargo --config net.offline=false vendor --locked --versioned-dirs
           --sync fuzz/Cargo.toml vendor
       - run: cargo xtask setup deny
-      - run: cargo xtask deny --no-record
-      # The tools pinned in xtask/src/pins.rs: a known vulnerability in one is due at once.
+      - id: deny
+        run: cargo xtask deny --no-record
+      # The tools pinned in xtask/src/pins.rs and the actions in the workflows: a known
+      # vulnerability in one is due at once. The token only lifts GitHub's limit on requests;
+      # it can read no more than anyone can.
       - if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: cargo xtask outdated --vulns
+      - if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DENY: ${{ steps.deny.outcome }}
+        run: cargo xtask badges target/badges --deny "$DENY"
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: badges
+          path: target/badges
+          if-no-files-found: error
 
-  # Red when a pinned tool has a release at least a month newer, or a known
+  # Pushes the badges. The only job that may write, and it runs none of the project's code:
+  # it lets through only the files and the words the badges can have, so that the job above,
+  # whose dependencies run build scripts, cannot put anything else on the badges branch.
+  badges:
+    needs: audit
+    if: ${{ !cancelled() && needs.audit.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: badges
+          path: badges
+      - name: Check the badges and push them to the badges branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Per project: TASKS in xtask/src/tasks/mod.rs, and audit and pins; the README
+          # shows each of them.
+          NAMES: "audit deny vet geiger miri coverage kani fuzz pins"
+        run: |
+          set -euo pipefail
+          set -f
+          cd badges
+          if [ -n "$(find . -mindepth 1 ! -type f)" ]; then
+            echo "the badges are not all plain files" >&2
+            exit 1
+          fi
+          expected=$(printf '%s.json\n' $NAMES | sort)
+          if [ "$(find . -type f -printf '%P\n' | sort)" != "$expected" ]; then
+            echo "the badges are not the files expected" >&2
+            exit 1
+          fi
+          for name in $NAMES; do
+            if [ "$(wc -c < "$name.json")" -gt 200 ] || ! jq -e --arg name "$name" '
+              (keys == ["color", "label", "message", "schemaVersion"])
+              and .schemaVersion == 1 and .label == $name
+              and (.message | type == "string")
+              and (.message | test("^(up to date|out of date|failed|never run|passing|failing|check failed|[1-9][0-9]{0,2} (due|urgent))$"))
+              and (.color | IN("brightgreen", "yellow", "red", "lightgrey"))
+            ' "$name.json" > /dev/null; then
+              echo "$name.json is not a badge" >&2
+              exit 1
+            fi
+          done
+          git init --quiet --initial-branch badges
+          git add --all .
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "Badges for ${GITHUB_SHA::7}"
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git -c http.extraheader="AUTHORIZATION: basic $auth" \
+            push --force --quiet "https://github.com/$GITHUB_REPOSITORY.git" HEAD:badges
+
+  # Red when a pinned tool or action has a release at least a month newer, or a known
   # vulnerability: update it with `cargo xtask outdated` on a workstation.
   outdated:
-    if: github.event.schedule != '0 6 * * *'
+    if: github.event.schedule == '17 3 * * 1' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       # Per project: with vendor/ (an application), restore it first; a library has no
       # such steps.
       - id: vendor-cache
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: vendor
           key: vendor-fuzz-${{ hashFiles('Cargo.lock', 'fuzz/Cargo.lock') }}
@@ -57,4 +143,6 @@ jobs:
         run: >
           cargo --config net.offline=false vendor --locked --versioned-dirs
           --sync fuzz/Cargo.toml vendor
-      - run: cargo xtask outdated
+      - env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: cargo xtask outdated

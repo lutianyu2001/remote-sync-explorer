@@ -1,17 +1,39 @@
 name: Verify
 
-# The security audit of SECURITY.md, kept out of the pipeline that builds and tests:
-# after each push to main, each task that the commit does not already hold a standing
-# result for (cargo xtask needed) runs as on a workstation, with the tools and the nightly
-# toolchain pinned in xtask/src/pins.rs. A newer push cancels the run in progress. The
-# results are committed back to audit/ by the last job, the only one that may write; the
-# code under test runs in jobs that cannot.
+# The security audit of SECURITY.md, kept out of the pipeline that builds and tests. The
+# maintainer's decision is to run on GitHub's runners every task whose length is known before
+# it starts, and so make full use of GitHub Actions; and only those:
+#
+# - At each release published on GitHub, deny, vet, geiger, coverage and fuzz run by
+#   themselves. Fuzzing runs FUZZ_SECONDS a target, all four at once on a runner's four
+#   cores, stopping on time whatever it finds: four hours, well within the six a job may
+#   take.
+# - Kani and Miri never start by themselves. How long they take depends on the proofs and
+#   tests, and one change can take them from seconds to hours (a single test took Miri from
+#   a minute to three hours). A run left to time out, release after release, would waste the
+#   runners and could draw GitHub's notice. Try them on a workstation first (cargo xtask kani
+#   --no-record), then run them there, or start this workflow by hand with tasks "kani miri".
+# - Never on a push: it takes hours, and a push does not need it.
+# - A release does not wait for it, and a result out of date holds no release back; the
+#   README's badges, kept by advisories.yml, show which results stand.
+#
+# Each task that the commit does not already hold a standing result for (cargo xtask needed)
+# runs as on a workstation, with the tools and nightly toolchain pinned in
+# xtask/src/pins.rs. A newer run on the same release or branch cancels the one in progress.
+# The results are committed to audit/ on the default branch by the last job, the only one
+# that may write, which runs none of the project's code; the code under test runs in jobs
+# that cannot write. Actions are pinned to commits, which cargo xtask outdated checks against
+# their releases.
 on:
-  push:
-    # Per project: the repository's default branch, which the record job below pushes to.
-    branches: [main]
-    paths-ignore: ["audit/**"]
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      tasks:
+        description: "Tasks to run, among: deny vet geiger miri coverage kani fuzz"
+        type: string
+        # Per project: what a release runs, as ON_RELEASE below.
+        default: "deny vet geiger coverage fuzz"
 
 concurrency: { group: "verify-${{ github.ref }}", cancel-in-progress: true }
 
@@ -20,25 +42,86 @@ env:
   # Each job has a machine of its own, and no systemd user scopes: going over the memory
   # ends the job alone.
   RUST_XTASK_NO_SCOPE: "1"
+  # Four hours a fuzz target, against one on a workstation: a run at least as long as
+  # cargo xtask fuzz's default stands for the task.
+  FUZZ_SECONDS: "14400"
 
 permissions:
   contents: read
 
 jobs:
+  # The tasks to run: those a release runs, or those asked for by hand, each one known.
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      tasks: ${{ steps.plan.outputs.tasks }}
+    steps:
+      - id: plan
+        env:
+          # Per project: TASKS in xtask/src/tasks/mod.rs, and those of them whose length is
+          # known before they start.
+          KNOWN: "deny vet geiger miri coverage kani fuzz"
+          ON_RELEASE: "deny vet geiger coverage fuzz"
+          EVENT: ${{ github.event_name }}
+          ASKED: ${{ github.event.inputs.tasks }}
+        run: |
+          set -f
+          if [ "$EVENT" = release ]; then asked=$ON_RELEASE; else asked=$ASKED; fi
+          tasks=()
+          for t in $asked; do
+            case " $KNOWN " in
+              *" $t "*) tasks+=("$t") ;;
+              *) echo "not a task: $t" >&2; exit 1 ;;
+            esac
+          done
+          if [ ${#tasks[@]} -eq 0 ]; then
+            echo "no task to run" >&2
+            exit 1
+          fi
+          echo "tasks=$(printf '%s\n' "${tasks[@]}" | jq -R . | jq -sc unique)" >> "$GITHUB_OUTPUT"
+
   check:
+    needs: plan
     strategy:
       # Each task's result is kept, whatever the others do.
       fail-fast: false
       matrix:
-        # Per project: the tasks of TASKS in xtask/src/tasks/mod.rs.
-        task: [deny, vet, geiger, miri, coverage, kani, fuzz]
+        task: ${{ fromJSON(needs.plan.outputs.tasks) }}
     runs-on: ubuntu-latest
+    # Per project: well past each task's usual time, for a run that hangs, not to stop one
+    # that is merely slow: fuzz takes FUZZ_SECONDS and its building.
+    timeout-minutes: ${{ matrix.task == 'fuzz' && 300 || 120 }}
+    permissions:
+      contents: read
+      # The fuzz corpus of the last run, kept as an artifact.
+      actions: read
+    env:
+      TASK: ${{ matrix.task }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Project code runs here, with no use for the token.
+          persist-credentials: false
+      # Fuzzing goes on from the corpus of the last run here, so that each release adds to
+      # the last; a cache would not do, as a release's run cannot read another tag's. Before
+      # any of the project's code runs, which could otherwise read the token.
+      - if: matrix.task == 'fuzz'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=fuzz-corpus&per_page=1" \
+            --jq '.artifacts[] | select(.expired | not) | .workflow_run.id')
+          if [ -n "$run" ]; then
+            gh run download "$run" --repo "$GITHUB_REPOSITORY" --name fuzz-corpus --dir fuzz/corpus \
+              || echo "no corpus to go on from"
+          else
+            echo "no corpus to go on from"
+          fi
       # Per project: with vendor/ (an application), restore it first, the fuzz workspace's
       # dependencies too; xtask itself builds from it. A library has no such steps.
       - id: vendor-cache
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: vendor
           key: vendor-fuzz-${{ hashFiles('Cargo.lock', 'fuzz/Cargo.lock') }}
@@ -47,11 +130,16 @@ jobs:
         run: >
           cargo --config net.offline=false vendor --locked --versioned-dirs
           --sync fuzz/Cargo.toml vendor
+      - id: args
+        run: |
+          if [ "$TASK" = fuzz ]; then echo "args=$FUZZ_SECONDS" >> "$GITHUB_OUTPUT"; fi
       # 0: a run is needed; 1: the committed result stands; anything else is an error.
       - id: needed
+        env:
+          ARGS: ${{ steps.args.outputs.args }}
         run: |
           set +e
-          cargo xtask needed ${{ matrix.task }}
+          cargo xtask needed "$TASK" $ARGS
           c=$?
           echo "code=$c" >> "$GITHUB_OUTPUT"
           [ "$c" -le 1 ]
@@ -62,7 +150,7 @@ jobs:
         if: >
           steps.needed.outputs.code == '0'
           && contains(fromJSON('["geiger", "coverage"]'), matrix.task)
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26"
           cache: false
@@ -76,7 +164,7 @@ jobs:
       - name: Cache librclone
         id: librclone
         if: steps.go.outcome == 'success'
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/librclone
           key: librclone-${{ runner.os }}-${{ steps.rclone.outputs.version }}-${{ hashFiles('scripts/build-librclone.sh', 'librse/**') }}
@@ -84,62 +172,75 @@ jobs:
         if: steps.go.outcome == 'success' && steps.librclone.outputs.cache-hit != 'true'
         run: scripts/build-librclone.sh ~/librclone
       - if: steps.needed.outputs.code == '0'
-        run: cargo xtask setup ${{ matrix.task }}
+        run: cargo xtask setup "$TASK"
       # A failure fails the job, and is committed too, with the last success kept beside it.
       - id: task
         if: steps.needed.outputs.code == '0'
-        run: cargo xtask ${{ matrix.task }}
+        env:
+          ARGS: ${{ steps.args.outputs.args }}
+        run: cargo xtask "$TASK" $ARGS
       - if: ${{ !cancelled() && steps.task.outcome != 'skipped' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: audit-${{ matrix.task }}
           path: audit/${{ matrix.task }}
           if-no-files-found: ignore
+      - if: ${{ !cancelled() && matrix.task == 'fuzz' && steps.task.outcome != 'skipped' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuzz-corpus
+          path: fuzz/corpus
+          if-no-files-found: ignore
+          retention-days: 90
       - if: failure() && matrix.task == 'fuzz'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: fuzz-crashes
           path: fuzz/artifacts
 
+  # Commits the results to audit/ on the default branch, as results for the commit the run
+  # was for: a release's, or the branch's when started by hand. Results committed there since
+  # that commit are newer, and stand; and a commit not on the default branch is not recorded.
+  # When the code there has changed since, cargo xtask status shows the results out of date.
+  # Restores no cache: what the jobs above wrote must not run here, with the token.
   record:
     needs: check
-    if: ${{ !cancelled() && github.ref_name == github.event.repository.default_branch }}
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: audit-*
           path: results
       - name: Commit the results to audit/
         env:
           BRANCH: ${{ github.event.repository.default_branch }}
+          # The release's tag, or the branch the run was started on.
+          NAME: ${{ github.ref_name }}
         run: |
           shopt -s nullglob
           sha=$GITHUB_SHA
           for attempt in 1 2 3; do
             git fetch --quiet origin "$BRANCH"
-            keep=()
-            if [ "$(git rev-parse "origin/$BRANCH")" = "$sha" ]; then
-              git checkout --quiet --detach "$sha"
-            elif ! git diff --quiet "$sha" "origin/$BRANCH" -- . ':!audit'; then
-              # A newer push has its own run, which records its own results.
-              echo "$BRANCH has moved on; not recording."
+            if ! git merge-base --is-ancestor "$sha" "origin/$BRANCH"; then
+              echo "${sha::7} is not on $BRANCH; not recording."
               exit 0
-            else
-              # Only results were committed since (which start no run): theirs stand.
-              git checkout --quiet --detach "origin/$BRANCH"
-              mapfile -t keep < <(git diff --name-only "$sha" "origin/$BRANCH" -- audit/ | cut -d/ -f2 | sort -u)
             fi
+            git checkout --quiet --detach "origin/$BRANCH"
+            # Results committed since this run's commit are newer: theirs stand.
+            mapfile -t keep < <(git diff --name-only "$sha" "origin/$BRANCH" -- audit/ | cut -d/ -f2 | sort -u)
             # Before the first results are committed, there is no audit/ to copy into.
             mkdir -p audit
             for dir in results/audit-*; do
               task=${dir#results/audit-}
               if printf '%s\n' "${keep[@]}" | grep -qx "$task"; then
+                echo "$task: results committed since ${sha::7} stand"
                 continue
               fi
               rm -rf "audit/$task"
@@ -156,7 +257,7 @@ jobs:
             fi
             git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-              commit --quiet -m "audit: results for ${sha::7}"
+              commit --quiet -m "audit: results for $NAME (${sha::7})"
             if git push origin "HEAD:$BRANCH"; then
               exit 0
             fi
