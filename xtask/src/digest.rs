@@ -97,7 +97,9 @@ fn contents<'a>(
 
 /// The git hashes of texts, in order.
 fn hash<'a>(root: &Path, texts: impl Iterator<Item = &'a str>) -> Result<Vec<String>, String> {
-    let dir = std::env::temp_dir().join(format!("xtask-hashes-{}", std::process::id()));
+    // Under target/, not the shared temporary directory, where another user could put a
+    // link at these names beforehand.
+    let dir = root.join("target").join("audit").join(format!("hashes-{}", std::process::id()));
     let written = (|| {
         fs::create_dir_all(&dir)?;
         let mut paths = String::new();

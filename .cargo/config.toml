@@ -18,4 +18,4 @@ offline = true
 
 # The security audit: cargo xtask <task> (see SECURITY.md).
 [alias]
-xtask = "run --quiet --package xtask --"
+xtask = "run --quiet --locked --package xtask --"

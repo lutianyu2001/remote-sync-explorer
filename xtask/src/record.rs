@@ -85,9 +85,25 @@ impl Run {
         &self.dir
     }
 
+    /// Why the run cannot stand for the commit it started on, if so: a recorded run says what
+    /// that commit does, and the tree was only known to match it at the start.
+    pub fn moved(&self) -> Option<String> {
+        if !self.record {
+            return None;
+        }
+        let head = git(&self.root, &["rev-parse", "HEAD"]).unwrap_or_default();
+        if head != self.commit {
+            return Some(format!("the commit changed during the run, to {head}"));
+        }
+        let paths = uncommitted(&self.root);
+        (!paths.is_empty()).then(|| format!("files changed during the run: {}", paths.join(", ")))
+    }
+
     /// Records how the run ended (`succeeded` or `failed: <why>`), with the task's own
-    /// parameters (as `seconds=3600`) and tools, and makes it the latest.
-    pub fn finish(self, outcome: &str, params: &str, tools: &str) {
+    /// parameters (as `seconds=3600`) and tools, and makes it the latest. A run that could not
+    /// be written whole, or rid of the paths of this machine, is an error, and goes no
+    /// further than `.running/`.
+    pub fn finish(self, outcome: &str, params: &str, tools: &str) -> Result<(), String> {
         if let Ok(mut current) = LOG.lock() {
             *current = None;
         }
@@ -99,21 +115,28 @@ impl Run {
         let _ = writeln!(text, "commit: {}", self.commit);
         let _ = writeln!(text, "args: {params}");
         let _ = writeln!(text, "tools: {tools}");
-        let _ = fs::write(self.dir.join("run.txt"), text);
-        let _ = fs::write(self.dir.join("inputs.txt"), &self.inputs);
-        scrub(&self.dir, &self.root);
+        for (name, contents) in [("run.txt", text.as_str()), ("inputs.txt", &self.inputs)] {
+            let path = self.dir.join(name);
+            fs::write(&path, contents).map_err(|e| err(&path, &e))?;
+        }
+        scrub(&self.dir, &self.root)?;
         let last = self.dir.join(LAST);
         // Without --no-record, the last success is kept beside a failure.
         if self.record && outcome != "succeeded" {
             // The last success: the latest run when it succeeded, else the one it kept.
-            let _ = if succeeded(&self.base) {
-                fs::rename(&self.base, &last)
-            } else {
-                fs::rename(self.base.join(LAST), &last)
-            };
+            let kept = if succeeded(&self.base) { self.base.clone() } else { self.base.join(LAST) };
+            absent_is_fine(fs::rename(&kept, &last)).map_err(|e| err(&kept, &e))?;
         }
-        let _ = fs::remove_dir_all(&self.base);
-        let _ = fs::rename(&self.dir, &self.base);
+        absent_is_fine(fs::remove_dir_all(&self.base)).map_err(|e| err(&self.base, &e))?;
+        fs::rename(&self.dir, &self.base).map_err(|e| err(&self.base, &e))
+    }
+}
+
+/// A first run, or one without a success to keep, finds nothing there.
+fn absent_is_fine(result: io::Result<()>) -> io::Result<()> {
+    match result {
+        Err(e) if e.kind() != io::ErrorKind::NotFound => Err(e),
+        _ => Ok(()),
     }
 }
 
@@ -185,41 +208,48 @@ fn pump(mut from: impl Read, mut to: impl Write) {
 
 /// Takes the paths of this machine out of the files a run wrote, so that they can be
 /// published: the repository becomes `.` and the home directory `~`.
-fn scrub(dir: &Path, root: &Path) {
+fn scrub(dir: &Path, root: &Path) -> Result<(), String> {
     let mut pairs = vec![(root.display().to_string(), ".")];
     if let Some(home) = std::env::var_os("HOME") {
         pairs.push((home.to_string_lossy().into_owned(), "~"));
     }
-    let Ok(entries) = fs::read_dir(dir) else { return };
-    for entry in entries.flatten() {
+    for entry in fs::read_dir(dir).map_err(|e| err(dir, &e))? {
+        let entry = entry.map_err(|e| err(dir, &e))?;
         let path = entry.path();
-        if entry.file_type().is_ok_and(|t| t.is_dir()) {
-            scrub(&path, root);
+        if entry.file_type().map_err(|e| err(&path, &e))?.is_dir() {
+            scrub(&path, root)?;
             continue;
         }
-        let Ok(old) = fs::read(&path) else { continue };
+        let old = fs::read(&path).map_err(|e| err(&path, &e))?;
         let new = pairs.iter().fold(old.clone(), |text, (from, to)| {
             replace_path(&text, from.as_bytes(), to.as_bytes())
         });
         if new != old {
-            let _ = fs::write(&path, new);
+            fs::write(&path, new).map_err(|e| err(&path, &e))?;
         }
     }
+    Ok(())
 }
 
 /// `text` with `from` replaced by `to` where it is a whole path or begins one: not where
-/// it begins a longer name, as `/home/me/rse` begins `/home/me/rse-old`.
+/// it begins a longer name, as `/home/me/rext` begins `/home/me/rext-old` and `.old` makes
+/// `/home/me/rext.old`, nor where it is the end of one, as in `/mnt/home/me/rext`. A `.` with
+/// no more of a name after it ends a sentence, not the name.
 fn replace_path(text: &[u8], from: &[u8], to: &[u8]) -> Vec<u8> {
     if from.len() < 2 {
         return text.to_vec();
     }
     let mut out = Vec::with_capacity(text.len());
     let mut i = 0;
+    let name = |c: &u8| c.is_ascii_alphanumeric() || b"-_".contains(c);
     while i < text.len() {
-        let ends = |at: usize| {
-            text.get(at).is_none_or(|c| !(c.is_ascii_alphanumeric() || b"-_.".contains(c)))
+        let ends = |at: usize| match text.get(at) {
+            None => true,
+            Some(b'.') => !text.get(at + 1).is_some_and(name),
+            Some(c) => !name(c),
         };
-        if text[i..].starts_with(from) && ends(i + from.len()) {
+        let starts = i == 0 || !(name(&text[i - 1]) || text[i - 1] == b'.');
+        if starts && text[i..].starts_with(from) && ends(i + from.len()) {
             out.extend_from_slice(to);
             i += from.len();
         } else {
@@ -236,7 +266,11 @@ fn replace_path(text: &[u8], from: &[u8], to: &[u8]) -> Vec<u8> {
 pub fn files(root: &Path) -> Result<Vec<(String, String)>, String> {
     let index = git(root, &["rev-parse", "--git-path", "index"])
         .ok_or("not in a git repository: the runs are recorded by the commit they ran on")?;
-    let temp = std::env::temp_dir().join(format!("xtask-index-{}", std::process::id()));
+    // Under target/, not the shared temporary directory, where another user could put a
+    // link at this name beforehand.
+    let dir = root.join("target").join("audit");
+    fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    let temp = dir.join(format!("index-{}", std::process::id()));
     // A copy keeps what git knows of the files, so that it rereads only the changed ones.
     let _ = fs::copy(root.join(index), &temp);
     let with_index = |args: &[&str]| {
@@ -307,7 +341,7 @@ pub fn needed(root: &Path, task: &str, inputs: &str, tools: &str, params: &str) 
     if f.get("tools") != tools {
         why.push("the pinned tools changed".to_owned());
     }
-    if f.get("args") != params {
+    if !covers(f.get("args"), params) {
         why.push(format!("recorded with different arguments (`{}`)", f.get("args")));
     }
     // New advisories appear whatever the code does.
@@ -355,6 +389,19 @@ fn age(started: &str) -> Option<u64> {
     let then = days * 86_400 + hours * 3600 + minutes * 60;
     let now = SystemTime::now().duration_since(UNIX_EPOCH).ok()?.as_secs();
     now.checked_sub(then)
+}
+
+/// Whether a run recorded with the arguments `recorded` stands for one with `wanted`: the
+/// same ones, or a fuzz run at least as long (`seconds=N`), as CI's runs are longer.
+fn covers(recorded: &str, wanted: &str) -> bool {
+    let seconds = |args: &str| args.strip_prefix("seconds=").and_then(|n| n.parse::<u64>().ok());
+    recorded == wanted
+        || matches!((seconds(recorded), seconds(wanted)), (Some(r), Some(w)) if r >= w)
+}
+
+/// How the latest run of `task` ended: whether it succeeded; None when it never ran.
+pub fn latest_succeeded(root: &Path, task: &str) -> Option<bool> {
+    fields(&root.join("audit").join(task)).map(|f| f.get("result") == "succeeded")
 }
 
 /// `cargo xtask status`: how each task's latest run ended, when one last succeeded, and
@@ -419,14 +466,33 @@ fn time(t: SystemTime) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{changed, replace_path};
+    use super::{changed, covers, replace_path};
+
+    #[test]
+    fn a_longer_fuzz_run_stands_for_a_shorter_one() {
+        assert!(covers("", ""));
+        assert!(covers("seconds=3600", "seconds=3600"));
+        assert!(covers("seconds=14400", "seconds=3600"));
+        assert!(!covers("seconds=3600", "seconds=14400"));
+        assert!(!covers("seconds=x", "seconds=3600"));
+        assert!(!covers("", "seconds=3600"));
+    }
 
     #[test]
     fn paths_are_replaced_only_where_whole() {
-        let text = b"/home/me/rse/src/a.rs /home/me/rse-old /home/me/rse: /home/me/rse";
+        let text = b"/home/me/rext/src/a.rs /home/me/rext-old /home/me/rext: /home/me/rext";
         assert_eq!(
-            replace_path(text, b"/home/me/rse", b"."),
-            b"./src/a.rs /home/me/rse-old .: .".to_vec()
+            replace_path(text, b"/home/me/rext", b"."),
+            b"./src/a.rs /home/me/rext-old .: .".to_vec()
+        );
+    }
+
+    #[test]
+    fn a_full_stop_ends_a_path_and_a_longer_path_is_left_alone() {
+        let text = b"see /home/me/rext. /home/me/rext.old /mnt/home/me/rext x=/home/me/rext";
+        assert_eq!(
+            replace_path(text, b"/home/me/rext", b"."),
+            b"see .. /home/me/rext.old /mnt/home/me/rext x=.".to_vec()
         );
     }
 

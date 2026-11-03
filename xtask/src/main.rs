@@ -17,6 +17,7 @@ use std::process::ExitCode;
 use run::{scope, size};
 use tasks::{KNOWN, TASKS, fuzz, memory, pins};
 
+mod badges;
 mod digest;
 mod lock;
 mod outdated;
@@ -38,16 +39,23 @@ pub const USAGE: &str = "usage: cargo xtask <task> [args]
                     HTML in target/llvm-cov/html
   kani [proof...]   every Kani proof, one at a time; each one's result, time and peak
                     memory into harnesses.txt. Naming proofs needs --no-record
-  fuzz [seconds]    every fuzz target, 3600 seconds each; another time needs --no-record
+  fuzz [seconds]    every fuzz target, 3600 seconds each unless given; fewer needs
+                    --no-record. A run at least as long stands for the task
   all               those above that the project runs, in this order, each whatever the
                     others did
   status            how each task last ran, when it last succeeded, and whether it needs
                     a run
-  needed <task>     why the task needs a run; exits 0 when it does, 1 when it does not,
-                    2 on an error
+  needed <task> [args]
+                    why the task, run with args, needs a run; exits 0 when it does, 1
+                    when it does not, 2 on an error
   outdated [--vulns] pinned versions with a release a month newer, or a known
                     vulnerability (only that with --vulns); asks which to update, and
-                    exits 2 when something is due and it cannot ask
+                    exits 2 when something is due and it cannot ask. Covers the actions
+                    the workflows use too, pinned to commits
+  badges <dir> --deny <outcome>
+                    the README's badges, as shields.io endpoint files, into dir: whether
+                    each task's latest result stands, deny's from the outcome given, and
+                    whether a pinned version is due
 
 A task's latest run is kept in audit/<task>/, to be committed: its output (run.log), when
 and on which commit it ran and how it ended (run.txt), the files it read (inputs.txt), and
@@ -95,6 +103,11 @@ fn main() -> ExitCode {
         // Not while a task uses the tools.
         "setup" => lock::exclusive(&root).and_then(|_held| setup::setup(rest)),
         "outdated" => return outdated::main(&root, rest),
+        "badges" => {
+            return badges::main(&root, rest, TASKS, |t| {
+                needed(&root, t, &params(t)).unwrap_or_else(|e| vec![e])
+            });
+        }
         // Run by this program inside a scope; they take no lock, being part of the task
         // that holds it.
         "__memory-max" => return run::memory_max(),
@@ -122,8 +135,9 @@ fn main() -> ExitCode {
             Ok(())
         }
         "needed" => match rest {
-            [t] if TASKS.contains(&t.as_str()) => {
-                return match needed(&root, t, &params(t)) {
+            [t, args @ ..] if TASKS.contains(&t.as_str()) => {
+                let wanted = plan(t, args, true).map(|p| p.params);
+                return match wanted.and_then(|params| needed(&root, t, &params)) {
                     Ok(why) if why.is_empty() => {
                         println!("{t}: up to date");
                         ExitCode::from(1)
@@ -140,7 +154,7 @@ fn main() -> ExitCode {
             }
             _ => {
                 // Not 1, which would read as the result standing.
-                eprintln!("xtask: usage: cargo xtask needed <task>\n\n{USAGE}");
+                eprintln!("xtask: usage: cargo xtask needed <task> [args]\n\n{USAGE}");
                 return ExitCode::from(2);
             }
         },
@@ -221,20 +235,28 @@ fn refused(task: &str, why: &str) -> Outcome {
 // test's sample): never documentation, whatever their names, and hashed as they are.
 const READ_AS_DATA: [&str; 0] = [];
 
+// Per project: what only Kani compiles (`#[cfg(kani)]`), which no other task can find changed.
+const PROOFS: [&str; 0] = [];
+
 /// Whether a change to `path` can change what `task` finds, besides the tools pinned for
 /// it. Documentation, CI and the results themselves change nothing.
 fn affects(task: &str, path: &str) -> bool {
     let under = |names: &[&str]| {
         names.iter().any(|n| path == *n || path.strip_prefix(n).is_some_and(|p| p.starts_with('/')))
     };
+    // Kani's list of proofs is all that a run parses with it, where a project has it.
+    if PROOFS.contains(&path) || path == "xtask/src/json.rs" {
+        return task == "kani";
+    }
     let module = |t: &str| format!("xtask/src/tasks/{t}.rs");
     // The dependencies, the toolchain, how the tasks run and the task's own code: not the
     // other tasks' code, nor what changes no run (how runs are recorded and kept apart, and
     // the tools, whose versions each run records).
     // A task the project does not run counts as another: its module changes no run.
     let other = KNOWN.iter().any(|t| *t != task && path == module(t));
-    let none = ["record.rs", "digest.rs", "pins.rs", "lock.rs", "setup.rs", "outdated.rs"]
-        .map(|f| format!("xtask/src/{f}"));
+    let none =
+        ["record.rs", "digest.rs", "pins.rs", "lock.rs", "setup.rs", "outdated.rs", "badges.rs"]
+            .map(|f| format!("xtask/src/{f}"));
     // Every member's manifest too: licenses, dependency kinds and versions that Cargo.lock
     // does not show.
     let manifest = path == "Cargo.toml" || path.ends_with("/Cargo.toml") && !under(&["fuzz"]);
@@ -322,9 +344,9 @@ fn plan(task: &str, args: &[String], record: bool) -> Result<Plan, String> {
             "a run of some of the proofs cannot stand for them all; add --no-record".to_owned()
         );
     }
-    if record && task == "fuzz" && plan.seconds != fuzz::SECONDS {
+    if record && task == "fuzz" && plan.seconds < fuzz::SECONDS {
         return Err(format!(
-            "a run of other than {} seconds would take the place of a full one; \
+            "a run of fewer than {} seconds would take the place of a full one; \
              add --no-record",
             fuzz::SECONDS
         ));
@@ -402,13 +424,17 @@ fn run(root: &Path, task: &str, args: &[String], opts: Opts) -> Outcome {
     };
     let dir = run.dir().to_owned();
     let result = tasks::run(root, task, &dir, &plan);
-    let outcome = match result {
+    let outcome = match result.and_then(|()| run.moved().map_or(Ok(()), Err)) {
         Ok(()) => Outcome::Succeeded,
         Err(e) => Outcome::Failed(e),
     };
     let line = format!("xtask: {task}: {outcome}");
     record::note(&line);
-    run.finish(&outcome.to_string(), &plan.params, &pins(task));
+    if let Err(e) = run.finish(&outcome.to_string(), &plan.params, &pins(task)) {
+        let outcome = Outcome::Failed(format!("its results were not kept: {e}"));
+        eprintln!("xtask: {task}: {outcome}");
+        return outcome;
+    }
     if opts.record {
         eprintln!("xtask: {task}: output kept in audit/{task}/");
         if root.join("audit").join(task).join(record::LAST).is_dir() {
@@ -453,10 +479,12 @@ mod tests {
             "xtask/src/lock.rs",
             "xtask/src/setup.rs",
             "xtask/src/outdated.rs",
+            "xtask/src/badges.rs",
         ] {
             assert_eq!(reads(path), Vec::<&str>::new(), "{path}");
         }
         assert_eq!(reads("xtask/src/tasks/kani.rs"), only(&["kani"]));
+        assert_eq!(reads("xtask/src/json.rs"), only(&["kani"]));
         assert_eq!(reads("xtask/src/tasks/fuzz.rs"), only(&["fuzz"]));
         // Per project: paths of this project, by the rows of the table in the skill.
         assert_eq!(reads("README.md"), Vec::<&str>::new());
@@ -478,6 +506,8 @@ mod tests {
         let args = |a: &[&str]| a.iter().map(|s| (*s).to_owned()).collect::<Vec<_>>();
         assert_eq!(plan("fuzz", &[], true).map(|p| p.params), Ok("seconds=3600".to_owned()));
         assert!(plan("fuzz", &args(&["600"]), true).is_err());
+        let longer = plan("fuzz", &args(&["14400"]), true).map(|p| p.params);
+        assert_eq!(longer, Ok("seconds=14400".to_owned()));
         assert_eq!(plan("fuzz", &args(&["600"]), false).map(|p| p.seconds), Ok(600));
         assert!(plan("fuzz", &args(&["0"]), false).is_err());
         assert!(plan("fuzz", &args(&["soon"]), false).is_err());
