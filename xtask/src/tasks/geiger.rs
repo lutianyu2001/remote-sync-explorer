@@ -23,6 +23,8 @@ pub fn run(root: &Path, dir: &Path) -> Result<(), String> {
     // geiger cleans before it builds; in target/debug that would take everyone's build.
     let mut scan = cargo(&copy, &["geiger", "--locked", "--offline", "--output-format", "Ascii"]);
     scan.env("CARGO_TARGET_DIR", root.join("target/geiger"));
+    // It colours the table as cargo's own output is coloured, and CI sets that to always.
+    scan.env("CARGO_TERM_COLOR", "never");
     let mut cmd = capped(scan, &limit("geiger"));
     record::say(&format!("$ {} > geiger.txt", shown(&cmd)));
     let ended = record::exec(&mut cmd, Some(file)).map_err(|e| format!("cargo geiger: {e}"))?;
