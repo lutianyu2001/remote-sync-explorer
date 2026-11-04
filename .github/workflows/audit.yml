@@ -8,8 +8,8 @@ name: Advisories
 # It also keeps the README's badges: whether each task's latest result in audit/ stands for
 # the code on the default branch, how this deny check went, and whether a pinned version is
 # due. Daily, after each run of Verify (which may have committed results; its last job starts
-# this), and when started by hand, to see them at once. They go to the badges branch, which holds nothing else and
-# is replaced each time.
+# this), and when started by hand, to see them at once. They go to the badges branch,
+# which holds nothing else and is replaced each time.
 on:
   schedule:
     - cron: "0 6 * * *"

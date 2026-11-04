@@ -22,8 +22,8 @@ name: Verify
 # xtask/src/pins.rs. A newer run on the same release or branch cancels the one in progress.
 # The results are committed to audit/ on the default branch by record, the only job that may
 # write to the repository, which runs none of the project's code; the code under test runs in
-# jobs that cannot write. Last, badges starts advisories.yml to show them. Actions are pinned to commits, which cargo xtask outdated checks against
-# their releases.
+# jobs that cannot write. Last, badges starts advisories.yml to show them. Actions are
+# pinned to commits, which cargo xtask outdated checks against their releases.
 on:
   release:
     types: [published]

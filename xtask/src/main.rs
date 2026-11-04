@@ -244,9 +244,13 @@ fn affects(task: &str, path: &str) -> bool {
     let under = |names: &[&str]| {
         names.iter().any(|n| path == *n || path.strip_prefix(n).is_some_and(|p| p.starts_with('/')))
     };
-    // Kani's list of proofs is all that a run parses with it, where a project has it.
-    if PROOFS.contains(&path) || path == "xtask/src/json.rs" {
+    if PROOFS.contains(&path) {
         return task == "kani";
+    }
+    // Where a project has it: what reads Kani's list of proofs, and the workspace's packages
+    // before geiger and coverage build (own_target).
+    if path == "xtask/src/json.rs" {
+        return matches!(task, "geiger" | "coverage" | "kani");
     }
     let module = |t: &str| format!("xtask/src/tasks/{t}.rs");
     // The dependencies, the toolchain, how the tasks run and the task's own code: not the
@@ -484,7 +488,7 @@ mod tests {
             assert_eq!(reads(path), Vec::<&str>::new(), "{path}");
         }
         assert_eq!(reads("xtask/src/tasks/kani.rs"), only(&["kani"]));
-        assert_eq!(reads("xtask/src/json.rs"), only(&["kani"]));
+        assert_eq!(reads("xtask/src/json.rs"), only(&["geiger", "coverage", "kani"]));
         assert_eq!(reads("xtask/src/tasks/fuzz.rs"), only(&["fuzz"]));
         // Per project: paths of this project, by the rows of the table in the skill.
         assert_eq!(reads("README.md"), Vec::<&str>::new());
