@@ -6,14 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/ci.yml/badge.svg)](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/ci.yml)
-[![audit](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Faudit.json)](SECURITY.md#running-the-audit)
-[![deny](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fdeny.json)](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/audit.yml)
-[![vet](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fvet.json)](audit/vet)
-[![geiger](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fgeiger.json)](audit/geiger)
-[![miri](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fmiri.json)](audit/miri)
-[![coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fcoverage.json)](audit/coverage)
-[![kani](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fkani.json)](audit/kani)
-[![fuzz](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Ffuzz.json)](audit/fuzz)
+[![audit](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Faudit.json)](SECURITY.md#ci)
 [![pins](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fpins.json)](xtask/src/pins.rs)
 
 remote-sync-explorer (`rse`) is a dual-pane terminal file manager for the local disk,
@@ -95,13 +88,22 @@ system's own, never shipped with rse.
 
 ## Security Audit
 
+[![deny](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fdeny.json)](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/audit.yml)
+[![vet](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fvet.json)](audit/vet)
+[![geiger](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fgeiger.json)](audit/geiger)
+[![miri](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fmiri.json)](audit/miri)
+[![coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fcoverage.json)](audit/coverage)
+[![kani](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fkani.json)](audit/kani)
+[![fuzz](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Ffuzz.json)](audit/fuzz)
+
 rse handles passwords, ssh logins and the files on remote servers, so its code has been
 audited for security. The audit was done by the project's maintainer, not by an
 independent third party: it raises confidence in the code but is no guarantee. The audit
 is repeated rather than done once: its latest results are committed with the code in
-[`audit/`](audit/), and the badges above show whether each still holds for the code on
-main. At each release CI reruns the parts whose results no longer hold and whose length is
-known beforehand (fuzzing four hours a target); Kani and Miri are rerun by hand.
+[`audit/`](audit/), and the badges above (with `audit` under the title for them all)
+show whether each still holds for the code on main. At each release CI reruns the parts
+whose results no longer hold and whose length is known beforehand (fuzzing four hours a
+target); Kani and Miri are rerun by hand.
 [SECURITY.md](SECURITY.md) describes each part and how to run it, and
 [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md) the dependencies. The figures below are from the runs
 of 2026-11-02.
@@ -632,7 +634,9 @@ The entire repository is licensed under the Apache License, Version 2.0
 (the "License"); you may not use any file in this repository except in 
 compliance with the License. You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+```plaintext
+http://www.apache.org/licenses/LICENSE-2.0
+```
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,

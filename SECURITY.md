@@ -115,9 +115,10 @@ commit, keeping any committed there since. As CI pushes to main, pull with
 `git pull --rebase` before pushing, and never amend and force push what is published.
 
 The Advisories workflow (`audit.yml`) runs `cargo xtask deny --no-record` and `cargo xtask
-outdated --vulns` daily, and the full `outdated` weekly. It also writes the badges at the
-top of README, to the `badges` branch (replaced each time): daily, after each run of
-Verify, and when started by hand. Each task's badge says whether its result in `audit/`
+outdated --vulns` daily, and the full `outdated` weekly. It also writes README's badges
+(`audit` and `pins` under its title, the tasks' at the start of its Security Audit
+section) to the `badges` branch, replaced each time: daily, after each run of Verify, and
+when started by hand. Each task's badge says whether its result in `audit/`
 still stands for the code on main (green), is out of date (yellow), failed (red) or never
 ran (grey); deny's shows that day's check; `audit` is the worst of them, and `pins` how
 many pinned versions are due.
