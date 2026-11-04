@@ -151,7 +151,7 @@ What this does not show:
 2. Install `rse`:
 
    ```bash
-   cargo install --locked remote-sync-explorer
+   cargo install --locked rse
    ```
 
 The first build compiles rclone, with rse's own additions from `librse/`, which takes a

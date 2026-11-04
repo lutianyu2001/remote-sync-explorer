@@ -1020,7 +1020,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "remote-sync-explorer"
+name = "rpassword"
+version = "7.5.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2da316a15f47e3d053de9cb2c439650bd8fa4aaeb9365f2e5f27f492ff73c196"
+dependencies = [
+ "libc",
+ "rtoolbox",
+ "windows-sys",
+]
+
+[[package]]
+name = "rse"
 version = "0.1.0"
 dependencies = [
  "aes",
@@ -1044,22 +1055,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "rpassword"
-version = "7.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2da316a15f47e3d053de9cb2c439650bd8fa4aaeb9365f2e5f27f492ff73c196"
-dependencies = [
- "libc",
- "rtoolbox",
- "windows-sys",
-]
-
-[[package]]
 name = "rse-fuzz"
 version = "0.0.0"
 dependencies = [
  "libfuzzer-sys",
- "remote-sync-explorer",
+ "rse",
  "toml",
  "unicode-segmentation",
 ]

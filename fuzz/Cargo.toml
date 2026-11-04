@@ -15,7 +15,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = { version = "0.4.13", features = ["arbitrary-derive"] }
-remote-sync-explorer = { path = "..", default-features = false }
+rse = { path = "..", default-features = false }
 toml = "1.1.8"
 unicode-segmentation = "1.13.3"
 

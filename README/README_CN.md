@@ -110,7 +110,7 @@ rse 经手密码、ssh 登录和远端服务器上的文件，所以它的代码
 2. 安装 `rse`：
 
    ```bash
-   cargo install --locked remote-sync-explorer
+   cargo install --locked rse
    ```
 
 首次构建会编译 rclone 和 `librse/` 里 rse 自己加的部分，需要一分钟以上。因为包含了整个 rclone，二进制文件约 90–115 MB。构建时会用 `librclone.h` 核对手写的绑定，rclone 导出的四个函数一旦变化，构建就会失败；在 glibc 上，rse 手写声明的那个 libintl 函数也会这样核对。
