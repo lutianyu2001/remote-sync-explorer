@@ -69,9 +69,11 @@ fn stats_latency_is_independent_of_concurrent_listing() {
         busy.len()
     );
     assert!(lists >= 1);
-    // A blocking implementation would make core/stats wait for a whole listing.
+    // A blocking implementation would make core/stats wait for a whole listing, so the
+    // slowest of its many samples would come near one. Against the listing, not a fixed
+    // time: a shared runner, with other tests running, can take tens of milliseconds.
     assert!(
-        busy_max < Duration::from_millis(50) && busy_max < longest_list,
+        busy_max * 4 < longest_list,
         "core/stats took {busy_max:?} while a listing took {longest_list:?}"
     );
 }
