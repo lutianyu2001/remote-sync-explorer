@@ -68,7 +68,7 @@ f7f224d71997ac1d0ffc422671c56040d360d722	tests/concurrency.rs
 cf8b0105e41c274844476e7e65de8d7b6bf09bdf	tests/sftp_ssh.rs
 696fcc59a9756b245a1fc2f7fe2a9aad69e66378	tests/startup.rs
 2ba761b32e745a1e6181cf7ef51308850484f2cc	xtask/Cargo.toml
-5485a991d7dff87f53c41d182d4cad24e01bb7ac	xtask/src/main.rs
+db8e23c2c4374ba63216e8254e306f7b572f137b	xtask/src/main.rs
 c1930b545baab252c81e949bf4b04144be5c14e9	xtask/src/run.rs
 872846b6df945a817bbbe54f91857ad0fc233b6b	xtask/src/tasks/coverage.rs
 8e6d71765cce475cb622d1b62bc6afedec9e05c5	xtask/src/tasks/mod.rs

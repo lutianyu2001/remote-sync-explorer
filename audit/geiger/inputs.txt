@@ -59,7 +59,7 @@ e8d7a9c8b4f563ddc077dd1acddc6478ed51ab70	src/ui/snapshots/rse__ui__tests__long_p
 36a96d5c09ceb116712be2aaf5579f5adb90e12a	src/ui/tests.rs
 97594d544b2b22539775f3b03549ad44eb1b8a21	src/ui/text.rs
 2ba761b32e745a1e6181cf7ef51308850484f2cc	xtask/Cargo.toml
-5485a991d7dff87f53c41d182d4cad24e01bb7ac	xtask/src/main.rs
+db8e23c2c4374ba63216e8254e306f7b572f137b	xtask/src/main.rs
 c1930b545baab252c81e949bf4b04144be5c14e9	xtask/src/run.rs
-a6b997e0c7091998b072d552c0e482f3c596fbbd	xtask/src/tasks/geiger.rs
+036e499d209ef65fe8667d05ca532200aeab1459	xtask/src/tasks/geiger.rs
 8e6d71765cce475cb622d1b62bc6afedec9e05c5	xtask/src/tasks/mod.rs
