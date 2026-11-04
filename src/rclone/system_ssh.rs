@@ -1722,7 +1722,12 @@ mod tests {
         let file = file.to_string_lossy().into_owned();
         let found = Route::Checked(format!("nas,known_hosts_file={file}"));
         let missing = dir.path().join("missing").to_string_lossy().into_owned();
-        let have_keygen = Command::new("ssh-keygen").arg("-?").output().is_ok();
+        // ssh-keygen that runs at all can still fail to look a host up, for example as a user
+        // with no passwd entry (as in a container); the lookups are then unsure, as above.
+        let have_keygen = Command::new("ssh-keygen")
+            .args(["-F", "absent.example", "-f", &file])
+            .output()
+            .is_ok_and(|o| o.status.code() == Some(1));
         for v in ["no", "accept-new"] {
             let set = effective(&[("userknownhostsfile", &file), ("stricthostkeychecking", v)]);
             assert_eq!(route(&[("host", "box")], &set), found, "{v}: a known one is checked");
