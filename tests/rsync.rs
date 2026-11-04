@@ -205,13 +205,19 @@ fn login_dir() -> Option<PathBuf> {
     line.trim().split(':').nth(5).map(PathBuf::from).filter(|p| p.is_absolute())
 }
 
+/// A directory for ssh's master sockets, whose paths may be no longer than about 100
+/// bytes: under /tmp, not the temporary directory, which on macOS is a long path.
+fn socket_work_dir() -> tempfile::TempDir {
+    tempfile::tempdir_in("/tmp").unwrap()
+}
+
 #[test]
 fn rsync_through_the_master_connection() {
     if !have("ssh") || !have("ssh-keygen") || !rse::rsync::usable() {
         eprintln!("skipped: ssh, ssh-keygen or rsync 3.1 or newer not installed");
         return;
     }
-    let work = tempfile::tempdir().unwrap();
+    let work = socket_work_dir();
     let key = keygen(work.path());
     let Some((_sshd, port)) = start_sshd(work.path(), &key) else {
         eprintln!("skipped: no sshd");

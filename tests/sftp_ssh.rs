@@ -130,6 +130,12 @@ fn sorted_names(backend: &dyn Backend, loc: &Location) -> Vec<String> {
     names
 }
 
+/// A directory for ssh's master sockets, whose paths may be no longer than about 100
+/// bytes: under /tmp, not the temporary directory, which on macOS is a long path.
+fn socket_work_dir() -> tempfile::TempDir {
+    tempfile::tempdir_in("/tmp").unwrap()
+}
+
 #[test]
 fn browse_and_copy_over_openssh() {
     let _turn = RCLONE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -265,7 +271,7 @@ fn builtin_sftp_remotes_share_one_system_ssh_login() {
         eprintln!("skipped: ssh or ssh-keygen not installed");
         return;
     }
-    let work = tempfile::tempdir().unwrap();
+    let work = socket_work_dir();
     let served = work.path().join("served");
     for d in ["a", "b", "c", "d"] {
         fs::create_dir_all(served.join(d)).unwrap();
@@ -364,7 +370,7 @@ fn passphrases_come_from_rclone_conf_or_the_user() {
         eprintln!("skipped: ssh or ssh-keygen not installed");
         return;
     }
-    let work = tempfile::tempdir().unwrap();
+    let work = socket_work_dir();
     let served = work.path().join("served");
     fs::create_dir_all(&served).unwrap();
     fs::write(served.join("f.txt"), "x").unwrap();
@@ -465,7 +471,7 @@ fn ssh_says_why_it_asks_again() {
         eprintln!("skipped: ssh or ssh-keygen not installed");
         return;
     }
-    let work = tempfile::tempdir().unwrap();
+    let work = socket_work_dir();
     let key = keygen(work.path());
     let auth = "PasswordAuthentication yes\nAuthenticationMethods password\n";
     let Some((_sshd, port)) = start_sshd_with(work.path(), &key, auth) else {

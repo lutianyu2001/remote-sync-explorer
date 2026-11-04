@@ -89,6 +89,12 @@ fn stop_after(b: &dyn Backend, params: serde_json::Value, at: i64) -> api::Stats
     stats
 }
 
+/// A directory for ssh's master sockets, whose paths may be no longer than about 100
+/// bytes: under /tmp, not the temporary directory, which on macOS is a long path.
+fn socket_work_dir() -> tempfile::TempDir {
+    tempfile::tempdir_in("/tmp").unwrap()
+}
+
 #[test]
 fn download_to_local_resumes_after_stop() {
     let _turn = TURN.lock().unwrap_or_else(PoisonError::into_inner);
@@ -271,7 +277,7 @@ fn upload_to_sftp_over_system_ssh_resumes_after_stop() {
         eprintln!("skipped: ssh or ssh-keygen not installed");
         return;
     }
-    let work = tempfile::tempdir().unwrap();
+    let work = socket_work_dir();
     let served = work.path().join("served");
     fs::create_dir_all(&served).unwrap();
     let key = keygen(work.path());
