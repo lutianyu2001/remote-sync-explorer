@@ -8,7 +8,7 @@ use std::process::Command;
 
 use crate::record;
 use crate::run::{capped, cargo, shown, status};
-use crate::tasks::limit;
+use crate::tasks::{limit, own_target};
 
 /// Where the copy of the work tree that geiger scans is made.
 const COPY: &str = "target/geiger-src";
@@ -17,6 +17,7 @@ pub fn run(root: &Path, dir: &Path) -> Result<(), String> {
     // geiger reads the dependencies' sources, which a build without vendor/ has fetched
     // only for the host's targets.
     status(cargo(root, &["fetch", "--locked"]))?;
+    own_target(root, "geiger")?;
     let copy = copy(root)?;
     let path = dir.join("geiger.txt");
     let file = fs::File::create(&path).map_err(|e| format!("{}: {e}", path.display()))?;

@@ -3,10 +3,16 @@
 //! `affects`).
 
 use std::env;
+use std::fs;
+use std::io;
 use std::path::Path;
+
+use serde_json::Value;
 
 use crate::Plan;
 use crate::pins::{NIGHTLY, TOOLS};
+use crate::record;
+use crate::run::cargo;
 
 pub mod coverage;
 pub mod deny;
@@ -92,4 +98,90 @@ pub fn memory(task: &str) -> Option<String> {
 
 pub fn limit(task: &str) -> String {
     memory(task).unwrap_or_default()
+}
+
+/// What [`own_target`] keeps in a task's build directory: the packages it was built for.
+const BUILT_FOR: &str = "xtask-built-for.txt";
+
+/// Empties `target/<dir>`, a task's own build directory, unless it was built for the
+/// workspace's packages as they are now: their names and where they are. Cargo, and the
+/// tools' own clean, clear only what the packages there are now built, and what one renamed
+/// or moved left behind is read as if it were still built: cargo-geiger 0.14.0 reads the
+/// paths in its old `.d` files, and fails on those gone; cargo-llvm-cov 0.9.1 reports on its
+/// old test programs too, their code never run, and the total drops.
+pub fn own_target(root: &Path, dir: &str) -> Result<(), String> {
+    let target = root.join("target").join(dir);
+    let mark = target.join(BUILT_FOR);
+    let now = packages(root)?;
+    match fs::read_to_string(&mark) {
+        Ok(was) if was == now => return Ok(()),
+        _ if !target.exists() => {}
+        _ => {
+            record::say(&format!(
+                "target/{dir}: built for other packages, or none recorded; emptied"
+            ));
+            fs::remove_dir_all(&target).or_else(|e| match e.kind() {
+                io::ErrorKind::NotFound => Ok(()),
+                _ => Err(format!("{}: {e}", target.display())),
+            })?;
+        }
+    }
+    fs::create_dir_all(&target).map_err(|e| format!("{}: {e}", target.display()))?;
+    fs::write(&mark, now).map_err(|e| format!("{}: {e}", mark.display()))
+}
+
+/// The workspace's packages, one a line: the name, then the manifest's path.
+fn packages(root: &Path) -> Result<String, String> {
+    let out = cargo(root, &["metadata", "--no-deps", "--format-version", "1"])
+        .output()
+        .map_err(|e| format!("cargo metadata: {e}"))?;
+    if !out.status.success() {
+        return Err(format!(
+            "cargo metadata: {}: {}",
+            out.status,
+            String::from_utf8_lossy(&out.stderr).trim()
+        ));
+    }
+    let meta: Value =
+        serde_json::from_slice(&out.stdout).map_err(|e| format!("cargo metadata: {e}"))?;
+    let mut lines: Vec<String> = meta["packages"]
+        .as_array()
+        .ok_or("cargo metadata: no packages")?
+        .iter()
+        .map(|p| {
+            let field = |k: &str| p[k].as_str().ok_or(format!("cargo metadata: a package's {k}"));
+            Ok(format!("{} {}", field("name")?, field("manifest_path")?))
+        })
+        .collect::<Result<_, String>>()?;
+    lines.sort();
+    Ok(lines.join("\n") + "\n")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// What another package left is cleared once, and what the packages there are now
+    /// built is kept after that.
+    #[test]
+    fn a_build_directory_keeps_only_this_workspaces_builds() {
+        let root = crate::root();
+        let dir = format!("xtask-test-{}", std::process::id());
+        let target = root.join("target").join(&dir);
+        fs::create_dir_all(target.join("debug")).unwrap();
+        fs::write(target.join("debug/old"), "").unwrap();
+        fs::write(target.join(BUILT_FOR), "renamed /gone/Cargo.toml\n").unwrap();
+        own_target(&root, &dir).unwrap();
+        assert!(!target.join("debug/old").exists());
+        let mark = fs::read_to_string(target.join(BUILT_FOR)).unwrap();
+        assert!(mark.contains(&format!("xtask {}", root.join("xtask/Cargo.toml").display())));
+        fs::write(target.join("new"), "").unwrap();
+        own_target(&root, &dir).unwrap();
+        assert!(target.join("new").exists());
+        // Nothing recorded: what is there cannot be told apart.
+        fs::remove_file(target.join(BUILT_FOR)).unwrap();
+        own_target(&root, &dir).unwrap();
+        assert!(!target.join("new").exists());
+        fs::remove_dir_all(&target).unwrap();
+    }
 }
