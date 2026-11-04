@@ -179,11 +179,18 @@ jobs:
         env:
           ARGS: ${{ steps.args.outputs.args }}
         run: cargo xtask "$TASK" $ARGS
+      # The artifact holds the task's directory itself, not just what is in it: the record job
+      # finds each task's results under the task's name, however many tasks ran, as
+      # download-artifact puts a lone artifact's files straight into its path.
+      - if: ${{ !cancelled() && steps.task.outcome != 'skipped' }}
+        run: |
+          mkdir -p target/results
+          if [ -d "audit/$TASK" ]; then cp -r "audit/$TASK" target/results/; fi
       - if: ${{ !cancelled() && steps.task.outcome != 'skipped' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: audit-${{ matrix.task }}
-          path: audit/${{ matrix.task }}
+          path: target/results
           if-no-files-found: ignore
       - if: ${{ !cancelled() && matrix.task == 'fuzz' && steps.task.outcome != 'skipped' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -218,6 +225,7 @@ jobs:
         with:
           pattern: audit-*
           path: results
+          merge-multiple: true
       - name: Commit the results to audit/
         env:
           BRANCH: ${{ github.event.repository.default_branch }}
@@ -237,8 +245,8 @@ jobs:
             mapfile -t keep < <(git diff --name-only "$sha" "origin/$BRANCH" -- audit/ | cut -d/ -f2 | sort -u)
             # Before the first results are committed, there is no audit/ to copy into.
             mkdir -p audit
-            for dir in results/audit-*; do
-              task=${dir#results/audit-}
+            for dir in results/*/; do
+              task=$(basename "$dir")
               if printf '%s\n' "${keep[@]}" | grep -qx "$task"; then
                 echo "$task: results committed since ${sha::7} stand"
                 continue
