@@ -1,10 +1,10 @@
 # Rust as tokens, TOML as values, the rest as git blobs (1)
 ea30e7752b0a869d9d0d8530380575fcd0ae9e6a	.cargo/config.toml
-a31043add15870d9a35f420d510370fd9dd5e8f9	Cargo.lock
-adb15c7b17dfac54e5a014371e68f269ce246171	Cargo.toml
+cb1e2abedcae7a1ddfda89068cd49a178ef06e05	Cargo.lock
+5f4f10164ed6bc872808c4577a56cbe4dac477b1	Cargo.toml
 4ac3565349e0cfd780d7bae9717e50dda6137821	deny.toml
-ab4765b84e56228991a6e7b7a04c65b258968bd1	fuzz/Cargo.lock
-73e49782151a5d68bfcfa2a7ff48f20ac7b0ecb2	fuzz/Cargo.toml
+9e89801f6f67666bc61c792d7a31734763f230dc	fuzz/Cargo.lock
+367dcbf72c85f3844716d999aacdbc09c57d6a09	fuzz/Cargo.toml
 9ec55b3b621dbc75fc68817cd51b96e407d3c94c	rust-toolchain.toml
 2ba761b32e745a1e6181cf7ef51308850484f2cc	xtask/Cargo.toml
 5485a991d7dff87f53c41d182d4cad24e01bb7ac	xtask/src/main.rs

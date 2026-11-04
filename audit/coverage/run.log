@@ -3,17 +3,17 @@ $ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -- cargo
 warning: --branch option is unstable
 info: cargo-llvm-cov currently setting cfg(coverage) and cfg(coverage_nightly); you can opt-out it by passing --no-cfg-coverage and --no-cfg-coverage-nightly
    Compiling proc-macro2 v1.0.107
-   Compiling unicode-ident v1.0.27
    Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
    Compiling libc v0.2.191
    Compiling cfg-if v1.0.5
    Compiling thiserror v2.0.21
    Compiling proc-macro-hack v0.5.20+deprecated
    Compiling unicode-segmentation v1.13.3
-   Compiling strsim v0.11.1
    Compiling bitflags v2.13.2
-   Compiling heck v0.5.0
+   Compiling strsim v0.11.1
    Compiling rustversion v1.0.23
+   Compiling heck v0.5.0
    Compiling foldhash v0.2.0
    Compiling allocator-api2 v0.2.21
    Compiling unicode-width v0.2.2
@@ -23,64 +23,64 @@ info: cargo-llvm-cov currently setting cfg(coverage) and cfg(coverage_nightly); 
    Compiling equivalent v1.0.3
    Compiling parking_lot_core v0.9.12
    Compiling linux-raw-sys v0.12.1
-   Compiling log v0.4.34
-   Compiling version_check v0.9.5
    Compiling either v1.19.0
    Compiling serde_core v1.0.229
+   Compiling log v0.4.34
    Compiling itoa v1.0.18
+   Compiling version_check v0.9.5
    Compiling signal-hook v0.3.18
-   Compiling scopeguard v1.2.0
    Compiling ryu v1.0.23
+   Compiling scopeguard v1.2.0
    Compiling static_assertions v1.1.0
    Compiling indoc v2.0.8
    Compiling litrs v1.0.1
    Compiling typenum v1.20.1
+   Compiling utf8parse v0.2.2
    Compiling rustc-hash v2.1.3
    Compiling memchr v2.8.3
-   Compiling autocfg v1.5.1
    Compiling lock_api v0.4.14
-   Compiling utf8parse v0.2.2
+   Compiling autocfg v1.5.1
    Compiling line-clipping v0.3.8
-   Compiling anstyle-parse v1.0.0
    Compiling type-map v0.5.1
-   Compiling is_terminal_polyfill v1.70.2
-   Compiling zmij v1.0.23
-   Compiling crossbeam-utils v0.8.23
-   Compiling same-file v1.0.6
+   Compiling anstyle-parse v1.0.0
    Compiling anstyle v1.0.14
    Compiling anstyle-query v1.1.5
-   Compiling itertools v0.14.0
+   Compiling zmij v1.0.23
    Compiling colorchoice v1.0.5
+   Compiling same-file v1.0.6
+   Compiling is_terminal_polyfill v1.70.2
+   Compiling crossbeam-utils v0.8.23
    Compiling anyhow v1.0.104
+   Compiling clap_lex v1.1.1
+   Compiling itertools v0.14.0
    Compiling winnow v1.0.4
    Compiling self_cell v1.3.0
    Compiling serde_json v1.0.154
-   Compiling unicase v2.10.0
-   Compiling generic-array v0.14.7
-   Compiling serde v1.0.229
-   Compiling clap_lex v1.1.1
    Compiling walkdir v2.5.0
-   Compiling convert_case v0.10.0
+   Compiling generic-array v0.14.7
+   Compiling anstream v1.0.0
+   Compiling unicase v2.10.0
+   Compiling serde v1.0.229
    Compiling getrandom v0.4.3
    Compiling hashbrown v0.17.1
+   Compiling convert_case v0.10.0
    Compiling iana-time-zone v0.1.65
-   Compiling remote-sync-explorer v0.1.0 (.)
-   Compiling cpufeatures v0.2.17
    Compiling toml_writer v1.1.3+spec-1.1.0
+   Compiling cpufeatures v0.2.17
+   Compiling rse v0.1.0 (.)
    Compiling sys-locale v0.3.2
    Compiling once_cell v1.21.4
-   Compiling anstream v1.0.0
-   Compiling num-traits v0.2.19
    Compiling fastrand v2.5.0
    Compiling similar v2.7.0
-   Compiling document-features v0.2.12
+   Compiling num-traits v0.2.19
    Compiling clap_builder v4.6.7
+   Compiling document-features v0.2.12
    Compiling toml_parser v1.1.5+spec-1.1.0
    Compiling castaway v0.2.4
    Compiling compact_str v0.9.1
-   Compiling crossbeam-channel v0.5.17
    Compiling syn v3.0.9
    Compiling syn v2.0.119
+   Compiling crossbeam-channel v0.5.17
    Compiling lru v0.18.5
    Compiling chrono v0.4.45
    Compiling errno v0.3.14
@@ -92,9 +92,9 @@ info: cargo-llvm-cov currently setting cfg(coverage) and cfg(coverage_nightly); 
    Compiling parking_lot v0.12.5
    Compiling inout v0.1.4
    Compiling crypto-common v0.1.7
-   Compiling signal-hook-mio v0.2.5
-   Compiling unicode-truncate v2.0.1
    Compiling cipher v0.4.4
+   Compiling unicode-truncate v2.0.1
+   Compiling signal-hook-mio v0.2.5
    Compiling aes v0.8.4
    Compiling toml_datetime v1.1.2+spec-1.1.0
    Compiling serde_spanned v1.1.2
@@ -108,8 +108,8 @@ info: cargo-llvm-cov currently setting cfg(coverage) and cfg(coverage_nightly); 
    Compiling crossterm v0.29.0
    Compiling displaydoc v0.2.7
    Compiling thiserror-impl v2.0.21
-   Compiling serde_derive v1.0.229
    Compiling clap_derive v4.6.7
+   Compiling serde_derive v1.0.229
    Compiling tinystr v0.8.5
    Compiling unic-langid-impl v0.9.6
    Compiling strum v0.28.0
@@ -133,14 +133,14 @@ info: cargo-llvm-cov currently setting cfg(coverage) and cfg(coverage_nightly); 
    Compiling ratatui-crossterm v0.1.2
    Compiling ratatui v0.30.2
    Compiling lazyui-ratatui v0.1.0
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.21s
-     Running unittests src/lib.rs (target/llvm-cov-target/debug/build/remote-sync-explorer/d84b3dbfd55f91ec/out/rse-d84b3dbfd55f91ec)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.20s
+     Running unittests src/lib.rs (target/llvm-cov-target/debug/build/rse/bd0121c9e7f6e2f1/out/rse-bd0121c9e7f6e2f1)
 
 running 231 tests
 test app::tests::a_file_and_a_directory_of_one_name_are_marked_apart ... ok
 test app::tests::a_drop_leaves_a_dialog_that_came_up_during_the_drag ... ok
-test app::tests::drag_rests_on_bottom_edge_autoscrolls ... ok
 test app::tests::drag_follows_the_entry_not_the_row ... ok
+test app::tests::drag_rests_on_bottom_edge_autoscrolls ... ok
 test app::tests::a_click_right_after_a_conflict_joins_is_ignored ... ok
 test app::tests::clicking_the_path_edits_it ... ok
 test app::tests::copy_to_the_same_directory_is_refused ... ok
@@ -148,45 +148,45 @@ test app::tests::copying_a_directory_into_itself_is_refused ... ok
 test app::tests::clicking_a_key_hint_runs_it ... ok
 test app::tests::alt_modifier_can_replace_ctrl ... ok
 test app::tests::click_moves_cursor_and_clears_marks ... ok
-test app::tests::conflict_check_lists_the_target_again ... ok
 test app::tests::double_click_enters_directories_and_parent ... ok
+test app::tests::conflict_check_lists_the_target_again ... ok
+test app::tests::double_click_on_copy_does_not_hit_the_conflict_dialog ... ok
 test app::tests::conflict_check_lists_a_target_no_pane_shows ... ok
-test app::tests::copy_file_asks_then_submits_copyfile ... ok
 test app::tests::copy_dir_uses_rse_copy_and_merges_note ... ok
 test app::tests::double_enter_on_confirm_skips_instead_of_overwriting ... ok
-test app::tests::double_click_on_copy_does_not_hit_the_conflict_dialog ... ok
 test app::tests::drop_action_copy_skips_the_menu ... ok
+test app::tests::copy_file_asks_then_submits_copyfile ... ok
 test app::tests::ctrl_click_and_right_click_toggle_marks ... ok
 test app::tests::drop_into_subdirectory_of_the_same_pane ... ok
-test app::tests::dragging_an_unmarked_entry_drags_only_it ... ok
 test app::tests::initial_listing_sorts_dirs_first_and_hides_dot_files ... ok
-test app::tests::a_job_waits_for_an_earlier_one_writing_its_name ... ok
 test app::tests::a_new_host_key_is_trusted_only_by_choice ... ok
-test app::tests::drag_to_other_pane_offers_copy_or_move ... ok
+test app::tests::a_job_waits_for_an_earlier_one_writing_its_name ... ok
+test app::tests::dragging_an_unmarked_entry_drags_only_it ... ok
 test app::tests::drag_menu_move_still_confirms ... ok
+test app::tests::drag_to_other_pane_offers_copy_or_move ... ok
 test app::tests::esc_cancels_a_drag ... ok
 test app::tests::dragging_a_marked_entry_drags_all_marked ... ok
 test app::tests::names_that_lead_out_of_a_directory_are_left_out ... ok
 test app::tests::a_file_beside_a_directory_of_its_name_keeps_the_cursor ... ok
 test app::tests::invalid_drops_do_nothing ... ok
-test app::tests::conflicts_ask_per_item ... ok
 test app::tests::delete_defaults_to_cancel ... ok
-test app::tests::help_and_error_log_open_and_close ... ok
+test app::tests::conflicts_ask_per_item ... ok
 test app::tests::enter_and_parent_restore_the_cursor ... ok
+test app::tests::help_and_error_log_open_and_close ... ok
 test app::tests::move_across_remotes_warns ... ok
 test app::tests::goto_accepts_remote_paths ... ok
-test app::tests::nothing_selected_on_parent_row ... ok
 test app::tests::quit_gives_up_waiting_after_the_grace_period ... ok
-test app::tests::cancelling_checks_that_hang_starts_the_next_job ... ok
 test app::tests::mkdir_creates_and_selects ... ok
+test app::tests::nothing_selected_on_parent_row ... ok
+test app::tests::cancelling_checks_that_hang_starts_the_next_job ... ok
 test app::tests::names_differing_only_in_case_conflict ... ok
 test app::tests::moved_directory_source_is_removed ... ok
 test app::tests::ssh_errors_get_a_login_hint ... ok
 test app::tests::listing_error_is_shown_in_the_pane_and_logged ... ok
 test app::tests::clicking_a_queue_cross_cancels ... ok
 test app::tests::quit_without_jobs_is_immediate ... ok
-test app::tests::slow_second_click_is_not_a_double_click ... ok
 test app::tests::one_listing_per_pane_in_flight ... ok
+test app::tests::slow_second_click_is_not_a_double_click ... ok
 test app::tests::letter_aliases_navigate_too ... ok
 test app::tests::cancel_leaves_every_job_not_yet_decided_failed ... ok
 test app::tests::a_conflict_waits_for_the_dialog_in_front_of_it ... ok
@@ -204,15 +204,15 @@ test endpoint::tests::sftp_paths_follow_url_conventions ... ok
 test engine::tests::without_the_system_ssh_rclone_does_everything ... ok
 test exec::tests::failed_submit_is_reported_as_finished_job ... ok
 test app::tests::marks_toggle_and_mark_all ... ok
-test app::tests::mkdir_rejects_existing_and_slash ... ok
 test exec::tests::listing_result_comes_back_as_event ... ok
+test app::tests::mkdir_rejects_existing_and_slash ... ok
 test exec::tests::unwanted_listing_is_skipped ... ok
-test app::tests::overwrite_all_copies_everything ... ok
+test app::tests::size_sort_puts_largest_files_first ... ok
 test hitmap::tests::dialog_captures_everything ... ok
 test hitmap::tests::rows_account_for_scroll_offset ... ok
 test hitmap::tests::title_queue_and_hints ... ok
 test i18n::tests::arguments_and_plurals ... ok
-test app::tests::size_sort_puts_largest_files_first ... ok
+test i18n::tests::both_languages_have_every_message_in_use ... ok
 test jobs::tests::a_cancel_while_pausing_cancels ... ok
 test jobs::tests::a_cancelled_check_makes_room_and_its_answer_is_ignored ... ok
 test jobs::tests::a_paused_job_skips_the_check_and_a_retried_one_does_not ... ok
@@ -258,105 +258,105 @@ test rclone::backend::tests::empty_ok_reply_is_an_empty_object ... ok
 test rclone::backend::tests::error_json_is_unwrapped ... ok
 test rclone::backend::tests::fake_backend_logs_calls ... ok
 test rclone::backend::tests::non_json_error_is_kept_verbatim ... ok
-test i18n::tests::both_languages_have_every_message_in_use ... ok
-test rclone::obscure::tests::decodes_only_the_text_rclone_writes ... ok
-test rclone::obscure::tests::obscures_like_rclone ... ok
-test rclone::obscure::tests::rejects_other_text ... ok
-test rclone::obscure::tests::reveals_what_rclone_obscured ... ok
+test app::tests::overwrite_all_copies_everything ... ok
 test app::tests::overwrite_mode_copies_without_checking_and_says_so ... ok
+test rclone::obscure::tests::decodes_only_the_text_rclone_writes ... ok
+test rclone::obscure::tests::rejects_other_text ... ok
+test rclone::obscure::tests::obscures_like_rclone ... ok
+test rclone::obscure::tests::reveals_what_rclone_obscured ... ok
 test exec::tests::without_rse_copy_rclone_copies_by_itself ... ok
 test app::tests::a_file_that_arrives_before_the_job_starts_is_not_overwritten ... ok
 test exec::tests::job_is_submitted_polled_and_finished ... ok
 test rclone::system_ssh::tests::a_host_or_user_is_never_an_option ... ok
-test rclone::obscure::tests::base64_round_trips_every_short_input ... ok
-test rclone::system_ssh::tests::connection_string_params ... ok
 test exec::tests::stop_calls_job_stop_with_rclone_id ... ok
+test rclone::system_ssh::tests::connection_string_params ... ok
+test rclone::obscure::tests::base64_round_trips_every_short_input ... ok
 test rclone::system_ssh::tests::host_key_changes_are_not_fallen_back_from ... ok
 test rclone::system_ssh::tests::host_key_questions_are_confirmations ... ok
-test app::tests::late_target_check_does_not_replace_an_open_dialog ... ok
+test rclone::system_ssh::tests::no_socket_dir_keeps_checking_host_keys ... ok
 test rclone::system_ssh::tests::openssh_versions ... ok
 test rclone::system_ssh::tests::options_become_ssh_arguments ... ok
 test rclone::system_ssh::tests::options_ssh_takes_over_leave_the_fs ... ok
-test app::tests::wheel_in_remote_picker_stops_at_the_last_choice ... ok
-test rclone::system_ssh::tests::no_socket_dir_keeps_checking_host_keys ... ok
+test rclone::system_ssh::tests::falling_back_keeps_checking_host_keys ... ok
+test rclone::system_ssh::tests::quoted_values_split_back_unchanged ... ok
 test rclone::system_ssh::tests::quoting_for_rclone ... ok
 test rclone::system_ssh::tests::refused_conf_secrets_are_explained ... ok
-test rclone::system_ssh::tests::quoted_values_split_back_unchanged ... ok
+test config::tests::save_is_atomic_and_round_trips ... ok
+test rclone::ssh_passwords::tests::reports_a_damaged_entry ... ok
 test rclone::system_ssh::tests::remembered_passwords_are_kept_per_resolved_login ... ok
-test rclone::system_ssh::tests::secrets_only_answer_this_logins_questions ... ok
+test rclone::system_ssh::tests::remembered_passwords_answer_only_this_logins_password_question ... ok
 test rclone::system_ssh::tests::secrets_stay_out_of_debug_output ... ok
-test rclone::system_ssh::tests::sockets_go_where_only_this_user_can_create_them ... ok
 test rclone::system_ssh::tests::some_options_need_askpass_or_the_builtin_ssh ... ok
 test rclone::system_ssh::tests::the_log_shows_no_passwords ... ok
+test rclone::system_ssh::tests::sockets_go_where_only_this_user_can_create_them ... ok
 test rclone::system_ssh::tests::transfers_forward_nothing_and_settings_keep_masters_apart ... ok
-test rclone::system_ssh::tests::unreadable_secrets_are_asked_for_saying_why ... ok
+test rclone::system_ssh::tests::secrets_only_answer_this_logins_questions ... ok
 test rclone::system_ssh::tests::untouched_fs_strings ... ok
-test rclone::system_ssh::tests::what_ssh_says_tells_why_it_asks_again ... ok
-test app::tests::wheel_scrolls_the_pane_under_the_pointer_without_focus ... ok
+test rclone::ssh_passwords::tests::keeps_other_lines ... ok
 test rclone::system_ssh::tests::whose_question ... ok
-test rclone::system_ssh::tests::falling_back_keeps_checking_host_keys ... ok
+test rclone::system_ssh::tests::unreadable_secrets_are_asked_for_saying_why ... ok
+test rclone::ssh_passwords::tests::remembers_and_forgets ... ok
 test rsync::tests::arguments_for_each_way ... ok
-test app::tests::swap_and_switch_panes ... ok
+test rclone::system_ssh::tests::what_ssh_says_tells_why_it_asks_again ... ok
 test rsync::tests::escaped_names ... ok
 test rsync::tests::files_up_to_date_count_in_the_total_only ... ok
 test rsync::tests::hosts_as_rsync_reads_them ... ok
-test rsync::tests::output_is_read_the_same_however_it_comes ... ok
 test rsync::tests::paths_are_never_read_as_something_else ... ok
+test rclone::system_ssh::tests::passwords_are_remembered_after_a_login ... ok
 test rsync::tests::progress_lines ... ok
-test rsync::tests::progress_of_a_whole_job ... ok
 test rsync::tests::remote_shell_quoting ... ok
-test app::tests::remote_picker_filters_and_switches ... ok
+test rsync::tests::progress_of_a_whole_job ... ok
+test rsync::tests::output_is_read_the_same_however_it_comes ... ok
 test rsync::tests::the_fs_root_is_joined_as_rclone_joins_it ... ok
 test state::tests::a_file_of_another_version_is_an_error ... ok
-test app::tests::quit_with_jobs_that_resume_is_immediate ... ok
-test app::tests::a_rename_onto_a_name_only_the_server_has_is_refused ... ok
+test state::tests::a_server_is_saved_without_its_password ... ok
+test state::tests::jobs_come_back_as_saved_and_no_jobs_remove_the_file ... ok
 test state::tests::the_queue_is_held_by_one_rse_at_a_time ... ok
 test ui::panes::tests::breadcrumb_joins_the_levels ... ok
 test ui::panes::tests::long_breadcrumb_shows_only_the_current_directory ... ok
 test ui::panes::tests::wrap_breaks_on_words_and_cuts_long_ones ... ok
-test rclone::ssh_passwords::tests::reports_a_damaged_entry ... ok
-test config::tests::save_is_atomic_and_round_trips ... ok
-test state::tests::a_server_is_saved_without_its_password ... ok
-test rclone::system_ssh::tests::remembered_passwords_answer_only_this_logins_password_question ... ok
-test state::tests::jobs_come_back_as_saved_and_no_jobs_remove_the_file ... ok
-test rclone::ssh_passwords::tests::keeps_other_lines ... ok
-test rclone::ssh_passwords::tests::remembers_and_forgets ... ok
-test rclone::system_ssh::tests::passwords_are_remembered_after_a_login ... ok
-test rclone::system_ssh::tests::whether_a_server_has_rsync ... ok
-test app::tests::jobs_in_conflict_together_are_decided_together ... ok
-test app::tests::address_bar_is_edited_below_it_with_one_refresh_or_go_button ... ok
+test app::tests::late_target_check_does_not_replace_an_open_dialog ... ok
+test app::tests::wheel_in_remote_picker_stops_at_the_last_choice ... ok
+test app::tests::wheel_scrolls_the_pane_under_the_pointer_without_focus ... ok
 test rclone::ssh_passwords::tests::refuses_a_file_others_can_read ... ok
-test ui::tests::failed_and_done_jobs ... ok
-test ui::tests::long_path_keeps_name_column_and_ellipsizes_title ... ok
-test ui::tests::main_screen_80x24 ... ok
+test rclone::system_ssh::tests::whether_a_server_has_rsync ... ok
 test ui::tests::empty_queue_shows_idle ... ok
+test rsync::tests::runs_rsync_to_its_end ... ok
+test app::tests::swap_and_switch_panes ... ok
+test app::tests::remote_picker_filters_and_switches ... ok
+test app::tests::quit_with_jobs_that_resume_is_immediate ... ok
+test app::tests::a_rename_onto_a_name_only_the_server_has_is_refused ... ok
+test ui::tests::failed_and_done_jobs ... ok
 test ui::tests::focused_queue_expands_with_current_file ... ok
-test ui::tests::main_screen_160x30_shows_times ... ok
+test ui::tests::long_path_keeps_name_column_and_ellipsizes_title ... ok
+test ui::text::tests::emoji_and_control_characters_match_the_drawn_width ... ok
 test ui::text::tests::extension_rules ... ok
 test ui::text::tests::middle_ellipsis_keeps_both_ends ... ok
-test ui::text::tests::sizes_and_durations ... ok
 test ui::text::tests::name_ellipsis_keeps_extension ... ok
+test ui::text::tests::sizes_and_durations ... ok
 test ui::text::tests::time_in_given_zone ... ok
 test ui::text::tests::what_cannot_be_seen_is_shown_as_a_mark ... ok
 test ui::text::tests::wide_characters_count_double ... ok
-test ui::text::tests::emoji_and_control_characters_match_the_drawn_width ... ok
-test rsync::tests::runs_rsync_to_its_end ... ok
-test ui::tests::main_screen_in_chinese ... ok
-test app::tests::overwrite_mode_turned_on_during_a_check_applies_to_it ... ok
 test ui::tests::delete_confirmation_dialog ... ok
-test ui::tests::wide_file_names_line_up ... ok
-test ui::tests::narrow_panes_hide_the_time_column ... ok
+test app::tests::jobs_in_conflict_together_are_decided_together ... ok
+test app::tests::address_bar_is_edited_below_it_with_one_refresh_or_go_button ... ok
+test ui::tests::main_screen_80x24 ... ok
+test ui::tests::main_screen_160x30_shows_times ... ok
+test ui::tests::main_screen_in_chinese ... ok
 test rclone::system_ssh::tests::a_stalled_login_is_given_up ... ok
+test ui::tests::wide_file_names_line_up ... ok
+test app::tests::overwrite_mode_turned_on_during_a_check_applies_to_it ... ok
 test ui::tests::overwrite_mode_row_in_chinese ... ok
+test ui::tests::pane_names_follow_a_swap ... ok
+test ui::tests::narrow_panes_hide_the_time_column ... ok
+test ui::tests::delete_confirmation_and_help_in_chinese ... ok
+test ui::tests::long_remote_filter_scrolls_inside_the_picker ... ok
 test app::tests::number_keys_focus_the_windows_named_in_their_corners ... ok
 test app::tests::protocol_tags_in_titles_and_go_to ... ok
 test app::tests::the_answer_to_a_cancelled_check_is_ignored ... ok
 test app::tests::a_retry_checks_the_target_again ... ok
-test ui::tests::pane_names_follow_a_swap ... ok
-test ui::tests::long_remote_filter_scrolls_inside_the_picker ... ok
 test app::tests::ssh_questions_are_asked_in_a_dialog ... ok
 test app::tests::ssh_passwords_can_be_remembered ... ok
-test ui::tests::delete_confirmation_and_help_in_chinese ... ok
 test app::tests::sort_filter_and_hidden_files ... ok
 test app::tests::rename_file_and_directory ... ok
 test rsync::tests::dropping_a_run_stops_it ... ok
@@ -369,149 +369,151 @@ test app::tests::transfer_queue_cancel_retry_clear ... ok
 test rsync::tests::a_stopped_run_keeps_its_partial_file ... ok
 test app::tests::leaving_an_endpoint_pauses_its_jobs_until_it_is_shown_again ... ok
 
-test result: ok. 231 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.45s
+test result: ok. 231 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.50s
 
-     Running unittests src/main.rs (target/llvm-cov-target/debug/build/remote-sync-explorer/b37a93ab20ab95ee/out/rse-b37a93ab20ab95ee)
+     Running unittests src/main.rs (target/llvm-cov-target/debug/build/rse/257193c675ec807d/out/rse-257193c675ec807d)
 
 running 3 tests
 test tests::a_single_local_path_opens_on_the_left ... ok
-test tests::a_single_remote_opens_on_the_right ... ok
 test tests::two_locations_keep_their_order ... ok
+test tests::a_single_remote_opens_on_the_right ... ok
 
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running tests/addresses.rs (target/llvm-cov-target/debug/build/remote-sync-explorer/d6ce2bd207b4990d/out/addresses-d6ce2bd207b4990d)
+     Running tests/addresses.rs (target/llvm-cov-target/debug/build/rse/59b46c9b2d8dab12/out/addresses-59b46c9b2d8dab12)
 
 running 1 test
-2026/11/03 17:48:35 ERROR : rc: "operations/list": error: read metadata failed: 401 Unauthorized
+2026/11/04 04:57:39 ERROR : rc: "operations/list": error: read metadata failed: 401 Unauthorized
 test webdav_with_a_password ... ok
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
 
-     Running tests/cancel.rs (target/llvm-cov-target/debug/build/remote-sync-explorer/022b15f21547e2dd/out/cancel-022b15f21547e2dd)
+     Running tests/cancel.rs (target/llvm-cov-target/debug/build/rse/a4e7412274fdb80f/out/cancel-a4e7412274fdb80f)
 
 running 2 tests
-2026/11/03 17:48:35 NOTICE: Bandwidth limit set to {8Mi 8Mi}
-2026/11/03 17:48:35 NOTICE: Bandwidth limit set to {8Mi 8Mi}
+2026/11/04 04:57:39 NOTICE: Bandwidth limit set to {8Mi 8Mi}
+2026/11/04 04:57:39 NOTICE: Bandwidth limit set to {8Mi 8Mi}
 test shutdown_stops_running_jobs ... ok
-2026/11/03 17:48:38 ERROR : inner.bin: rse: context canceled
-2026/11/03 17:48:39 ERROR : big.bin: Failed to copy: failed to update memory object: context canceled
-2026/11/03 17:48:39 ERROR : big.bin: Not deleting source as copy failed: failed to update memory object: context canceled
-2026/11/03 17:48:39 ERROR : cancel-move: error listing: directory not found
-2026/11/03 17:48:39 ERROR : rc: "operations/list": error: error in ListJSON: directory not found
+2026/11/04 04:57:42 ERROR : inner.bin: rse: context canceled
+2026/11/04 04:57:43 ERROR : big.bin: Failed to copy: failed to update memory object: context canceled
+2026/11/04 04:57:43 ERROR : big.bin: Not deleting source as copy failed: failed to update memory object: context canceled
+2026/11/04 04:57:43 ERROR : cancel-move: error listing: directory not found
+2026/11/04 04:57:43 ERROR : rc: "operations/list": error: error in ListJSON: directory not found
 test cancelled_transfers_leave_only_partial_files ... ok
 
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.16s
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.26s
 
-     Running tests/concurrency.rs (target/llvm-cov-target/debug/build/remote-sync-explorer/22420794b8250a35/out/concurrency-22420794b8250a35)
+     Running tests/concurrency.rs (target/llvm-cov-target/debug/build/rse/0d14d059bbaf7a7e/out/concurrency-0d14d059bbaf7a7e)
 
 running 2 tests
 test many_threads_get_their_own_results ... ok
 test stats_latency_is_independent_of_concurrent_listing ... ok
 
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.46s
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.31s
 
-     Running tests/rclone_ops.rs (target/llvm-cov-target/debug/build/remote-sync-explorer/d17275bb34147a9a/out/rclone_ops-d17275bb34147a9a)
+     Running tests/rclone_ops.rs (target/llvm-cov-target/debug/build/rse/21a0a69209d0531c/out/rclone_ops-21a0a69209d0531c)
 
 running 11 tests
-2026/11/03 17:48:44 ERROR : definitely/not/here/x1: error listing: directory not found
-2026/11/03 17:48:44 ERROR : rc: "operations/list": error: error in ListJSON: directory not found
+2026/11/04 04:57:47 ERROR : definitely/not/here/x1: error listing: directory not found
+2026/11/04 04:57:47 ERROR : rc: "operations/list": error: error in ListJSON: directory not found
 test listing_reports_errors_for_missing_directories ... ok
-2026/11/03 17:48:44 ERROR : rc: "operations/rmdir": error: remove /tmp/.tmpAzcHS3/d: directory not empty
+2026/11/04 04:57:47 ERROR : rc: "operations/rmdir": error: remove /tmp/.tmpUI2QTG/d: directory not empty
 test remove_empty_dir_refuses_a_non_empty_directory ... ok
-2026/11/03 17:48:44 ERROR : rc: "operations/rmdir": error: stat /tmp/.tmpdzarcm/d: no such file or directory
-2026/11/03 17:48:44 ERROR : rc: "operations/movefile": error: object not found
+2026/11/04 04:57:47 ERROR : rc: "operations/rmdir": error: stat /tmp/.tmpPNpVGy/d: no such file or directory
+2026/11/04 04:57:47 ERROR : rc: "operations/movefile": error: object not found
 test mkdir_and_rename_on_the_browse_workers ... ok
+test failures_carry_rclones_error ... ok
 test delete_file_and_purge_directory ... ok
 test copy_overwrites_an_existing_file ... ok
-test failures_carry_rclones_error ... ok
-test move_file_and_directory_removes_the_source ... ok
 test directory_copy_merges_into_existing ... ok
+test move_file_and_directory_removes_the_source ... ok
 test copy_file_and_directory_locally ... ok
-2026/11/03 17:48:44 ERROR : rc: "operations/rmdir": error: stat /tmp/.tmpKbDJZu/d: no such file or directory
+2026/11/04 04:57:47 ERROR : rc: "operations/rmdir": error: stat /tmp/.tmpU0hdxi/d: no such file or directory
 test move_between_backends ... ok
 test copy_to_memory_backend_and_back ... ok
 
 test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
 
-     Running tests/resume.rs (target/llvm-cov-target/debug/build/remote-sync-explorer/bcd8af8b2b31cb86/out/resume-bcd8af8b2b31cb86)
+     Running tests/resume.rs (target/llvm-cov-target/debug/build/rse/5280c7675803a4ac/out/resume-5280c7675803a4ac)
 
 running 4 tests
-2026/11/03 17:48:44 NOTICE: Bandwidth limit set to {4Mi 4Mi}
-2026/11/03 17:48:45 NOTICE: Bandwidth limit reset to unlimited
+2026/11/04 04:57:48 NOTICE: Bandwidth limit set to {4Mi 4Mi}
+2026/11/04 04:57:49 NOTICE: Bandwidth limit reset to unlimited
 test download_to_local_resumes_after_stop ... ok
 test mismatched_partial_restarts_and_identical_files_are_skipped ... ok
-2026/11/03 17:48:45 ERROR : rc: "rse/resumable": error: didn't find section in config file ("nosuchremote")
+2026/11/04 04:57:49 ERROR : rc: "rse/resumable": error: didn't find section in config file ("nosuchremote")
 test resumable_answers_by_target ... ok
-2026/11/03 17:48:46 NOTICE: Bandwidth limit set to {4Mi 4Mi}
-2026/11/03 17:48:46 NOTICE: box{22klo}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
-2026/11/03 17:48:47 NOTICE: Bandwidth limit reset to unlimited
+2026/11/04 04:57:50 NOTICE: Bandwidth limit set to {4Mi 4Mi}
+2026/11/04 04:57:50 NOTICE: box{33D1u}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:57:51 NOTICE: Bandwidth limit reset to unlimited
 test upload_to_sftp_over_system_ssh_resumes_after_stop ... ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.68s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.72s
 
-     Running tests/rsync.rs (target/llvm-cov-target/debug/build/remote-sync-explorer/406e6ed90b285433/out/rsync-406e6ed90b285433)
+     Running tests/rsync.rs (target/llvm-cov-target/debug/build/rse/e6aa32630ab58445/out/rsync-e6aa32630ab58445)
 
 running 1 test
-2026/11/03 17:48:55 NOTICE: :sftp{awlrT}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
-2026/11/03 17:48:55 NOTICE: Can't save config "shell_type" for on the fly backend ":sftp"
-2026/11/03 17:48:55 NOTICE: Can't save config "md5sum_command" for on the fly backend ":sftp"
-2026/11/03 17:48:55 NOTICE: Can't save config "sha1sum_command" for on the fly backend ":sftp"
+2026/11/04 04:57:59 NOTICE: :sftp{PmsK9}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:57:59 NOTICE: Can't save config "shell_type" for on the fly backend ":sftp"
+2026/11/04 04:57:59 NOTICE: Can't save config "md5sum_command" for on the fly backend ":sftp"
+2026/11/04 04:57:59 NOTICE: Can't save config "sha1sum_command" for on the fly backend ":sftp"
 test rsync_through_the_master_connection ... ok
 
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.13s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.16s
 
-     Running tests/sftp_ssh.rs (target/llvm-cov-target/debug/build/remote-sync-explorer/14d953fe0c28d588/out/sftp_ssh-14d953fe0c28d588)
+     Running tests/sftp_ssh.rs (target/llvm-cov-target/debug/build/rse/0936213013cf3b5c/out/sftp_ssh-0936213013cf3b5c)
 
 running 4 tests
-2026/11/03 17:48:56 NOTICE: viassh: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
-2026/11/03 17:48:56 NOTICE: :sftp{-LAfn}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
-2026/11/03 17:48:57 NOTICE: Can't save config "shell_type" for on the fly backend ":sftp"
-2026/11/03 17:48:57 NOTICE: Can't save config "md5sum_command" for on the fly backend ":sftp"
-2026/11/03 17:48:57 NOTICE: Can't save config "sha1sum_command" for on the fly backend ":sftp"
-2026/11/03 17:48:57 NOTICE: viassh: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
-2026/11/03 17:48:57 NOTICE: viassh: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
-2026/11/03 17:48:58 NOTICE: badkey: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
-2026/11/03 17:49:09 ERROR : rc: "operations/list": error: NewFs: couldn't initialise SFTP: error receiving version packet from server: server unexpectedly closed connection: unexpected EOF
+2026/11/04 04:57:59 NOTICE: viassh: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:58:00 NOTICE: :sftp{_0qBO}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:58:01 NOTICE: Can't save config "shell_type" for on the fly backend ":sftp"
+2026/11/04 04:58:01 NOTICE: Can't save config "md5sum_command" for on the fly backend ":sftp"
+2026/11/04 04:58:01 NOTICE: Can't save config "sha1sum_command" for on the fly backend ":sftp"
+2026/11/04 04:58:01 NOTICE: viassh: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:58:01 NOTICE: viassh: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:58:02 NOTICE: badkey: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:58:13 ERROR : rc: "operations/list": error: NewFs: couldn't initialise SFTP: error receiving version packet from server: server unexpectedly closed connection: unexpected EOF
 test browse_and_copy_over_openssh ... ok
-2026/11/03 17:49:09 ERROR : rc: "operations/list": error: NewFs: couldn't connect SSH: ssh: handshake failed: ssh: unable to authenticate, attempted methods [none publickey], no supported methods remain
-2026/11/03 17:49:10 NOTICE: box{QI5sA}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
-2026/11/03 17:49:10 NOTICE: box{QI5sA}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
-2026/11/03 17:49:10 NOTICE: box{QI5sA}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
-2026/11/03 17:49:10 NOTICE: box{QI5sA}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
-2026/11/03 17:49:10 NOTICE: :sftp{r5-QA}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
-2026/11/03 17:49:10 NOTICE: Can't save config "shell_type" for on the fly backend ":sftp"
-2026/11/03 17:49:10 NOTICE: Can't save config "md5sum_command" for on the fly backend ":sftp"
-2026/11/03 17:49:10 NOTICE: Can't save config "sha1sum_command" for on the fly backend ":sftp"
-test builtin_sftp_remotes_share_one_system_ssh_login ... ok
-2026/11/03 17:49:10 NOTICE: stored{zTGQt}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
-2026/11/03 17:49:11 NOTICE: asked{pO_nD}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
-2026/11/03 17:49:11 NOTICE: unobscured{zTGQt}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
-2026/11/03 17:49:11 NOTICE: wrong{zTGQt}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:58:14 NOTICE: stored{Ks9eM}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:58:14 NOTICE: asked{KjV--}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:58:14 NOTICE: unobscured{Ks9eM}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:58:15 NOTICE: wrong{Ks9eM}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
 test passphrases_come_from_rclone_conf_or_the_user ... ok
-2026/11/03 17:49:16 ERROR : rc: "operations/list": error: couldn't connect to ssh-agent: SSH agent requested but SSH_AUTH_SOCK not-specified
+2026/11/04 04:58:15 ERROR : rc: "operations/list": error: NewFs: couldn't connect SSH: ssh: handshake failed: ssh: unable to authenticate, attempted methods [none publickey], no supported methods remain
+2026/11/04 04:58:15 NOTICE: box{g0gs5}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:58:15 NOTICE: box{g0gs5}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:58:15 NOTICE: box{g0gs5}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:58:15 NOTICE: box{g0gs5}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:58:15 NOTICE: :sftp{cxUia}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/04 04:58:16 NOTICE: Can't save config "shell_type" for on the fly backend ":sftp"
+2026/11/04 04:58:16 NOTICE: Can't save config "md5sum_command" for on the fly backend ":sftp"
+2026/11/04 04:58:16 NOTICE: Can't save config "sha1sum_command" for on the fly backend ":sftp"
+test builtin_sftp_remotes_share_one_system_ssh_login ... ok
+2026/11/04 04:58:20 ERROR : rc: "operations/list": error: couldn't connect to ssh-agent: SSH agent requested but SSH_AUTH_SOCK not-specified
 test ssh_says_why_it_asks_again ... ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 20.93s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 21.01s
 
-     Running tests/startup.rs (target/llvm-cov-target/debug/build/remote-sync-explorer/7b13d1f8bbbd00c2/out/startup-7b13d1f8bbbd00c2)
+     Running tests/startup.rs (target/llvm-cov-target/debug/build/rse/083cf185f92c08d2/out/startup-083cf185f92c08d2)
 
 running 9 tests
 test rcd_flag_without_the_feature_is_explained ... ok
 test bad_config_file_is_an_error ... ok
-2026/11/03 17:49:17 ERROR : Couldn't decrypt configuration, most likely wrong password.
-2026/11/03 17:49:17 CRITICAL: Failed to load config file "/tmp/.tmpqWrfLO/rclone.conf": unable to decrypt configuration and not allowed to ask for password - set RCLONE_CONFIG_PASS to your configuration password
-2026/11/03 17:49:17 ERROR : rc: job 4 panic: fatal error: Failed to load config file "/tmp/.tmpqWrfLO/rclone.conf": unable to decrypt configuration and not allowed to ask for password - set RCLONE_CONFIG_PASS to your configuration password
+test forget_password_deletes_a_remembered_one ... ok
+test language_in_the_config_file_applies_from_the_command_line_on ... ok
+2026/11/04 04:58:20 ERROR : Couldn't decrypt configuration, most likely wrong password.
+2026/11/04 04:58:20 CRITICAL: Failed to load config file "/tmp/.tmpUUyQnQ/rclone.conf": unable to decrypt configuration and not allowed to ask for password - set RCLONE_CONFIG_PASS to your configuration password
+2026/11/04 04:58:20 ERROR : rc: job 4 panic: fatal error: Failed to load config file "/tmp/.tmpUUyQnQ/rclone.conf": unable to decrypt configuration and not allowed to ask for password - set RCLONE_CONFIG_PASS to your configuration password
 goroutine 17 [running, locked to thread]:
 runtime/debug.Stack()
 	runtime/debug/stack.go:26 +0x5e
 github.com/rclone/rclone/fs/rc/jobs.(*Job).run.func1()
 	github.com/rclone/rclone@v1.75.2/fs/rc/jobs/job.go:114 +0x45
-panic({0x5bce915dece8?, 0x1d3e7e4d8670?})
+panic({0x5ff5e5b16ce8?, 0x3a1049ba6370?})
 	runtime/panic.go:859 +0x125
-github.com/rclone/rclone/fs.panicIfRcJob({0x0, 0x0}, {0x5bce8cee71ca, 0x21}, {0x1d3e7e395868, 0x2, 0x2})
+github.com/rclone/rclone/fs.panicIfRcJob({0x0, 0x0}, {0x5ff5e144b20a, 0x21}, {0x3a1049cbb868, 0x2, 0x2})
 	github.com/rclone/rclone@v1.75.2/fs/log.go:241 +0x1cc
-github.com/rclone/rclone/fs.Fatalf({0x0, 0x0}, {0x5bce8cee71ca, 0x21}, {0x1d3e7e395868, 0x2, 0x2})
+github.com/rclone/rclone/fs.Fatalf({0x0, 0x0}, {0x5ff5e144b20a, 0x21}, {0x3a1049cbb868, 0x2, 0x2})
 	github.com/rclone/rclone@v1.75.2/fs/log.go:260 +0xb0
 github.com/rclone/rclone/fs/config.LoadedData()
 	github.com/rclone/rclone@v1.75.2/fs/config/config.go:378 +0x1ae
@@ -519,28 +521,26 @@ github.com/rclone/rclone/fs/config.GetRemotes()
 	github.com/rclone/rclone@v1.75.2/fs/config/config.go:484 +0x22d
 github.com/rclone/rclone/fs/config.GetRemoteNames()
 	github.com/rclone/rclone@v1.75.2/fs/config/config.go:504 +0x1f
-github.com/rclone/rclone/fs/config.rcListRemotes({0x1d3e7e395b40?, 0x5bce8ed73d7d?}, 0x30?)
+github.com/rclone/rclone/fs/config.rcListRemotes({0x3a1049cbbb40?, 0x5ff5e32abd7d?}, 0x30?)
 	github.com/rclone/rclone@v1.75.2/fs/config/rc.go:108 +0x17
-github.com/rclone/rclone/fs/rc/jobs.(*Job).run(0x1d3e7e2443c0, {0x5bce91a555f0?, 0x1d3e7e4d0cf0?}, 0x5bce91daad00?, 0x5bce915df0e8?)
+github.com/rclone/rclone/fs/rc/jobs.(*Job).run(0x3a1049a48300, {0x5ff5e5f8d5f0?, 0x3a1049b2e6c0?}, 0x5ff5e62e2d00?, 0x5ff5e5b170e8?)
 	github.com/rclone/rclone@v1.75.2/fs/rc/jobs/job.go:118 +0x5f
-github.com/rclone/rclone/fs/rc/jobs.(*Jobs).NewJob(0x5bce91ac36a0, {0x5bce91a55548, 0x5bce91daad00}, 0x5bce91a71360, 0x1d3e7e4d0c00)
+github.com/rclone/rclone/fs/rc/jobs.(*Jobs).NewJob(0x5ff5e5ffb6a0, {0x5ff5e5f8d548, 0x5ff5e62e2d00}, 0x5ff5e5fa9360, 0x3a1049b2e5d0)
 	github.com/rclone/rclone@v1.75.2/fs/rc/jobs/job.go:309 +0x711
 github.com/rclone/rclone/fs/rc/jobs.NewJob(...)
 	github.com/rclone/rclone@v1.75.2/fs/rc/jobs/job.go:319
-github.com/rclone/rclone/librclone/librclone.RPC({0x1d3e7e4f6b28, 0x12}, {0x1d3e7e4cf980, 0x2})
+github.com/rclone/rclone/librclone/librclone.RPC({0x3a10498724c8, 0x12}, {0x3a1049af6d60, 0x2})
 	github.com/rclone/rclone@v1.75.2/librclone/librclone/librclone.go:117 +0x485
-main.RcloneRPC(0x788de0000fb0?, 0x788de00012a0)
+main.RcloneRPC(0x7778dc000fb0?, 0x7778dc0012a0)
 	github.com/lutianyu2001/remote-sync-explorer/librse/main.go:62 +0x4f
-2026/11/03 17:49:17 ERROR : rc: "config/listremotes": error: panic received: fatal error: Failed to load config file "/tmp/.tmpqWrfLO/rclone.conf": unable to decrypt configuration and not allowed to ask for password - set RCLONE_CONFIG_PASS to your configuration password
-test language_in_the_config_file_applies_from_the_command_line_on ... ok
-test forget_password_deletes_a_remembered_one ... ok
+2026/11/04 04:58:20 ERROR : rc: "config/listremotes": error: panic received: fatal error: Failed to load config file "/tmp/.tmpUUyQnQ/rclone.conf": unable to decrypt configuration and not allowed to ask for password - set RCLONE_CONFIG_PASS to your configuration password
 test encrypted_config_needs_unlocking ... ok
 test version_names_both_versions ... ok
 test locked_config_is_reported_before_the_interface_starts ... ok
 test env_password_unlocks_the_config ... ok
 test command_line_help_and_errors_follow_the_language ... ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
 
 $ cargo +nightly-2026-10-28 llvm-cov report --html
 

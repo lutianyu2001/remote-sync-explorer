@@ -1,7 +1,7 @@
 # Rust as tokens, TOML as values, the rest as git blobs (1)
 ea30e7752b0a869d9d0d8530380575fcd0ae9e6a	.cargo/config.toml
-a31043add15870d9a35f420d510370fd9dd5e8f9	Cargo.lock
-adb15c7b17dfac54e5a014371e68f269ce246171	Cargo.toml
+cb1e2abedcae7a1ddfda89068cd49a178ef06e05	Cargo.lock
+5f4f10164ed6bc872808c4577a56cbe4dac477b1	Cargo.toml
 9ec55b3b621dbc75fc68817cd51b96e407d3c94c	rust-toolchain.toml
 f16956287ede62a02a19a6e077fd0cf66485a415	supply-chain/audits.toml
 156cca56a700933750c7f6ed1f4c3f741e33c4be	supply-chain/config.toml

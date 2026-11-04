@@ -10,7 +10,7 @@ Symbols:
 
 Functions  Expressions  Impls  Traits  Methods  Dependency
 
-0/0        17/17        0/0    0/0     0/0      !  remote-sync-explorer 0.1.0
+0/0        17/17        0/0    0/0     0/0      !  rse 0.1.0
 18/43      765/1113     0/0    0/0     0/0      !  |-- aes 0.8.4
 0/0        0/0          0/0    0/0     0/0      ?  |   |-- cfg-if 1.0.5
 0/0        7/7          0/0    0/0     0/0      !  |   |-- cipher 0.4.4
