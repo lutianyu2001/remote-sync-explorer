@@ -356,7 +356,11 @@ fn builtin_sftp_remotes_share_one_system_ssh_login() {
     assert!(!fs::read_to_string(&known).unwrap().trim().is_empty(), "new host key accepted");
     let confirmed = confirmed.lock().unwrap().clone();
     assert_eq!(confirmed.len(), 1, "asked once, then known: {confirmed:?}");
-    assert!(confirmed[0].contains("fingerprint is SHA256:"), "{confirmed:?}");
+    // `fingerprint is SHA256:` (OpenSSH 9.6), `fingerprint is: SHA256:` (macOS's).
+    assert!(
+        confirmed[0].contains("fingerprint") && confirmed[0].contains(" SHA256:"),
+        "{confirmed:?}"
+    );
 
     ssh.close_masters();
     let sockets: Vec<_> = fs::read_dir(work.path().join("sockets")).unwrap().collect();
