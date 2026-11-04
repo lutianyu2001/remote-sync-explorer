@@ -3,8 +3,9 @@
 //!
 //! rsync logs in through the master connection rse keeps to the server
 //! ([`SystemSsh::rsync_remote`]), so a transfer is no new login, and is used only when the
-//! server has an `rsync` of its own: rse never ships or uploads one. [`args`] builds the
-//! command line, and [`Running`] runs it and reads its progress.
+//! server has an `rsync` of its own, and the local one is rsync 3.1 or newer ([`usable`]):
+//! rse never ships or uploads one. [`args`] builds the command line, and [`Running`] runs it
+//! and reads its progress.
 //!
 //! A file rsync is stopped in the middle of is kept in [`PARTIAL_DIR`] beside its target,
 //! and the next run sends only what the kept part lacks (`--partial-dir`). Not
@@ -24,7 +25,7 @@ use std::os::unix::ffi::{OsStrExt, OsStringExt};
 use std::os::unix::process::{CommandExt, ExitStatusExt};
 use std::path::PathBuf;
 use std::process::{Child, Command, ExitStatus, Stdio};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 use crate::location::Location;
@@ -148,6 +149,38 @@ impl Side {
                 format!("{}:{path}", remote.host).into_bytes()
             }
         }
+    }
+}
+
+/// Whether the local `rsync` takes the options [`args`] passes: rsync 3.1 or newer, the first
+/// with `--info=progress2`. Not openrsync, the `rsync` of macOS since 15.4, which has none
+/// of `--no-inc-recursive`, `--info` and `--out-format`; nor the rsync 2.6.9 of older
+/// macOS. Asked once.
+pub fn usable() -> bool {
+    static USABLE: OnceLock<bool> = OnceLock::new();
+    *USABLE.get_or_init(|| {
+        Command::new("rsync")
+            .arg("--version")
+            .stdin(Stdio::null())
+            .stderr(Stdio::null())
+            .output()
+            .is_ok_and(|o| o.status.success() && supported(&o.stdout))
+    })
+}
+
+/// Whether the first line `rsync --version` printed, such as `rsync  version v3.2.7
+/// protocol version 31` (3.2.3 on put a `v` there), names rsync 3.1 or newer.
+fn supported(version: &[u8]) -> bool {
+    let text = String::from_utf8_lossy(version);
+    let mut words = text.lines().next().unwrap_or_default().split_whitespace();
+    if words.next() != Some("rsync") || words.next() != Some("version") {
+        return false;
+    }
+    let Some(number) = words.next() else { return false };
+    let mut parts = number.trim_start_matches('v').split('.').map(str::parse::<u32>);
+    match (parts.next(), parts.next()) {
+        (Some(Ok(major)), Some(Ok(minor))) => (major, minor) >= (3, 1),
+        _ => false,
     }
 }
 
@@ -942,7 +975,24 @@ mod tests {
     // Running rsync itself, between two local directories.
 
     fn have_rsync() -> bool {
-        Command::new("rsync").arg("--version").output().is_ok_and(|o| o.status.success())
+        usable()
+    }
+
+    #[test]
+    fn only_rsync_3_1_on_is_used() {
+        for (line, ok) in [
+            ("rsync  version v3.2.7  protocol version 31", true),
+            ("rsync  version 3.1.0  protocol version 31", true),
+            ("rsync  version 4.0.0  protocol version 32", true),
+            ("rsync  version 3.0.9  protocol version 30", false),
+            ("rsync  version 2.6.9  protocol version 29", false),
+            ("openrsync: protocol version 29", false),
+            ("rsync version 2.6.9 compatible", false),
+            ("rsync  version", false),
+            ("", false),
+        ] {
+            assert_eq!(supported(format!("{line}\nCopyright\n").as_bytes()), ok, "{line}");
+        }
     }
 
     fn finish(run: &mut Running) -> (Stats, Result<(), String>) {

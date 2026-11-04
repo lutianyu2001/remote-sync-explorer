@@ -142,6 +142,9 @@ What this does not show:
 - Network access to the Go module proxy for the first build
 - OpenSSH ≥8.4 for passwords and one-time codes asked through the system `ssh`
   (optional)
+- rsync ≥3.1 for transfers with rsync (optional; without it rclone carries them out).
+  macOS's own `rsync` is openrsync, which rse does not use: install rsync, for example
+  with Homebrew
 
 ## Installation
 
@@ -603,7 +606,7 @@ cargo fmt --check
   a remote to the local disk and to an sftp server through the system ssh.
 - `tests/rsync.rs` copies and moves with rsync both ways through a private `sshd`,
   stops transfers midway and checks that the next run sends only what was missing
-  (skipped when `sshd` or `rsync` is not installed).
+  (skipped when `sshd` or rsync ≥3.1 is not installed).
 - `tests/concurrency.rs` checks that rclone calls do not block each other.
 - `cargo test` also checks that both language files define the same messages and that
   every message is used.

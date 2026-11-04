@@ -101,6 +101,7 @@ rse 经手密码、ssh 登录和远端服务器上的文件，所以它的代码
 - cgo 需要的 C 工具链（`cc`）；**不**需要 libclang
 - 首次构建时能访问 Go 模块代理
 - OpenSSH ≥8.4，用于通过系统 `ssh` 询问密码和一次性验证码（可选）
+- rsync ≥3.1，用于用 rsync 传输（可选，没有时由 rclone 传输）。macOS 自带的 `rsync` 是 openrsync，rse 不用它，请另装 rsync，例如用 Homebrew
 
 ## 安装
 
@@ -388,7 +389,7 @@ cargo fmt --check
 - 界面快照用英文拍摄，其中几个用中文重拍，以检查宽字符是否对齐。
 - 集成测试在 local 和 memory 后端上运行内置的 rclone，中途取消传输，并通过一个私有的 `sshd` 浏览 sftp 远程（没有安装 `sshd` 时跳过）。
 - `tests/resume.rs` 中途停下传输，检查下一次能接着传：从远程到本地磁盘，以及经系统 ssh 到 sftp 服务器。
-- `tests/rsync.rs` 通过私有的 `sshd` 用 rsync 双向复制和移动，中途停下传输，检查下一次只传缺的部分（没有安装 `sshd` 或 `rsync` 时跳过）。
+- `tests/rsync.rs` 通过私有的 `sshd` 用 rsync 双向复制和移动，中途停下传输，检查下一次只传缺的部分（没有安装 `sshd` 或 rsync ≥3.1 时跳过）。
 - `tests/concurrency.rs` 检查 rclone 调用之间不会互相阻塞。
 - `cargo test` 还会检查两个语言文件定义了相同的消息，且每条消息都被用到。
 

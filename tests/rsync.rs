@@ -207,8 +207,8 @@ fn login_dir() -> Option<PathBuf> {
 
 #[test]
 fn rsync_through_the_master_connection() {
-    if !have("ssh") || !have("ssh-keygen") || !have("rsync") {
-        eprintln!("skipped: ssh, ssh-keygen or rsync not installed");
+    if !have("ssh") || !have("ssh-keygen") || !rse::rsync::usable() {
+        eprintln!("skipped: ssh, ssh-keygen or rsync 3.1 or newer not installed");
         return;
     }
     let work = tempfile::tempdir().unwrap();

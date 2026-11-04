@@ -1,6 +1,7 @@
 //! Which program carries out a copy or move: rsync between the local disk and an sftp
-//! server reached through the system ssh that has an `rsync` of its own, rclone for
-//! everything else (other remotes, two servers, a server rclone's built-in ssh reaches).
+//! server reached through the system ssh that has an `rsync` of its own, when the local one
+//! is rsync 3.1 or newer ([`rsync::usable`]); rclone for everything else (other remotes,
+//! two servers, a server rclone's built-in ssh reaches).
 
 use std::ffi::OsString;
 use std::sync::Arc;
@@ -52,7 +53,9 @@ impl Engines {
     /// The sides rsync sees for a transfer from `src` to `dst`: one the local disk, the
     /// other a server that has rsync.
     fn rsync_sides(&self, src: &Location, dst: &Location) -> Option<(Side, Side)> {
-        if self.choice != EngineChoice::Auto {
+        // Before the server is asked: without a local rsync that takes rse's options,
+        // whatever the server has is of no use.
+        if self.choice != EngineChoice::Auto || !rsync::usable() {
             return None;
         }
         let ssh = self.ssh.as_ref()?;
