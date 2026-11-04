@@ -22,12 +22,12 @@ d61bc60965e99ae36229ce32c5e4490fe50fe895	scripts/build-librclone.sh
 c312d1796e5dc85dc5b8613a15cad09b528d8351	src/app_tests.rs
 5c76077398be91a3c1e5ab982ea6bea2e648a5b6	src/config.rs
 e1d0394f522e3e290c489ebad5fa5e40eef9286b	src/endpoint.rs
-ba03c4d40ec7a0e5d88d637deaabfb4350069ef7	src/engine.rs
+726fae43f7cac968f595798ba7230573a82e260a	src/engine.rs
 baa59dd55bc824f681a84dea3803f5c3db2efab6	src/event.rs
 b2aae0ad302d51ef5903db1b0c57ff977452961e	src/exec.rs
 746042c86641c6ddfe974ff6b9887f043022435c	src/fuzz.rs
 929451ae702922cad58afe2695c31563eb1c3729	src/hitmap.rs
-6b39518cbd93d89a7f0de564e34689120b97954b	src/i18n.rs
+c82bab3fe0ea1fa3411746c6a6d0634288537641	src/i18n.rs
 57701f6739050bd6efcc681572a428056ae1818d	src/jobs.rs
 da1a909da3f5e7a36dbb115132a35948f6e0bb76	src/keymap.rs
 45ed69b5694ac72abdbe143f2b4b975024933a7c	src/lib.rs
@@ -40,7 +40,7 @@ a65e70eef1199870c4d632c3cb597139a0842c8b	src/rclone/mod.rs
 5c1362876d9263cdf4d4e6c438862081bfcf10f9	src/rclone/obscure.rs
 b31cce7ea65211cefb7cfde1bc1eb84bc030b72c	src/rclone/ssh_passwords.rs
 8c6db33eacaea8cfecba6a057b7276b798771bcb	src/rclone/system_ssh.rs
-c758775ecf6f2ab7c7a73cb02bd1f74375ed0bc4	src/rsync.rs
+b861353a76597c9a6055755ffa5126b3ff41fb9d	src/rsync.rs
 a4545af95308ccb44f7a0d8c51514e1993a96472	src/state.rs
 b74ac7638a0314ab394eb8b744a17a077be371c5	src/testutil.rs
 c465c2a72ebd77bbe1042ccec02e01cfc8ae612d	src/ui/dialogs.rs
@@ -61,5 +61,5 @@ e8d7a9c8b4f563ddc077dd1acddc6478ed51ab70	src/ui/snapshots/rse__ui__tests__long_p
 2ba761b32e745a1e6181cf7ef51308850484f2cc	xtask/Cargo.toml
 5485a991d7dff87f53c41d182d4cad24e01bb7ac	xtask/src/main.rs
 c1930b545baab252c81e949bf4b04144be5c14e9	xtask/src/run.rs
-261f86ccd4bfeadb8aea9eeb3bcb8503cef92fb4	xtask/src/tasks/geiger.rs
-171917aad0222375043b3fbf17d60ac79566b69f	xtask/src/tasks/mod.rs
+a6b997e0c7091998b072d552c0e482f3c596fbbd	xtask/src/tasks/geiger.rs
+8e6d71765cce475cb622d1b62bc6afedec9e05c5	xtask/src/tasks/mod.rs

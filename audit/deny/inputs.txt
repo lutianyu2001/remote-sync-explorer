@@ -10,4 +10,4 @@ cb1e2abedcae7a1ddfda89068cd49a178ef06e05	Cargo.lock
 5485a991d7dff87f53c41d182d4cad24e01bb7ac	xtask/src/main.rs
 c1930b545baab252c81e949bf4b04144be5c14e9	xtask/src/run.rs
 474d6c3d7076c28a02dc6cb57447bf56f948b2f0	xtask/src/tasks/deny.rs
-171917aad0222375043b3fbf17d60ac79566b69f	xtask/src/tasks/mod.rs
+8e6d71765cce475cb622d1b62bc6afedec9e05c5	xtask/src/tasks/mod.rs
