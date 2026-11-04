@@ -53,12 +53,15 @@ impl Engines {
     /// The sides rsync sees for a transfer from `src` to `dst`: one the local disk, the
     /// other a server that has rsync.
     fn rsync_sides(&self, src: &Location, dst: &Location) -> Option<(Side, Side)> {
-        // Before the server is asked: without a local rsync that takes rse's options,
-        // whatever the server has is of no use.
-        if self.choice != EngineChoice::Auto || !rsync::usable() {
+        if self.choice != EngineChoice::Auto {
             return None;
         }
         let ssh = self.ssh.as_ref()?;
+        // Before the server is asked: without a local rsync that takes rse's options,
+        // whatever the server has is of no use.
+        if src.is_local() == dst.is_local() || !rsync::usable() {
+            return None;
+        }
         let remote = |loc: &Location| ssh.rsync_remote(&loc.fs).ok().flatten();
         match (src.is_local(), dst.is_local()) {
             (true, false) => Some((Side::local(src), remote(dst)?.side(&dst.path))),
