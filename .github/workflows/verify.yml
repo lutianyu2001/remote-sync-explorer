@@ -20,9 +20,9 @@ name: Verify
 # Each task that the commit does not already hold a standing result for (cargo xtask needed)
 # runs as on a workstation, with the tools and nightly toolchain pinned in
 # xtask/src/pins.rs. A newer run on the same release or branch cancels the one in progress.
-# The results are committed to audit/ on the default branch by the last job, the only one
-# that may write, which runs none of the project's code; the code under test runs in jobs
-# that cannot write. Actions are pinned to commits, which cargo xtask outdated checks against
+# The results are committed to audit/ on the default branch by record, the only job that may
+# write to the repository, which runs none of the project's code; the code under test runs in
+# jobs that cannot write. Last, badges starts advisories.yml to show them. Actions are pinned to commits, which cargo xtask outdated checks against
 # their releases.
 on:
   release:
@@ -282,3 +282,21 @@ jobs:
           done
           echo "$BRANCH kept moving; not recorded." >&2
           exit 1
+
+  # Starts advisories.yml on the default branch, which writes the README's badges from what
+  # record committed. Its workflow_run trigger would not do: GitHub starts no workflow_run for
+  # a run started with a GITHUB_TOKEN, as this one is when a project's CI publishes the
+  # release and starts it by workflow_dispatch. A job of its own, so that no job holds both
+  # this token and record's: it checks nothing out and downloads nothing, and runs gh alone.
+  badges:
+    needs: record
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: gh workflow run Advisories --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
