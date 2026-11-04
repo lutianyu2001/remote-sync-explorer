@@ -17,7 +17,7 @@ f1d8bfad23280e5d409431d2902a8c96edb02ca2	librse/resume/resume.go
 9ec55b3b621dbc75fc68817cd51b96e407d3c94c	rust-toolchain.toml
 d61bc60965e99ae36229ce32c5e4490fe50fe895	scripts/build-librclone.sh
 1c48e27a76b5c6a045d32e55146bfca36138cbdc	scripts/cargo-online.sh
-313123feaa186a6dec16aba4ec864cd32d48d156	scripts/third-party-licenses.sh
+f0c8de29b016d7d65434e65ebc3c40f50401332f	scripts/third-party-licenses.sh
 5d06c70cfe9a9d5b04eed1730e88f8d7ab0e0d86	src/app.rs
 c312d1796e5dc85dc5b8613a15cad09b528d8351	src/app_tests.rs
 5c76077398be91a3c1e5ab982ea6bea2e648a5b6	src/config.rs

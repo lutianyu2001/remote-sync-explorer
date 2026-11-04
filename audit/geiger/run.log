@@ -1,5 +1,5 @@
 $ cargo fetch --locked
-$ systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 -- cargo geiger --locked --offline --output-format Ascii > geiger.txt
+$ cargo geiger --locked --offline --output-format Ascii > geiger.txt
 Failed to match (ignoring source) package: registry+https://github.com/rust-lang/crates.io-index#base64@0.23.1 
 Failed to match (ignoring source) package: registry+https://github.com/rust-lang/crates.io-index#base64@0.23.1 
 Failed to match (ignoring source) package: registry+https://github.com/rust-lang/crates.io-index#base64@0.23.1 
@@ -227,470 +227,470 @@ Failed to match (ignoring source) package: registry+https://github.com/rust-lang
 Failed to match (ignoring source) package: registry+https://github.com/rust-lang/crates.io-index#zeroize@1.9.1 
 Failed to match (ignoring source) package: registry+https://github.com/rust-lang/crates.io-index#zeroize@1.9.1 
 Failed to match (ignoring source) package: registry+https://github.com/rust-lang/crates.io-index#zeroize@1.9.1 
-     Removed 1069 files, 618.6MiB total
+     Removed 0 files
    Compiling proc-macro2 v1.0.107
-   Compiling unicode-ident v1.0.27
    Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
    Compiling libc v0.2.191
-   Compiling proc-macro-hack v0.5.20+deprecated
-   Compiling thiserror v2.0.21
-    Checking cfg-if v1.0.5
-   Compiling rustversion v1.0.23
-   Compiling heck v0.5.0
-    Checking bitflags v2.13.2
-    Checking unicode-width v0.2.2
-   Compiling ident_case v1.0.1
-    Checking foldhash v0.2.0
-    Checking equivalent v1.0.3
-    Checking allocator-api2 v0.2.21
-   Compiling strsim v0.11.1
-    Checking smallvec v1.16.3
-   Compiling unicode-segmentation v1.13.3
-    Checking log v0.4.34
-   Compiling version_check v0.9.5
-   Compiling serde_core v1.0.229
-    Checking itoa v1.0.18
-   Compiling signal-hook v0.3.18
-    Checking either v1.19.0
-   Compiling parking_lot_core v0.9.12
-   Compiling rustix v1.1.5
-    Checking static_assertions v1.1.0
-    Checking scopeguard v1.2.0
-    Checking ryu v1.0.23
-    Checking typenum v1.20.1
-    Checking linux-raw-sys v0.12.1
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/cfg_if-67a0d44d19132074.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/static_assertions-1f82789da0bbdab8.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/equivalent-be54af99fdf4f2bf.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unicode_ident-81bfb0f85f6a8742.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/scopeguard-e0469f0b7ed1272f.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/heck-c4dbf551d3f1e684.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/foldhash-fb722b66b893d67d.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/itoa-5dd47718cb728e0a.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/log-a20a0c6558dfbcfc.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/smallvec-39a95bd12f77a46f.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/ryu-a15f52b70e71beec.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcfg_if-67a0d44d19132074.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libstatic_assertions-1f82789da0bbdab8.rmeta","emit":"metadata"}
-   Compiling litrs v1.0.1
-   Compiling indoc v2.0.8
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/allocator_api2-06f483e6d42ed7b0.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libequivalent-be54af99fdf4f2bf.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libscopeguard-e0469f0b7ed1272f.rmeta","emit":"metadata"}
-    Checking utf8parse v0.2.2
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/parking_lot_core-2b03cd4cda95e745/build_script_build-2b03cd4cda95e745.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/proc-macro-hack-5c399632478b07ed/build_script_build-5c399632478b07ed.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/serde_core-429b460704ec6519/build_script_build-429b460704ec6519.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/rustix-0f0c31fe9b5f456f/build_script_build-0f0c31fe9b5f456f.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/rustversion-f5ed32b1082d42cd/build_script_build-f5ed32b1082d42cd.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/proc-macro2-ab005e1b49b4395b/build_script_build-ab005e1b49b4395b.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unicode_segmentation-ef4319f46cfdaad5.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/version_check-79d478a2d6ba8ed6.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/ident_case-cf568afe9695f425.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/signal-hook-3ce3f52a87a1f959/build_script_build-3ce3f52a87a1f959.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/strsim-45ae7cc0685dd3cc.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/build/quote-cb66644ea05edbd9/build_script_build-cb66644ea05edbd9.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/bitflags-5c037dd688d1679c.d","emit":"dep-info"}
-    Checking lock_api v0.4.14
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/proc-macro2-ab005e1b49b4395b/build_script_build-ab005e1b49b4395b.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/build/libc-0b3e93e097eeb127/build_script_build-0b3e93e097eeb127.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/thiserror-f7b54138f33f94db/build_script_build-f7b54138f33f94db.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unicode_ident-81bfb0f85f6a8742.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunicode_ident-81bfb0f85f6a8742.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unicode_segmentation-deea36fe9430dc68.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/either-4e37ebbb8b780b17.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unicode_width-f12a4548f2acaa81.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/utf8parse-ddf5081d9c9fac1e.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libfoldhash-fb722b66b893d67d.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/linux_raw_sys-9e223dfca6c67b1e.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libryu-a15f52b70e71beec.rmeta","emit":"metadata"}
-   Compiling autocfg v1.5.1
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/indoc-c1441b4c83b5f063.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libutf8parse-ddf5081d9c9fac1e.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libident_case-cf568afe9695f425.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liblog-a20a0c6558dfbcfc.rmeta","emit":"metadata"}
-    Checking rustc-hash v2.1.3
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libheck-c4dbf551d3f1e684.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/litrs-5f45015e8be96fc1.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libident_case-cf568afe9695f425.rlib","emit":"link"}
-    Checking memchr v2.8.3
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libitoa-5dd47718cb728e0a.rmeta","emit":"metadata"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunicode_ident-81bfb0f85f6a8742.rlib","emit":"link"}
-    Checking anstyle-parse v1.0.0
-    Checking anstyle-query v1.1.5
-    Checking anstyle v1.0.14
-    Checking colorchoice v1.0.5
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/lock_api-af976536b5c562bf.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/autocfg-2bddf2f80f691adf.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/rustc_hash-856cc4334f538bed.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/anstyle_query-53ec1b235ce1276f.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libbitflags-5c037dd688d1679c.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/colorchoice-d2fe17ca1b88260b.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/anstyle_parse-3d27090a781e5ee6.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsmallvec-39a95bd12f77a46f.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libanstyle_query-53ec1b235ce1276f.rmeta","emit":"metadata"}
-    Checking line-clipping v0.3.8
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libheck-c4dbf551d3f1e684.rlib","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcolorchoice-d2fe17ca1b88260b.rmeta","emit":"metadata"}
-   Compiling same-file v1.0.6
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/librustc_hash-856cc4334f538bed.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunicode_width-f12a4548f2acaa81.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/anstyle-73092a97ca7e531b.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libversion_check-79d478a2d6ba8ed6.rmeta","emit":"metadata"}
-   Compiling crossbeam-utils v0.8.23
-    Checking is_terminal_polyfill v1.70.2
-   Compiling zmij v1.0.23
-    Checking type-map v0.5.1
-    Checking winnow v1.0.4
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libeither-4e37ebbb8b780b17.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libstrsim-45ae7cc0685dd3cc.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/same_file-5df108b667056288.d","emit":"dep-info"}
-    Checking itertools v0.14.0
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/crossbeam-utils-82a77f363ece218e/build_script_build-82a77f363ece218e.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/is_terminal_polyfill-7761058b594da90b.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/zmij-946061105b7cdaa0/build_script_build-946061105b7cdaa0.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libis_terminal_polyfill-7761058b594da90b.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/line_clipping-32f043217d2a6a80.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/memchr-35f6a8453bae164a.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/type_map-874925ca1cdbcaf7.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsame_file-5df108b667056288.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libanstyle_parse-3d27090a781e5ee6.rmeta","emit":"metadata"}
-   Compiling serde_json v1.0.154
+   Compiling proc-macro-hack v0.5.20+deprecated
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/proc-macro-hack-5c399632478b07ed/build_script_build-5c399632478b07ed.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/build/quote-cb66644ea05edbd9/build_script_build-cb66644ea05edbd9","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/typenum-9cfc89dde2917fea.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/winnow-52d6b94579369c19.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/proc-macro-hack-5c399632478b07ed/build_script_build-5c399632478b07ed","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/signal-hook-3ce3f52a87a1f959/build_script_build-3ce3f52a87a1f959","emit":"link"}
+   Compiling thiserror v2.0.21
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/thiserror-f7b54138f33f94db/build_script_build-f7b54138f33f94db.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/build/proc-macro2-ab005e1b49b4395b/build_script_build-ab005e1b49b4395b","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/parking_lot_core-2b03cd4cda95e745/build_script_build-2b03cd4cda95e745","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/strsim-040ca1b75394e7a6.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsame_file-5df108b667056288.rlib","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liblock_api-af976536b5c562bf.rmeta","emit":"metadata"}
-   Compiling walkdir v2.5.0
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libline_clipping-32f043217d2a6a80.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtype_map-874925ca1cdbcaf7.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liballocator_api2-06f483e6d42ed7b0.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libversion_check-79d478a2d6ba8ed6.rlib","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libanstyle-73092a97ca7e531b.rmeta","emit":"metadata"}
-   Compiling anyhow v1.0.104
-    Checking self_cell v1.3.0
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/serde_json-a4a9ff45eaa6f756/build_script_build-a4a9ff45eaa6f756.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/serde_core-429b460704ec6519/build_script_build-429b460704ec6519","emit":"link"}
-    Checking unicase v2.10.0
-    Checking clap_lex v1.1.1
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libautocfg-2bddf2f80f691adf.rmeta","emit":"metadata"}
-   Compiling serde v1.0.229
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libstrsim-45ae7cc0685dd3cc.rlib","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/thiserror-f7b54138f33f94db/build_script_build-f7b54138f33f94db","emit":"link"}
-    Checking anstream v1.0.0
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/walkdir-38d6e01d2a34ad2d.d","emit":"dep-info"}
-   Compiling generic-array v0.14.7
-    Checking{"$message_type":"artifact","artifact":"./target/geiger/debug/build/rustversion-f5ed32b1082d42cd/build_script_build-f5ed32b1082d42cd","emit":"link"}
- hashbrown v0.17.1
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/rustix-0f0c31fe9b5f456f/build_script_build-0f0c31fe9b5f456f","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libstrsim-040ca1b75394e7a6.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/anyhow-b01fde7fcdd21fa7/build_script_build-b01fde7fcdd21fa7.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/same_file-efed975f3af6a8d5.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/self_cell-3533d37633a9895c.d","emit":"dep-info"}
-   Compiling rse v0.1.0 (./target/geiger-src)
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unicase-2534d3aed1949aed.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/serde-94cd7afb59b66330/build_script_build-94cd7afb59b66330.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/clap_lex-aa552f193211390b.d","emit":"dep-info"}
-    Checking iana-time-zone v0.1.65
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libself_cell-3533d37633a9895c.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsame_file-efed975f3af6a8d5.rmeta","emit":"metadata"}
-    Checking toml_writer v1.1.3+spec-1.1.0
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/generic-array-ff81e624fa74bab8/build_script_build-ff81e624fa74bab8.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/crossbeam-utils-82a77f363ece218e/build_script_build-82a77f363ece218e","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/anstream-05e62185321fbab2.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/zmij-946061105b7cdaa0/build_script_build-946061105b7cdaa0","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunicode_segmentation-ef4319f46cfdaad5.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/iana_time_zone-18a35316557f8193.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/proc_macro_hack-e8bf1b48e63557ec.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/toml_writer-4135123f11b052fd.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/walkdir-bf5c30ef140687dc.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/rse-fbd4a2770817e996/build_script_build-fbd4a2770817e996.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libclap_lex-aa552f193211390b.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/itertools-27f280e88a700b57.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunicode_segmentation-deea36fe9430dc68.rmeta","emit":"metadata"}
-    Checking cpufeatures v0.2.17
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liblinux_raw_sys-9e223dfca6c67b1e.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunicase-2534d3aed1949aed.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libindoc-c1441b4c83b5f063.so","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libiana_time_zone-18a35316557f8193.rmeta","emit":"metadata"}
-    Checking sys-locale v0.3.2
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/serde_json-a4a9ff45eaa6f756/build_script_build-a4a9ff45eaa6f756","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/rustversion-330082f51b296de7.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liblitrs-5f45015e8be96fc1.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/cpufeatures-169294971ec13642.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libwalkdir-38d6e01d2a34ad2d.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcpufeatures-169294971ec13642.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/proc-macro-hack-5c399632478b07ed/build_script_build-5c399632478b07ed","emit":"link"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/build/libc-0b3e93e097eeb127/build_script_build-0b3e93e097eeb127","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunicode_segmentation-ef4319f46cfdaad5.rlib","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/sys_locale-3bdb921802ddcd91.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/hashbrown-b8b28b16b5f3eb2f.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libautocfg-2bddf2f80f691adf.rlib","emit":"link"}
-   Compiling convert_case v0.10.0
-   Compiling num-traits v0.2.19
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsys_locale-3bdb921802ddcd91.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/generic-array-ff81e624fa74bab8/build_script_build-ff81e624fa74bab8","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libanstream-05e62185321fbab2.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libwalkdir-bf5c30ef140687dc.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/zmij-071bd32896956c8f.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtoml_writer-4135123f11b052fd.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libwalkdir-38d6e01d2a34ad2d.rlib","emit":"link"}
-    Checking clap_builder v4.6.7
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/convert_case-8121266849a76caa.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/num-traits-c9bf16cc5a66f033/build_script_build-c9bf16cc5a66f033.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/crossbeam_utils-f0cc41c10644d34d.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libwinnow-52d6b94579369c19.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liblitrs-5f45015e8be96fc1.rlib","emit":"link"}
-    Checking toml_parser v1.1.5+spec-1.1.0
-   Compiling document-features v0.2.12
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/proc_macro_hack-e8bf1b48e63557ec.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/proc_macro2-48009055b595a344.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libmemchr-35f6a8453bae164a.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/anyhow-b01fde7fcdd21fa7/build_script_build-b01fde7fcdd21fa7","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/serde-94cd7afb59b66330/build_script_build-94cd7afb59b66330","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/document_features-df08c62608e7c4fb.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/rse-fbd4a2770817e996/build_script_build-fbd4a2770817e996","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/build/num-traits-c9bf16cc5a66f033/build_script_build-c9bf16cc5a66f033","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/toml_parser-b2d815c555e46f3d.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libconvert_case-8121266849a76caa.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/serde_core-5d11f89bc720d497.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libconvert_case-8121266849a76caa.rlib","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/anyhow-1e7a194132057311.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libzmij-071bd32896956c8f.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/clap_builder-03f30bfb6d35275e.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcrossbeam_utils-f0cc41c10644d34d.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libanyhow-1e7a194132057311.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/librustversion-330082f51b296de7.so","emit":"link"}
-    Checking crossbeam-channel v0.5.17
-    Checking castaway v0.2.4
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/num_traits-52fee84e5794fd53.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtypenum-9cfc89dde2917fea.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/thiserror-f7b54138f33f94db/build_script_build-f7b54138f33f94db","emit":"link"}
+    Checking cfg-if v1.0.5
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/cfg_if-67a0d44d19132074.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcfg_if-67a0d44d19132074.rmeta","emit":"metadata"}
+   Compiling rustversion v1.0.23
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/rustversion-f5ed32b1082d42cd/build_script_build-f5ed32b1082d42cd.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libc-70cd9bdbadf22bd3.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/castaway-b56dfcbd8ffa2a65.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libdocument_features-df08c62608e7c4fb.so","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcastaway-b56dfcbd8ffa2a65.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/crossbeam_channel-1c36c6b4990937d5.d","emit":"dep-info"}
-    Checking compact_str v0.9.1
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libproc_macro_hack-e8bf1b48e63557ec.so","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtoml_parser-b2d815c555e46f3d.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/rustversion-f5ed32b1082d42cd/build_script_build-f5ed32b1082d42cd","emit":"link"}
+   Compiling heck v0.5.0
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libproc_macro2-48009055b595a344.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/generic_array-d2a2a6fbe11b2339.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libhashbrown-b8b28b16b5f3eb2f.rmeta","emit":"metadata"}
-    Checking lru v0.18.5
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/compact_str-7e04b339305527f0.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/heck-c4dbf551d3f1e684.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libheck-c4dbf551d3f1e684.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libproc_macro_hack-e8bf1b48e63557ec.so","emit":"link"}
+    Checking allocator-api2 v0.2.21
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libheck-c4dbf551d3f1e684.rlib","emit":"link"}
+    Checking bitflags v2.13.2
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/bitflags-5c037dd688d1679c.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/allocator_api2-06f483e6d42ed7b0.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libproc_macro2-48009055b595a344.rlib","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/lru-21656873897382c3.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/rustix-7fa03a926c76a71d.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libbitflags-5c037dd688d1679c.rmeta","emit":"metadata"}
+    Checking foldhash v0.2.0
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/quote-8a050a42cff7de9b.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liblru-21656873897382c3.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcrossbeam_channel-1c36c6b4990937d5.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/foldhash-fb722b66b893d67d.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libfoldhash-fb722b66b893d67d.rmeta","emit":"metadata"}
+    Checking equivalent v1.0.3
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libquote-8a050a42cff7de9b.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/equivalent-be54af99fdf4f2bf.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libequivalent-be54af99fdf4f2bf.rmeta","emit":"metadata"}
+   Compiling strsim v0.11.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liballocator_api2-06f483e6d42ed7b0.rmeta","emit":"metadata"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libquote-8a050a42cff7de9b.rlib","emit":"link"}
+   Compiling ident_case v1.0.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/strsim-45ae7cc0685dd3cc.d","emit":"dep-info"}
    Compiling syn v3.0.9
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/ident_case-cf568afe9695f425.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libident_case-cf568afe9695f425.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libident_case-cf568afe9695f425.rlib","emit":"link"}
    Compiling syn v2.0.119
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libnum_traits-52fee84e5794fd53.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcompact_str-7e04b339305527f0.rmeta","emit":"metadata"}
-    Checking chrono v0.4.45
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libgeneric_array-d2a2a6fbe11b2339.rmeta","emit":"metadata"}
-    Checking crypto-common v0.1.7
-    Checking inout v0.1.4
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/crypto_common-1e074f04f1b8bcb6.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/inout-57b73c0f329c9ef9.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcrypto_common-1e074f04f1b8bcb6.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/chrono-416e791c13c57751.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libinout-57b73c0f329c9ef9.rmeta","emit":"metadata"}
-    Checking cipher v0.4.4
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/syn-6a16dc0458eae7f5.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/cipher-2f90b4db8ddf0bc3.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/syn-c873d3f0423be2d2.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libitertools-27f280e88a700b57.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcipher-2f90b4db8ddf0bc3.rmeta","emit":"metadata"}
-    Checking aes v0.8.4
-    Checking unicode-truncate v2.0.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libstrsim-45ae7cc0685dd3cc.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libstrsim-45ae7cc0685dd3cc.rlib","emit":"link"}
+    Checking unicode-width v0.2.2
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liblibc-70cd9bdbadf22bd3.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unicode_truncate-2004acacf672b057.d","emit":"dep-info"}
+    Checking smallvec v1.16.3
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unicode_width-f12a4548f2acaa81.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/smallvec-39a95bd12f77a46f.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/syn-6a16dc0458eae7f5.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/syn-c873d3f0423be2d2.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunicode_width-f12a4548f2acaa81.rmeta","emit":"metadata"}
     Checking errno v0.3.14
-    Checking mio v1.2.4
-    Checking rtoolbox v0.0.6
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunicode_truncate-2004acacf672b057.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/aes-32990ec191ee63d4.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsmallvec-39a95bd12f77a46f.rmeta","emit":"metadata"}
+    Checking hashbrown v0.17.1
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/errno-7602c6069d395519.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/rtoolbox-cf947db53d5ebfbf.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/parking_lot_core-d24a1876d93f7323.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liberrno-7602c6069d395519.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/librtoolbox-cf947db53d5ebfbf.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/mio-65daf1f9cce2db36.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/rustversion-330082f51b296de7.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/hashbrown-b8b28b16b5f3eb2f.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/librustversion-330082f51b296de7.so","emit":"link"}
+    Checking either v1.19.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/either-4e37ebbb8b780b17.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libhashbrown-b8b28b16b5f3eb2f.rmeta","emit":"metadata"}
+   Compiling unicode-segmentation v1.13.3
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libeither-4e37ebbb8b780b17.rmeta","emit":"metadata"}
+   Compiling parking_lot_core v0.9.12
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unicode_segmentation-ef4319f46cfdaad5.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/parking_lot_core-2b03cd4cda95e745/build_script_build-2b03cd4cda95e745.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/parking_lot_core-2b03cd4cda95e745/build_script_build-2b03cd4cda95e745","emit":"link"}
+   Compiling signal-hook v0.3.18
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/signal-hook-3ce3f52a87a1f959/build_script_build-3ce3f52a87a1f959.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/signal-hook-3ce3f52a87a1f959/build_script_build-3ce3f52a87a1f959","emit":"link"}
+    Checking itoa v1.0.18
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunicode_segmentation-ef4319f46cfdaad5.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/itoa-5dd47718cb728e0a.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunicode_segmentation-ef4319f46cfdaad5.rlib","emit":"link"}
+   Compiling version_check v0.9.5
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libitoa-5dd47718cb728e0a.rmeta","emit":"metadata"}
+    Checking log v0.4.34
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/version_check-79d478a2d6ba8ed6.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/log-a20a0c6558dfbcfc.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liblog-a20a0c6558dfbcfc.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libversion_check-79d478a2d6ba8ed6.rmeta","emit":"metadata"}
+   Compiling serde_core v1.0.229
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/serde_core-429b460704ec6519/build_script_build-429b460704ec6519.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libversion_check-79d478a2d6ba8ed6.rlib","emit":"link"}
+   Compiling generic-array v0.14.7
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/generic-array-ff81e624fa74bab8/build_script_build-ff81e624fa74bab8.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/serde_core-429b460704ec6519/build_script_build-429b460704ec6519","emit":"link"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/generic-array-ff81e624fa74bab8/build_script_build-ff81e624fa74bab8","emit":"link"}
+   Compiling convert_case v0.10.0
+    Checking itertools v0.14.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/convert_case-8121266849a76caa.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libconvert_case-8121266849a76caa.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/itertools-27f280e88a700b57.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libconvert_case-8121266849a76caa.rlib","emit":"link"}
+    Checking castaway v0.2.4
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/castaway-b56dfcbd8ffa2a65.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcastaway-b56dfcbd8ffa2a65.rmeta","emit":"metadata"}
     Checking signal-hook-registry v1.4.8
-    Checking rpassword v7.5.4
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/signal_hook_registry-9ee6802162093f12.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/rpassword-76a52ebcd651bf38.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libparking_lot_core-d24a1876d93f7323.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/librpassword-76a52ebcd651bf38.rmeta","emit":"metadata"}
-    Checking parking_lot v0.12.5
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsignal_hook_registry-9ee6802162093f12.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/parking_lot-8e352b820e69c41e.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/signal_hook-70ad01cd52a9bfd8.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libmio-65daf1f9cce2db36.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libaes-32990ec191ee63d4.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libparking_lot-8e352b820e69c41e.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsignal_hook-70ad01cd52a9bfd8.rmeta","emit":"metadata"}
-    Checking signal-hook-mio v0.2.5
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/signal_hook_mio-d6f943226a4c79a1.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsignal_hook_mio-d6f943226a4c79a1.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libclap_builder-03f30bfb6d35275e.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libchrono-416e791c13c57751.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libserde_core-5d11f89bc720d497.rmeta","emit":"metadata"}
-    Checking toml_datetime v1.1.2+spec-1.1.0
-    Checking serde_spanned v1.1.2
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/serde_spanned-27a75e8a4b99f147.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/toml_datetime-560e7d543a8b2808.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libserde_spanned-27a75e8a4b99f147.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/serde_json-08bf87a8a627b441.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtoml_datetime-560e7d543a8b2808.rmeta","emit":"metadata"}
-    Checking toml v1.1.8+spec-1.1.0
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/toml-84bc99bfcda54b58.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/librustix-7fa03a926c76a71d.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libserde_json-08bf87a8a627b441.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtoml-84bc99bfcda54b58.rmeta","emit":"metadata"}
+    Checking static_assertions v1.1.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/static_assertions-1f82789da0bbdab8.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libstatic_assertions-1f82789da0bbdab8.rmeta","emit":"metadata"}
+    Checking ryu v1.0.23
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/ryu-a15f52b70e71beec.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libryu-a15f52b70e71beec.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unicode_segmentation-deea36fe9430dc68.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsyn-6a16dc0458eae7f5.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunicode_segmentation-deea36fe9430dc68.rmeta","emit":"metadata"}
+    Checking scopeguard v1.2.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/scopeguard-e0469f0b7ed1272f.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libscopeguard-e0469f0b7ed1272f.rmeta","emit":"metadata"}
+   Compiling rustix v1.1.5
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/rustix-0f0c31fe9b5f456f/build_script_build-0f0c31fe9b5f456f.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/rustix-0f0c31fe9b5f456f/build_script_build-0f0c31fe9b5f456f","emit":"link"}
+    Checking lock_api v0.4.14
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/lock_api-af976536b5c562bf.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libitertools-27f280e88a700b57.rmeta","emit":"metadata"}
+    Checking unicode-truncate v2.0.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liblock_api-af976536b5c562bf.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unicode_truncate-2004acacf672b057.d","emit":"dep-info"}
+    Checking compact_str v0.9.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunicode_truncate-2004acacf672b057.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/compact_str-7e04b339305527f0.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/signal_hook-70ad01cd52a9bfd8.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsyn-c873d3f0423be2d2.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsignal_hook-70ad01cd52a9bfd8.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/parking_lot_core-d24a1876d93f7323.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libparking_lot_core-d24a1876d93f7323.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcompact_str-7e04b339305527f0.rmeta","emit":"metadata"}
+    Checking mio v1.2.4
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/mio-65daf1f9cce2db36.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/serde_core-5d11f89bc720d497.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsyn-6a16dc0458eae7f5.rlib","emit":"link"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libmio-65daf1f9cce2db36.rmeta","emit":"metadata"}
+    Checking lru v0.18.5
    Compiling strum_macros v0.28.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/lru-21656873897382c3.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liblru-21656873897382c3.rmeta","emit":"metadata"}
    Compiling derive_more-impl v2.1.1
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/derive_more_impl-1195a8580591da07.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/strum_macros-28931184a64c9822.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsyn-c873d3f0423be2d2.rmeta","emit":"metadata"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libderive_more_impl-1195a8580591da07.so","emit":"link"}
-    Checking derive_more v2.1.1
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/derive_more-bfb7462ca505492a.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libderive_more-bfb7462ca505492a.rmeta","emit":"metadata"}
-    Checking crossterm v0.29.0
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/crossterm-8dd428e544b3167c.d","emit":"dep-info"}
+    Checking typenum v1.20.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/typenum-9cfc89dde2917fea.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsyn-c873d3f0423be2d2.rlib","emit":"link"}
    Compiling displaydoc v0.2.7
-   Compiling thiserror-impl v2.0.21
-   Compiling darling_core v0.24.1
-   Compiling clap_derive v4.6.7
-   Compiling serde_derive v1.0.229
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/displaydoc-f95ff7581c3e16bb.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtypenum-9cfc89dde2917fea.rmeta","emit":"metadata"}
+   Compiling thiserror-impl v2.0.21
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libserde_core-5d11f89bc720d497.rmeta","emit":"metadata"}
+   Compiling darling_core v0.24.1
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/thiserror_impl-58e260ec2b4a7d42.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/clap_derive-def90a8dd87510cc.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/darling_core-d07dcb46f1fb6377.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcrossterm-8dd428e544b3167c.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/serde_derive-a34d085ad919eae4.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libdisplaydoc-f95ff7581c3e16bb.so","emit":"link"}
    Compiling tinystr v0.8.5
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/tinystr-598893da30cf73e5.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/tinystr-fa471b17712beeb4.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libstrum_macros-28931184a64c9822.so","emit":"link"}
-    Checking strum v0.28.0
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtinystr-598893da30cf73e5.rmeta","emit":"metadata"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtinystr-fa471b17712beeb4.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/strum-d4c000b6ad6e344a.d","emit":"dep-info"}
-    Checking unic-langid-impl v0.9.6
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtinystr-fa471b17712beeb4.rlib","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libstrum-d4c000b6ad6e344a.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unic_langid_impl-7ff41f502a0f654a.d","emit":"dep-info"}
+   Compiling unic-langid-impl v0.9.6
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unic_langid_impl-41596bb67fd954f1.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunic_langid_impl-7ff41f502a0f654a.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libstrum_macros-28931184a64c9822.so","emit":"link"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/darling_core-d07dcb46f1fb6377.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/tinystr-598893da30cf73e5.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunic_langid_impl-41596bb67fd954f1.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtinystr-598893da30cf73e5.rmeta","emit":"metadata"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunic_langid_impl-41596bb67fd954f1.rlib","emit":"link"}
    Compiling unic-langid-macros-impl v0.9.6
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libthiserror_impl-58e260ec2b4a7d42.so","emit":"link"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unic_langid_impl-7ff41f502a0f654a.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unic_langid_macros_impl-582ecd6209c62110.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/thiserror-3dc6600c5ded6dbd.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libthiserror-3dc6600c5ded6dbd.rmeta","emit":"metadata"}
-    Checking kasuari v0.4.13
-    Checking fluent-syntax v0.12.0
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/kasuari-341098e4e6cfa2b9.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/fluent_syntax-c4984d7bbfd68356.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libkasuari-341098e4e6cfa2b9.rmeta","emit":"metadata"}
-    Checking ratatui-core v0.1.2
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libfluent_syntax-c4984d7bbfd68356.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunic_langid_impl-7ff41f502a0f654a.rmeta","emit":"metadata"}
+    Checking strum v0.28.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/strum-d4c000b6ad6e344a.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libstrum-d4c000b6ad6e344a.rmeta","emit":"metadata"}
+   Compiling litrs v1.0.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/litrs-5f45015e8be96fc1.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunic_langid_macros_impl-582ecd6209c62110.so","emit":"link"}
     Checking unic-langid-macros v0.9.6
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unic_langid_macros-87dd749b6f8ffca2.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unic_langid_macros-f4ac59f04c65ba14.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunic_langid_macros-87dd749b6f8ffca2.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunic_langid_macros-f4ac59f04c65ba14.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunic_langid_macros-f4ac59f04c65ba14.rlib","emit":"link"}
     Checking unic-langid v0.9.6
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unic_langid-b1ebd006958ee5ae.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunic_langid-b1ebd006958ee5ae.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unic_langid-5dfc69c9e33277b5.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunic_langid-5dfc69c9e33277b5.rmeta","emit":"metadata"}
-    Checking fluent-langneg v0.13.1
-    Checking intl-memoizer v0.5.3
-    Checking intl_pluralrules v7.0.2
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunic_langid-5dfc69c9e33277b5.rlib","emit":"link"}
-   Compiling fluent-template-macros v0.15.1
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/fluent_langneg-a21cfa27284e9527.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libclap_derive-def90a8dd87510cc.so","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/intl_memoizer-4d499a8e83fee393.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/fluent_template_macros-187499d06105e718.d","emit":"dep-info"}
-    Checking clap v4.6.7
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/intl_pluralrules-53c956effc5d7783.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libfluent_langneg-a21cfa27284e9527.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libintl_memoizer-4d499a8e83fee393.rmeta","emit":"metadata"}
+    Checking linux-raw-sys v0.12.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liblitrs-5f45015e8be96fc1.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/linux_raw_sys-9e223dfca6c67b1e.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liblitrs-5f45015e8be96fc1.rlib","emit":"link"}
+   Compiling indoc v2.0.8
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/indoc-c1441b4c83b5f063.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libthiserror_impl-58e260ec2b4a7d42.so","emit":"link"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/thiserror-3dc6600c5ded6dbd.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libthiserror-3dc6600c5ded6dbd.rmeta","emit":"metadata"}
+    Checking kasuari v0.4.13
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liblinux_raw_sys-9e223dfca6c67b1e.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/kasuari-341098e4e6cfa2b9.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libindoc-c1441b4c83b5f063.so","emit":"link"}
+   Compiling document-features v0.2.12
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libkasuari-341098e4e6cfa2b9.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/document_features-df08c62608e7c4fb.d","emit":"dep-info"}
+    Checking ratatui-core v0.1.2
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/ratatui_core-a6db534694fb0ae6.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/clap-10c40026b511ef13.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libclap-10c40026b511ef13.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libintl_pluralrules-53c956effc5d7783.rmeta","emit":"metadata"}
-    Checking fluent-bundle v0.16.0
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/fluent_bundle-c957da170872631b.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libfluent_template_macros-187499d06105e718.so","emit":"link"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libfluent_bundle-c957da170872631b.rmeta","emit":"metadata"}
-    Checking fluent-templates v0.15.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/rustix-7fa03a926c76a71d.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libdocument_features-df08c62608e7c4fb.so","emit":"link"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libdarling_core-d07dcb46f1fb6377.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/fluent_templates-fbb1b7726cd25fe1.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libfluent_templates-fbb1b7726cd25fe1.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/generic_array-d2a2a6fbe11b2339.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libgeneric_array-d2a2a6fbe11b2339.rmeta","emit":"metadata"}
+    Checking derive_more v2.1.1
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libratatui_core-a6db534694fb0ae6.rmeta","emit":"metadata"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libserde_derive-a34d085ad919eae4.so","emit":"link"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/derive_more-bfb7462ca505492a.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libderive_more-bfb7462ca505492a.rmeta","emit":"metadata"}
+    Checking signal-hook-mio v0.2.5
+    Checking parking_lot v0.12.5
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/signal_hook_mio-d6f943226a4c79a1.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsignal_hook_mio-d6f943226a4c79a1.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/parking_lot-8e352b820e69c41e.d","emit":"dep-info"}
+    Checking utf8parse v0.2.2
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/utf8parse-ddf5081d9c9fac1e.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libutf8parse-ddf5081d9c9fac1e.rmeta","emit":"metadata"}
+   Compiling autocfg v1.5.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libparking_lot-8e352b820e69c41e.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/autocfg-2bddf2f80f691adf.d","emit":"dep-info"}
+    Checking memchr v2.8.3
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/memchr-35f6a8453bae164a.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libautocfg-2bddf2f80f691adf.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libautocfg-2bddf2f80f691adf.rlib","emit":"link"}
+    Checking rustc-hash v2.1.3
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/rustc_hash-856cc4334f538bed.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/librustc_hash-856cc4334f538bed.rmeta","emit":"metadata"}
+    Checking type-map v0.5.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/type_map-874925ca1cdbcaf7.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libmemchr-35f6a8453bae164a.rmeta","emit":"metadata"}
+   Compiling num-traits v0.2.19
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtype_map-874925ca1cdbcaf7.rmeta","emit":"metadata"}
+    Checking anstyle-parse v1.0.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/num-traits-c9bf16cc5a66f033/build_script_build-c9bf16cc5a66f033.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/anstyle_parse-3d27090a781e5ee6.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/num-traits-c9bf16cc5a66f033/build_script_build-c9bf16cc5a66f033","emit":"link"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libanstyle_parse-3d27090a781e5ee6.rmeta","emit":"metadata"}
+    Checking line-clipping v0.3.8
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unic_langid_macros-f4ac59f04c65ba14.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunic_langid_macros-f4ac59f04c65ba14.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunic_langid_macros-f4ac59f04c65ba14.rlib","emit":"link"}
+    Checking anstyle v1.0.14
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/line_clipping-32f043217d2a6a80.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/anstyle-73092a97ca7e531b.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libline_clipping-32f043217d2a6a80.rmeta","emit":"metadata"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libdarling_core-d07dcb46f1fb6377.rlib","emit":"link"}
+   Compiling crossbeam-utils v0.8.23
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/crossbeam-utils-82a77f363ece218e/build_script_build-82a77f363ece218e.d","emit":"dep-info"}
    Compiling darling_macro v0.24.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libanstyle-73092a97ca7e531b.rmeta","emit":"metadata"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/darling_macro-8cc45c04ea4724d2.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/serde-1e091101ab9f6c46.d","emit":"dep-info"}
+    Checking is_terminal_polyfill v1.70.2
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/is_terminal_polyfill-7761058b594da90b.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libis_terminal_polyfill-7761058b594da90b.rmeta","emit":"metadata"}
+    Checking colorchoice v1.0.5
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/colorchoice-d2fe17ca1b88260b.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/crossbeam-utils-82a77f363ece218e/build_script_build-82a77f363ece218e","emit":"link"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcolorchoice-d2fe17ca1b88260b.rmeta","emit":"metadata"}
+   Compiling same-file v1.0.6
+    Checking anstyle-query v1.1.5
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/anstyle_query-53ec1b235ce1276f.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/same_file-5df108b667056288.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libanstyle_query-53ec1b235ce1276f.rmeta","emit":"metadata"}
+   Compiling zmij v1.0.23
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsame_file-5df108b667056288.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/zmij-946061105b7cdaa0/build_script_build-946061105b7cdaa0.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsame_file-5df108b667056288.rlib","emit":"link"}
+   Compiling walkdir v2.5.0
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libdarling_macro-8cc45c04ea4724d2.so","emit":"link"}
    Compiling darling v0.24.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/walkdir-38d6e01d2a34ad2d.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/darling-a0c4f5f958998523.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libdarling-a0c4f5f958998523.rmeta","emit":"metadata"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libdarling-a0c4f5f958998523.rlib","emit":"link"}
    Compiling instability v0.3.14
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/zmij-946061105b7cdaa0/build_script_build-946061105b7cdaa0","emit":"link"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/instability-cde5f070780eb935.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libserde-1e091101ab9f6c46.rmeta","emit":"metadata"}
+    Checking anstream v1.0.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libwalkdir-38d6e01d2a34ad2d.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/anstream-05e62185321fbab2.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libwalkdir-38d6e01d2a34ad2d.rlib","emit":"link"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unic_langid-5dfc69c9e33277b5.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunic_langid-5dfc69c9e33277b5.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunic_langid-5dfc69c9e33277b5.rlib","emit":"link"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libanstream-05e62185321fbab2.rmeta","emit":"metadata"}
+    Checking intl-memoizer v0.5.3
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/intl_memoizer-4d499a8e83fee393.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libintl_memoizer-4d499a8e83fee393.rmeta","emit":"metadata"}
+    Checking fluent-syntax v0.12.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/librustix-7fa03a926c76a71d.rmeta","emit":"metadata"}
+    Checking crypto-common v0.1.7
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/fluent_syntax-c4984d7bbfd68356.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/crypto_common-1e074f04f1b8bcb6.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcrypto_common-1e074f04f1b8bcb6.rmeta","emit":"metadata"}
+    Checking inout v0.1.4
+    Checking crossterm v0.29.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/inout-57b73c0f329c9ef9.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libinout-57b73c0f329c9ef9.rmeta","emit":"metadata"}
+    Checking intl_pluralrules v7.0.2
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libinstability-cde5f070780eb935.so","emit":"link"}
     Checking ratatui-widgets v0.3.2
-    Checking ratatui-crossterm v0.1.2
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/ratatui_crossterm-0ca7349dae73c3af.d","emit":"dep-info"}
-{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libratatui_crossterm-0ca7349dae73c3af.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libfluent_syntax-c4984d7bbfd68356.rmeta","emit":"metadata"}
+    Checking fluent-langneg v0.13.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/intl_pluralrules-53c956effc5d7783.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/crossterm-8dd428e544b3167c.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/fluent_langneg-a21cfa27284e9527.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libfluent_langneg-a21cfa27284e9527.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/strsim-040ca1b75394e7a6.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/ratatui_widgets-43f11ecb720f909f.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libstrsim-040ca1b75394e7a6.rmeta","emit":"metadata"}
+    Checking self_cell v1.3.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libintl_pluralrules-53c956effc5d7783.rmeta","emit":"metadata"}
+    Checking winnow v1.0.4
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/self_cell-3533d37633a9895c.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libself_cell-3533d37633a9895c.rmeta","emit":"metadata"}
+    Checking unicase v2.10.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/winnow-52d6b94579369c19.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/unicase-2534d3aed1949aed.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libunicase-2534d3aed1949aed.rmeta","emit":"metadata"}
+   Compiling serde_json v1.0.154
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/serde_json-a4a9ff45eaa6f756/build_script_build-a4a9ff45eaa6f756.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcrossterm-8dd428e544b3167c.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/serde_json-a4a9ff45eaa6f756/build_script_build-a4a9ff45eaa6f756","emit":"link"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libwinnow-52d6b94579369c19.rmeta","emit":"metadata"}
+   Compiling serde v1.0.229
+    Checking clap_lex v1.1.1
+    Checking ratatui-crossterm v0.1.2
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/serde-94cd7afb59b66330/build_script_build-94cd7afb59b66330.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/clap_lex-aa552f193211390b.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/ratatui_crossterm-0ca7349dae73c3af.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libclap_lex-aa552f193211390b.rmeta","emit":"metadata"}
+   Compiling anyhow v1.0.104
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libratatui_crossterm-0ca7349dae73c3af.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/anyhow-b01fde7fcdd21fa7/build_script_build-b01fde7fcdd21fa7.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/same_file-efed975f3af6a8d5.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsame_file-efed975f3af6a8d5.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/serde-94cd7afb59b66330/build_script_build-94cd7afb59b66330","emit":"link"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/walkdir-bf5c30ef140687dc.d","emit":"dep-info"}
+    Checking clap_builder v4.6.7
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libwalkdir-bf5c30ef140687dc.rmeta","emit":"metadata"}
+    Checking toml_parser v1.1.5+spec-1.1.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/anyhow-b01fde7fcdd21fa7/build_script_build-b01fde7fcdd21fa7","emit":"link"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/toml_parser-b2d815c555e46f3d.d","emit":"dep-info"}
+    Checking fluent-bundle v0.16.0
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libratatui_widgets-43f11ecb720f909f.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/clap_builder-03f30bfb6d35275e.d","emit":"dep-info"}
     Checking ratatui v0.30.2
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/fluent_bundle-c957da170872631b.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/ratatui-6baeab79b0681902.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libratatui-6baeab79b0681902.rmeta","emit":"metadata"}
+    Checking cipher v0.4.4
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/cipher-2f90b4db8ddf0bc3.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtoml_parser-b2d815c555e46f3d.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libfluent_bundle-c957da170872631b.rmeta","emit":"metadata"}
+   Compiling fluent-template-macros v0.15.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcipher-2f90b4db8ddf0bc3.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/fluent_template_macros-187499d06105e718.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/num_traits-52fee84e5794fd53.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/crossbeam_utils-f0cc41c10644d34d.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcrossbeam_utils-f0cc41c10644d34d.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/zmij-071bd32896956c8f.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libfluent_template_macros-187499d06105e718.so","emit":"link"}
+    Checking serde_spanned v1.1.2
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libnum_traits-52fee84e5794fd53.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/serde_spanned-27a75e8a4b99f147.d","emit":"dep-info"}
+    Checking toml_datetime v1.1.2+spec-1.1.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libserde_spanned-27a75e8a4b99f147.rmeta","emit":"metadata"}
+   Compiling clap_derive v4.6.7
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/toml_datetime-560e7d543a8b2808.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libzmij-071bd32896956c8f.rmeta","emit":"metadata"}
+   Compiling serde_derive v1.0.229
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtoml_datetime-560e7d543a8b2808.rmeta","emit":"metadata"}
+    Checking rtoolbox v0.0.6
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/rtoolbox-cf947db53d5ebfbf.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/librtoolbox-cf947db53d5ebfbf.rmeta","emit":"metadata"}
+    Checking cpufeatures v0.2.17
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/cpufeatures-169294971ec13642.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcpufeatures-169294971ec13642.rmeta","emit":"metadata"}
+    Checking toml_writer v1.1.3+spec-1.1.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/clap_derive-def90a8dd87510cc.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/toml_writer-4135123f11b052fd.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtoml_writer-4135123f11b052fd.rmeta","emit":"metadata"}
+    Checking iana-time-zone v0.1.65
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/iana_time_zone-18a35316557f8193.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libiana_time_zone-18a35316557f8193.rmeta","emit":"metadata"}
+   Compiling rse v0.1.0 (./target/geiger-src)
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/rse-fbd4a2770817e996/build_script_build-fbd4a2770817e996.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/serde_derive-a34d085ad919eae4.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libclap_builder-03f30bfb6d35275e.rmeta","emit":"metadata"}
+    Checking chrono v0.4.45
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/chrono-416e791c13c57751.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/build/rse-fbd4a2770817e996/build_script_build-fbd4a2770817e996","emit":"link"}
+    Checking toml v1.1.8+spec-1.1.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/toml-84bc99bfcda54b58.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libchrono-416e791c13c57751.rmeta","emit":"metadata"}
+    Checking aes v0.8.4
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/aes-32990ec191ee63d4.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libclap_derive-def90a8dd87510cc.so","emit":"link"}
+    Checking clap v4.6.7
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/clap-10c40026b511ef13.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libclap-10c40026b511ef13.rmeta","emit":"metadata"}
+    Checking rpassword v7.5.4
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/rpassword-76a52ebcd651bf38.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/librpassword-76a52ebcd651bf38.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libtoml-84bc99bfcda54b58.rmeta","emit":"metadata"}
+    Checking fluent-templates v0.15.1
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/fluent_templates-fbb1b7726cd25fe1.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libaes-32990ec191ee63d4.rmeta","emit":"metadata"}
+    Checking crossbeam-channel v0.5.17
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/serde_json-08bf87a8a627b441.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libfluent_templates-fbb1b7726cd25fe1.rmeta","emit":"metadata"}
     Checking lazyui-ratatui v0.1.0
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/crossbeam_channel-1c36c6b4990937d5.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/lazyui_ratatui-033effff36111fe0.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/liblazyui_ratatui-033effff36111fe0.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/anyhow-1e7a194132057311.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libanyhow-1e7a194132057311.rmeta","emit":"metadata"}
+    Checking sys-locale v0.3.2
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libcrossbeam_channel-1c36c6b4990937d5.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/sys_locale-3bdb921802ddcd91.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libsys_locale-3bdb921802ddcd91.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libserde_json-08bf87a8a627b441.rmeta","emit":"metadata"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libserde_derive-a34d085ad919eae4.so","emit":"link"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/serde-1e091101ab9f6c46.d","emit":"dep-info"}
+{"$message_type":"artifact","artifact":"./target/geiger/debug/deps/libserde-1e091101ab9f6c46.rmeta","emit":"metadata"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/rse-98daddba2e606c02.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/librse-98daddba2e606c02.rmeta","emit":"metadata"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/rse-1d9d313e938c2c03.d","emit":"dep-info"}
 {"$message_type":"artifact","artifact":"./target/geiger/debug/deps/librse-1d9d313e938c2c03.rmeta","emit":"metadata"}
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.08s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 11.53s
 Failed to parse file: ./vendor/signal-hook-registry-1.4.8/src/lib.rs, Syn(Error("expected `;`"), "./vendor/signal-hook-registry-1.4.8/src/lib.rs") 
     Scanning done
-WARNING: Dependency file was never scanned: ./vendor/derive_more-impl-2.1.1/README.md
-WARNING: Dependency file was never scanned: ./target/geiger/debug/build/serde_core-b98c1f9e4c290de7/out/private.rs
-WARNING: Dependency file was never scanned: ./vendor/clap-4.6.7/examples/demo.md
 WARNING: Dependency file was never scanned: ./vendor/derive_more-impl-2.1.1/doc/is_variant.md
-WARNING: Dependency file was never scanned: ./target/geiger-src/locales/en/rse.ftl
-WARNING: Dependency file was never scanned: ./target/geiger/debug/build/thiserror-5f5ed575411202b9/out/private.rs
-WARNING: Dependency file was never scanned: ./vendor/clap_builder-4.6.7/README.md
-WARNING: Dependency file was never scanned: ./vendor/clap_derive-4.6.7/README.md
-WARNING: Dependency file was never scanned: ./target/geiger-src/locales/zh-CN/rse.ftl
-WARNING: Dependency file was never scanned: ./vendor/signal-hook-registry-1.4.8/src/lib.rs
+WARNING: Dependency file was never scanned: ./vendor/clap-4.6.7/examples/demo.md
 WARNING: Dependency file was never scanned: ./vendor/compact_str-0.9.1/README.md
 WARNING: Dependency file was never scanned: ./target/geiger/debug/build/serde-ba8426c877a92a17/out/private.rs
+WARNING: Dependency file was never scanned: ./target/geiger/debug/build/serde_core-b98c1f9e4c290de7/out/private.rs
+WARNING: Dependency file was never scanned: ./vendor/clap_builder-4.6.7/README.md
+WARNING: Dependency file was never scanned: ./target/geiger-src/locales/en/rse.ftl
+WARNING: Dependency file was never scanned: ./target/geiger-src/locales/zh-CN/rse.ftl
+WARNING: Dependency file was never scanned: ./vendor/clap_derive-4.6.7/README.md
+WARNING: Dependency file was never scanned: ./vendor/derive_more-impl-2.1.1/README.md
 WARNING: Dependency file was never scanned: ./target/geiger/debug/build/rustversion-d2854a6eb6777e68/out/version.expr
+WARNING: Dependency file was never scanned: ./vendor/signal-hook-registry-1.4.8/src/lib.rs
+WARNING: Dependency file was never scanned: ./target/geiger/debug/build/thiserror-5f5ed575411202b9/out/private.rs
 error: Found 13 warnings
 cargo geiger: exit status: 1, with a whole table
 xtask: geiger: succeeded
