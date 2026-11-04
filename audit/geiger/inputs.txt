@@ -61,5 +61,5 @@ e8d7a9c8b4f563ddc077dd1acddc6478ed51ab70	src/ui/snapshots/rse__ui__tests__long_p
 2ba761b32e745a1e6181cf7ef51308850484f2cc	xtask/Cargo.toml
 5485a991d7dff87f53c41d182d4cad24e01bb7ac	xtask/src/main.rs
 c1930b545baab252c81e949bf4b04144be5c14e9	xtask/src/run.rs
-4ba5df54b1b7e296f1910e9c44d8a949c032b890	xtask/src/tasks/geiger.rs
+261f86ccd4bfeadb8aea9eeb3bcb8503cef92fb4	xtask/src/tasks/geiger.rs
 171917aad0222375043b3fbf17d60ac79566b69f	xtask/src/tasks/mod.rs
