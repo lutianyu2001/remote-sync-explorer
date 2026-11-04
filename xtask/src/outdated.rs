@@ -639,7 +639,11 @@ fn commit_of(agent: &ureq::Agent, repo: &str, version: &str) -> Result<String, S
 /// The known vulnerabilities of an action at `version`, from OSV, which carries GitHub's
 /// advisories. OSV does not order an action's versions, so a query by version finds nothing:
 /// every advisory of the action is read, and its ranges compared here.
-fn action_vulnerabilities(agent: &ureq::Agent, repo: &str, version: &str) -> Result<Vec<String>, String> {
+fn action_vulnerabilities(
+    agent: &ureq::Agent,
+    repo: &str,
+    version: &str,
+) -> Result<Vec<String>, String> {
     let mut ids = Vec::new();
     let mut token = String::new();
     for _ in 0..20 {
@@ -777,8 +781,7 @@ fn ask(question: &str) -> bool {
 /// configuration it goes into.
 fn is_token(t: &str) -> bool {
     let body = t.trim_end_matches('=');
-    !body.is_empty()
-        && body.bytes().all(|b| b.is_ascii_alphanumeric() || b"-._~+/".contains(&b))
+    !body.is_empty() && body.bytes().all(|b| b.is_ascii_alphanumeric() || b"-._~+/".contains(&b))
 }
 
 /// `GITHUB_TOKEN`, if set, checked to be a token: it goes into a header.

@@ -133,15 +133,23 @@ jobs:
       - id: args
         run: |
           if [ "$TASK" = fuzz ]; then echo "args=$FUZZ_SECONDS" >> "$GITHUB_OUTPUT"; fi
-      # 0: a run is needed; 1: the committed result stands; anything else is an error.
+      # 0: a run is needed; 1: the committed result stands; anything else is an error. A job
+      # that skips its task still succeeds, so it says so: a notice on the run's page, and a
+      # line in its summary, as does one that runs, with the reason.
       - id: needed
         env:
           ARGS: ${{ steps.args.outputs.args }}
         run: |
           set +e
-          cargo xtask needed "$TASK" $ARGS
+          why=$(cargo xtask needed "$TASK" $ARGS)
           c=$?
+          echo "$why"
           echo "code=$c" >> "$GITHUB_OUTPUT"
+          case $c in
+            0) echo "- $TASK: runs, as the committed result does not stand: ${why#"$TASK: "}" >> "$GITHUB_STEP_SUMMARY" ;;
+            1) echo "::notice title=$TASK skipped::The committed result stands for this commit."
+               echo "- $TASK: skipped, as the committed result stands" >> "$GITHUB_STEP_SUMMARY" ;;
+          esac
           [ "$c" -le 1 ]
       # Per project: what building with the default features needs. geiger and coverage
       # build rse with them, which compile librclone with Go (see ci.yml); Miri, Kani and
