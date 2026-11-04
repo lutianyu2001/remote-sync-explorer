@@ -140,10 +140,14 @@ jobs:
         with:
           go-version: "1.26"
           cache: false
+      # Pinned: cargo-about 0.9.3 installs its program only with the cli feature, and an
+      # unpinned install took that release without it, failing the build of v0.1.0.
       - name: Tools for license texts and the embedded dependency list
         run: |
-          (cd "$HOME" && cargo install --locked cargo-about cargo-auditable)
-          go install github.com/google/go-licenses@latest
+          cd "$HOME"
+          cargo install --locked --features cli cargo-about@0.9.3
+          cargo install --locked cargo-auditable@0.7.7
+          go install github.com/google/go-licenses@v1.6.0
       # cargo auditable embeds the dependency list, so cargo audit bin can check a release.
       - name: Build
         run: cargo auditable build --release --locked

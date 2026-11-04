@@ -5,8 +5,8 @@
 #
 #   scripts/third-party-licenses.sh OUT
 #
-# Needs cargo-about (cargo install cargo-about) and go-licenses
-# (go install github.com/google/go-licenses@latest).
+# Needs cargo-about (cargo install --locked --features cli cargo-about@0.9.3) and
+# go-licenses (go install github.com/google/go-licenses@v1.6.0), as CI installs them.
 set -eu
 
 out=${1:?usage: $0 OUT}
