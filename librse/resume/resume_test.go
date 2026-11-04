@@ -259,7 +259,9 @@ func TestStoppedJobLeavesThePartial(t *testing.T) {
 	data := randomFile(t, filepath.Join(src, "big"), 4*mib)
 	setBwlimit(t, "1M")
 	t.Cleanup(func() { setBwlimit(t, "off") })
-	in := copyParams(src, "big", dst, "big")
+	// Not as a reflink (macOS APFS, Linux btrfs, Linux XFS, etc.), which rclone makes of a
+	// copy on one disk where it can: a reflink is not limited, and leaves no partial file.
+	in := copyParams(src, "big", ":local,no_clone=true:"+dst, "big")
 	in["_async"] = true
 	job, _, err := jobs.NewJob(context.Background(), rc.Calls.Get("rse/copy").Fn, in)
 	require.NoError(t, err)
