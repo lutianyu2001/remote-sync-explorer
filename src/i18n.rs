@@ -34,17 +34,36 @@ thread_local! {
     static THREAD_CHINESE: std::cell::Cell<Option<bool>> = const { std::cell::Cell::new(None) };
 }
 
-/// Sets the interface language; `Auto` follows the system locale (`LANGUAGE`, `LANG` and
-/// the like). Call it before starting threads: it also sets the C library's message
-/// language.
+/// Sets the interface language; `Auto` follows the locale as gettext does ([`locale`]),
+/// and without one the system's language. Call it before starting threads: it also sets
+/// the C library's message language.
 pub fn set(language: Language) {
     let chinese = match language {
-        Language::Auto => sys_locale::get_locale().is_some_and(|l| l.starts_with("zh")),
+        Language::Auto => locale(|name| std::env::var(name).ok())
+            .or_else(sys_locale::get_locale)
+            .is_some_and(|l| l.starts_with("zh")),
         Language::En => false,
         Language::ZhCn => true,
     };
     CHINESE.store(chinese, Ordering::Relaxed);
     set_system_messages(chinese);
+}
+
+/// The locale the environment names for messages, as gettext reads it: the first set of
+/// `LC_ALL`, `LC_MESSAGES` and `LANG`, unless `LANGUAGE` lists one ahead of it; never
+/// `LANGUAGE` when that is `C` or `POSIX`. None when none is set, which leaves the
+/// system's language: sys-locale reads these variables on Linux, but on macOS only the
+/// language of the system's settings.
+fn locale(var: impl Fn(&str) -> Option<String>) -> Option<String> {
+    let set = |name: &str| var(name).filter(|v| !v.is_empty());
+    let named = ["LC_ALL", "LC_MESSAGES", "LANG"].into_iter().find_map(set);
+    // As glibc's gettext: `C.UTF-8` and the like still take `LANGUAGE`.
+    if named.as_deref().is_some_and(|l| l == "C" || l == "POSIX") {
+        return named;
+    }
+    let first =
+        set("LANGUAGE").and_then(|l| l.split(':').find(|l| !l.is_empty()).map(str::to_owned));
+    first.or(named)
 }
 
 /// Has glibc translate system errors (`No such file or directory`), which `io::Error`
@@ -126,6 +145,31 @@ mod tests {
     use std::path::Path;
 
     use super::*;
+
+    #[test]
+    fn the_locale_is_read_as_gettext_reads_it() {
+        fn env(pairs: &[(&str, &str)]) -> impl Fn(&str) -> Option<String> + use<> {
+            let pairs: Vec<(String, String)> =
+                pairs.iter().map(|(k, v)| ((*k).to_owned(), (*v).to_owned())).collect();
+            move |name| pairs.iter().find(|(k, _)| k == name).map(|(_, v)| v.clone())
+        }
+        assert_eq!(locale(env(&[])), None);
+        assert_eq!(locale(env(&[("LANG", "")])), None);
+        assert_eq!(locale(env(&[("LANG", "zh_CN.UTF-8")])).as_deref(), Some("zh_CN.UTF-8"));
+        let messages = env(&[("LANG", "zh_CN.UTF-8"), ("LC_MESSAGES", "en_US.UTF-8")]);
+        assert_eq!(locale(messages).as_deref(), Some("en_US.UTF-8"));
+        let all = env(&[("LC_ALL", "zh_TW.UTF-8"), ("LC_MESSAGES", "en_US.UTF-8")]);
+        assert_eq!(locale(all).as_deref(), Some("zh_TW.UTF-8"));
+        let listed = env(&[("LANGUAGE", ":zh_CN:en"), ("LANG", "en_US.UTF-8")]);
+        assert_eq!(locale(listed).as_deref(), Some("zh_CN"));
+        assert_eq!(locale(env(&[("LANGUAGE", "zh_CN")])).as_deref(), Some("zh_CN"));
+        for c in ["C", "POSIX"] {
+            let plain = env(&[("LANGUAGE", "zh_CN"), ("LANG", c)]);
+            assert_eq!(locale(plain).as_deref(), Some(c), "{c}");
+        }
+        let utf8 = env(&[("LANGUAGE", "zh_CN:en"), ("LANG", "C.UTF-8")]);
+        assert_eq!(locale(utf8).as_deref(), Some("zh_CN"));
+    }
 
     fn ids(file: &str) -> BTreeSet<String> {
         let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("locales").join(file);

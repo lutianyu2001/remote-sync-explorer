@@ -471,7 +471,8 @@ nothing of the new name is there yet.
 
 rse speaks English or Simplified Chinese: `language` in `[ui]` picks one, and `auto`
 (the default) follows the system locale, as gettext does (`LANGUAGE`, `LC_ALL`,
-`LC_MESSAGES`, `LANG`). This covers the interface, `rse --help` and its errors, and the
+`LC_MESSAGES`, `LANG`), on macOS too; with none of them set, the system's language
+(on macOS, the one in System Settings). This covers the interface, `rse --help` and its errors, and the
 errors and prompts at start-up; the config file's setting already applies to `--help`.
 System errors such as "No such file or directory" follow it too when glibc has the
 translations (Linux). What rclone, ssh and the TOML parser say stays in English, and so

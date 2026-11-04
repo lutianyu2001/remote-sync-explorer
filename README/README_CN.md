@@ -335,7 +335,7 @@ rse 以前叫 rclone-explorer-tui（命令为 `rext`）。第一次启动时，�
 
 ## 语言
 
-rse 支持英文和简体中文：`[ui]` 里的 `language` 选择其一，`auto`（默认）像 gettext 一样跟随系统语言（`LANGUAGE`、`LC_ALL`、`LC_MESSAGES`、`LANG`）。范围包括界面、`rse --help` 及其报错，以及启动时的报错和提示；配置文件里的设置对 `--help` 同样生效。glibc 有对应翻译时（Linux），"No such file or directory" 这类系统错误也会跟随。rclone、ssh 和 TOML 解析器输出的内容保持英文，日志文件也是。
+rse 支持英文和简体中文：`[ui]` 里的 `language` 选择其一，`auto`（默认）像 gettext 一样跟随系统语言（`LANGUAGE`、`LC_ALL`、`LC_MESSAGES`、`LANG`），macOS 上也一样；这几个变量都没有设置时，使用系统的语言（macOS 上是系统设置里的语言）。范围包括界面、`rse --help` 及其报错，以及启动时的报错和提示；配置文件里的设置对 `--help` 同样生效。glibc 有对应翻译时（Linux），"No such file or directory" 这类系统错误也会跟随。rclone、ssh 和 TOML 解析器输出的内容保持英文，日志文件也是。
 
 文本保存在 [Fluent](https://projectfluent.org) 文件 `locales/en/rse.ftl` 和 `locales/zh-CN/rse.ftl` 中，编译进二进制文件。
 
