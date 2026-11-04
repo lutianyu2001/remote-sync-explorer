@@ -82,13 +82,21 @@ fn copy(root: &Path) -> Result<PathBuf, String> {
         root,
         &["ls-files", "-z", "--others", "--ignored", "--exclude-standard", "--directory"],
     )?;
+    let mut linked: Vec<&PathBuf> = Vec::new();
     for name in &ignored {
         // The builds, this copy among them.
         if name.starts_with("target") {
             continue;
         }
+        // git 2.43 lists a directory with a .gitignore of its own (pytest's `*`), then its
+        // files as well: they are there through the directory's link, and a link made for
+        // one of them would go through it, into the work tree.
+        if linked.iter().any(|dir| name.starts_with(dir)) {
+            continue;
+        }
         let made = parent(&to.join(name)).and_then(|()| symlink(root.join(name), to.join(name)));
         made.map_err(|e| format!("{}: {e}", to.join(name).display()))?;
+        linked.push(name);
     }
     Ok(to)
 }

@@ -264,9 +264,13 @@ fn affects(task: &str, path: &str) -> bool {
     // Every member's manifest too: licenses, dependency kinds and versions that Cargo.lock
     // does not show.
     let manifest = path == "Cargo.toml" || path.ends_with("/Cargo.toml") && !under(&["fuzz"]);
+    // How code is formatted and linted, wherever it is (xtask/ has its own): no run reads it.
+    let style = Path::new(path).file_name().is_some_and(|n| {
+        ["rustfmt.toml", ".rustfmt.toml", "clippy.toml", ".clippy.toml"].iter().any(|s| n == *s)
+    });
     let every = manifest
         || under(&["Cargo.lock", ".cargo", "rust-toolchain.toml"])
-        || under(&["xtask"]) && !other && !none.iter().any(|f| path == f);
+        || under(&["xtask"]) && !other && !style && !none.iter().any(|f| path == f);
     if every {
         return true;
     }
@@ -274,7 +278,8 @@ fn affects(task: &str, path: &str) -> bool {
     let documentation = Path::new(path).extension().is_some_and(|e| e.eq_ignore_ascii_case("md"))
         || top.starts_with("README")
         || top.starts_with("LICENSE")
-        || under(&[".github", ".gitignore", "clippy.toml", "rustfmt.toml"]);
+        || under(&[".github", ".gitignore"])
+        || style;
     // What the code reads counts for every code task, wherever it is: a sample under tests/
     // that a unit test reads too.
     let code = |also: &[&str]| {
@@ -490,10 +495,11 @@ mod tests {
         assert_eq!(reads("xtask/src/tasks/kani.rs"), only(&["kani"]));
         assert_eq!(reads("xtask/src/json.rs"), only(&["geiger", "coverage", "kani"]));
         assert_eq!(reads("xtask/src/tasks/fuzz.rs"), only(&["fuzz"]));
-        // Per project: paths of this project, by the rows of the table in the skill.
+        // Per project: paths of this project, by which files each task reads.
         assert_eq!(reads("README.md"), Vec::<&str>::new());
         assert_eq!(reads("README/README_CN.md"), Vec::<&str>::new());
         assert_eq!(reads("LICENSE"), Vec::<&str>::new());
+        assert_eq!(reads("xtask/rustfmt.toml"), Vec::<&str>::new());
         assert_eq!(reads(".github/workflows/verify.yml"), Vec::<&str>::new());
         assert_eq!(reads("deny.toml"), only(&["deny"]));
         assert_eq!(reads("supply-chain/audits.toml"), only(&["vet"]));

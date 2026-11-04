@@ -728,8 +728,8 @@ fn affects_version(advisory: &Value, repo: &str, version: &str) -> Result<bool, 
     Ok(false)
 }
 
-// Per project: ureq, from the dependencies; without an HTTP crate there, the three below are
-// replaced by reference/variants/curl-agent.rs.
+// Per project: ureq, from the dependencies; without an HTTP crate there, the three below call
+// the system's curl instead.
 fn get_json(agent: &ureq::Agent, url: &str) -> Result<Value, String> {
     let mut resp = agent
         .get(url)

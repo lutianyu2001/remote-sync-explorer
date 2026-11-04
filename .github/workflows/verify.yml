@@ -5,9 +5,9 @@ name: Verify
 # it starts, and so make full use of GitHub Actions; and only those:
 #
 # - At each release published on GitHub, deny, vet, geiger, coverage and fuzz run by
-#   themselves. Fuzzing runs FUZZ_SECONDS a target, all four at once on a runner's four
-#   cores, stopping on time whatever it finds: four hours, well within the six a job may
-#   take.
+#   themselves. Fuzzing runs FUZZ_SECONDS a target, the targets at once on a runner's four
+#   cores (up to four of them), stopping on time whatever it finds: four hours, well within
+#   the six a job may take.
 # - Kani and Miri never start by themselves. How long they take depends on the proofs and
 #   tests, and one change can take them from seconds to hours (a single test took Miri from
 #   a minute to three hours). A run left to time out, release after release, would waste the
@@ -273,7 +273,7 @@ jobs:
             fi
             git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-              commit --quiet -m "audit: results for $NAME (${sha::7})"
+              commit --quiet -m "chore(audit): record results for $NAME (${sha::7})"
             if git push origin "HEAD:$BRANCH"; then
               exit 0
             fi
