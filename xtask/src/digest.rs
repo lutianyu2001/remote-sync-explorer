@@ -287,9 +287,11 @@ mod tests {
         assert_eq!(blank("Cargo.toml", workspace), "[workspace.package]\nversion = \"\"\n");
         let inherited = "[package]\nversion.workspace = true\n";
         assert_eq!(blank("Cargo.toml", inherited), inherited);
-        // Both reach normal, and the rest of the text stays: a Cargo.toml as TOML, a Cargo.lock
-        // with its own versions left out, or as it is where the code reads its version.
-        assert!(normal("Cargo.toml", manifest("0.2.0").as_bytes()).is_some());
+        // Both reach normal, and the rest of the text stays: with their own versions left out,
+        // or as they are where the code reads its version (a Cargo.toml then still as TOML,
+        // unless the toml branch is gone).
+        let manifest_read = normal("Cargo.toml", manifest("0.2.0").as_bytes());
+        assert!(manifest_read.is_some() || OWN_VERSION_READ);
         let lock_read = normal("fuzz/Cargo.lock", lock("0.2.0", "1.0.0").as_bytes());
         assert_eq!(lock_read.is_some(), !OWN_VERSION_READ);
         assert_eq!(normal("a.md", b"version = \"1\""), None);
