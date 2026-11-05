@@ -1,6 +1,6 @@
 result: succeeded
-started: 2026-11-05 02:37 UTC
-seconds: 189
-commit: 765a14c930e3411b2f626ea9a2f31514dc78225a
+started: 2026-11-05 03:15 UTC
+seconds: 309
+commit: 828dce1acab35f14291297a5bd165cd75703d262
 args: 
 tools: nightly-2026-10-28

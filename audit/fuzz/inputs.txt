@@ -1,13 +1,13 @@
-# Rust as tokens, TOML as values, the rest as git blobs (1)
+# Rust as tokens, TOML as values, the rest as git blobs, own versions left out (1)
 ea30e7752b0a869d9d0d8530380575fcd0ae9e6a	.cargo/config.toml
-cb1e2abedcae7a1ddfda89068cd49a178ef06e05	Cargo.lock
-5f4f10164ed6bc872808c4577a56cbe4dac477b1	Cargo.toml
+ef856cdad694ceca72ae8b85de3a6d1ee32fccbd	Cargo.lock
+ce10733873a8a20febe495e53d4078e406ccb9d5	Cargo.toml
 8bbd9fdb5116fdabe50dcc66b382becdb613d63a	about.hbs
 fe1f859b407081ec799351f9bbb4a06058ea9ae4	about.toml
 e4cfbc475199ea6462bd04d276d549f1e0335598	build.rs
 401a0abbe0700574919e10002590f14a17ae28b2	fuzz/.gitignore
-9e89801f6f67666bc61c792d7a31734763f230dc	fuzz/Cargo.lock
-367dcbf72c85f3844716d999aacdbc09c57d6a09	fuzz/Cargo.toml
+f9e1cdcf67684b3c0da40c2003ef39a8bc617aa6	fuzz/Cargo.lock
+733eb23993cc32919ed57fd317f650f06c1831ca	fuzz/Cargo.toml
 a17bf5de702e2e027809e2f09b327ef7fcd3cc14	fuzz/fuzz_targets/address.rs
 98316cc39dd03d8c052311abe3bbe646ae5214db	fuzz/fuzz_targets/config.rs
 99632b65ab59a74ea15aa828fe453ac22d01e942	fuzz/fuzz_targets/rsync.rs
@@ -67,8 +67,8 @@ e8d7a9c8b4f563ddc077dd1acddc6478ed51ab70	src/ui/snapshots/rse__ui__tests__long_p
 7a9560878947fbe24c06afc937ddc11284ed9d8d	src/ui/snapshots/rse__ui__tests__main_screen_in_chinese.snap
 36a96d5c09ceb116712be2aaf5579f5adb90e12a	src/ui/tests.rs
 97594d544b2b22539775f3b03549ad44eb1b8a21	src/ui/text.rs
-2ba761b32e745a1e6181cf7ef51308850484f2cc	xtask/Cargo.toml
-db8e23c2c4374ba63216e8254e306f7b572f137b	xtask/src/main.rs
+4c2e4f5ee4049364970ae460748291e36140fbbb	xtask/Cargo.toml
+1ad150fffb216e3496145f88e3cfd7049748d24d	xtask/src/main.rs
 c1930b545baab252c81e949bf4b04144be5c14e9	xtask/src/run.rs
 2732ef272fb7a177e568bc03fe19b3eb84d3dc04	xtask/src/tasks/fuzz.rs
 8e6d71765cce475cb622d1b62bc6afedec9e05c5	xtask/src/tasks/mod.rs

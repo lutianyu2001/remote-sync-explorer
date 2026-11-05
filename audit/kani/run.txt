@@ -1,6 +1,6 @@
 result: succeeded
-started: 2026-11-04 18:20 UTC
-seconds: 61
-commit: d4f078f6738c6198c8d40f8599d8689edfb9d280
+started: 2026-11-05 03:14 UTC
+seconds: 37
+commit: 828dce1acab35f14291297a5bd165cd75703d262
 args: 
 tools: kani-verifier 0.68.0

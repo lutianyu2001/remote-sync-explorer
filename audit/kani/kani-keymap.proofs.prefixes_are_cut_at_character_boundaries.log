@@ -17,6 +17,7 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
+[1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 0.04s
 warning: Found the following unsupported constructs:
              - caller_location (1)
              - foreign function (1)
@@ -24,7 +25,6 @@ warning: Found the following unsupported constructs:
          Verification will fail if one or more of these constructs is reachable.
          See https://model-checking.github.io/kani/rust-feature-support.html for more details.
 
-[1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 0.06s
 Checking harness keymap::proofs::prefixes_are_cut_at_character_boundaries...
 CBMC 6.11.0 (cbmc-6.11.0)
 CBMC version 6.11.0 (cbmc-6.11.0) 64-bit x86_64 linux
@@ -539,76 +539,76 @@ Unwinding loop memcmp.0 iteration 6 file <builtin-library-memcmp> line 25 functi
 Unwinding loop memcmp.0 iteration 7 file <builtin-library-memcmp> line 25 function memcmp thread 0
 Unwinding loop memcmp.0 iteration 8 file <builtin-library-memcmp> line 25 function memcmp thread 0
 Not unwinding loop memcmp.0 iteration 9 file <builtin-library-memcmp> line 25 function memcmp thread 0
-Runtime Symex: 13.0986s
+Runtime Symex: 7.54165s
 size of program expression: 173824 steps
 slicing removed 132977 assignments
 Generated 3681 VCC(s), 2259 remaining after simplification
-Runtime Postprocess Equation: 0.332759s
+Runtime Postprocess Equation: 0.209722s
 Passing problem to propositional reduction
 converting SSA
-Runtime Convert SSA: 0.940138s
+Runtime Convert SSA: 0.603806s
 Running propositional reduction
 Post-processing
-Runtime Post-process: 0.0238638s
+Runtime Post-process: 0.0151051s
 Solving with CaDiCaL 3.0.0
 573410 variables, 1908161 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 5.01041s
-Runtime decision procedure: 5.98951s
+Runtime Solver: 3.166s
+Runtime decision procedure: 3.79654s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573411 variables, 1908162 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.215529s
-Runtime decision procedure: 0.230611s
+Runtime Solver: 0.14202s
+Runtime decision procedure: 0.151167s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573412 variables, 1908163 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.175559s
-Runtime decision procedure: 0.184673s
+Runtime Solver: 0.100113s
+Runtime decision procedure: 0.106034s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573413 variables, 1908164 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.0890402s
-Runtime decision procedure: 0.0983939s
+Runtime Solver: 0.0543269s
+Runtime decision procedure: 0.0602284s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573414 variables, 1908165 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.0985564s
-Runtime decision procedure: 0.107771s
+Runtime Solver: 0.0518563s
+Runtime decision procedure: 0.057746s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573415 variables, 1908166 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.412641s
-Runtime decision procedure: 0.422134s
+Runtime Solver: 0.199771s
+Runtime decision procedure: 0.205624s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573416 variables, 1908167 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.167713s
-Runtime decision procedure: 0.17688s
+Runtime Solver: 0.102225s
+Runtime decision procedure: 0.108042s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573417 variables, 1908168 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.391314s
-Runtime decision procedure: 0.399337s
+Runtime Solver: 0.248821s
+Runtime decision procedure: 0.254195s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573418 variables, 1908169 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.160178s
-Runtime decision procedure: 0.166344s
+Runtime Solver: 0.0849096s
+Runtime decision procedure: 0.0888255s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573419 variables, 1908170 clauses
 SAT checker: instance is UNSATISFIABLE
-Runtime Solver: 4.48477s
-Runtime decision procedure: 4.48624s
+Runtime Solver: 2.53111s
+Runtime decision procedure: 2.53227s
 
 RESULTS:
 Check 1: std::fmt::Arguments::<'_>::from_str.assertion.1
@@ -1911,7 +1911,7 @@ SUMMARY:
  ** 0 of 259 failed (17 unreachable)
 
 VERIFICATION:- SUCCESSFUL
-Verification Time: 31.67958s
+Verification Time: 19.029516s
 
 Manual Harness Summary:
 Complete - 1 successfully verified harnesses, 0 failures, 1 total.

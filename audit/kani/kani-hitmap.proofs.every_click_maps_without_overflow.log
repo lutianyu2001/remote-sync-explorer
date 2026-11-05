@@ -17,7 +17,7 @@ warning: use of an unstable feature
   |
   = note: requested on the command line with `--force-warn unstable-features`
 
-[1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 0.05s
+[1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 0.03s
 warning: Found the following unsupported constructs:
              - caller_location (1)
              - foreign function (1)
@@ -38,52 +38,52 @@ Starting Bounded Model Checking
 Unwinding loop _RNvMNtCsl6uirjh9DzI_3rse6hitmapNtB2_6HitMap3hit.0 iteration 1 file src/hitmap.rs line 89 column 9 function hitmap::HitMap::hit thread 0
 Unwinding loop _RNvMNtCsl6uirjh9DzI_3rse6hitmapNtB2_6HitMap3hit.0 iteration 2 file src/hitmap.rs line 89 column 9 function hitmap::HitMap::hit thread 0
 aborting path on assume(false) at file src/hitmap.rs line 89 column 29 function hitmap::HitMap::hit thread 0
-Runtime Symex: 0.276521s
+Runtime Symex: 0.146781s
 size of program expression: 10934 steps
 slicing removed 7934 assignments
 Generated 509 VCC(s), 41 remaining after simplification
-Runtime Postprocess Equation: 0.0051933s
+Runtime Postprocess Equation: 0.00169411s
 Passing problem to propositional reduction
 converting SSA
-Runtime Convert SSA: 0.0249864s
+Runtime Convert SSA: 0.0109177s
 Running propositional reduction
 Post-processing
-Runtime Post-process: 7.051e-06s
+Runtime Post-process: 5.728e-06s
 Solving with CaDiCaL 3.0.0
 27092 variables, 39758 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.0536765s
-Runtime decision procedure: 0.0795073s
+Runtime Solver: 0.0317179s
+Runtime decision procedure: 0.0431231s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 27093 variables, 39759 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.00139908s
-Runtime decision procedure: 0.00185447s
+Runtime Solver: 0.000623169s
+Runtime decision procedure: 0.000874568s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 27094 variables, 39760 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.0300718s
-Runtime decision procedure: 0.0303512s
+Runtime Solver: 0.0187821s
+Runtime decision procedure: 0.0189366s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 27095 variables, 39761 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.0107078s
-Runtime decision procedure: 0.0109183s
+Runtime Solver: 0.00666703s
+Runtime decision procedure: 0.00678027s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 27096 variables, 39762 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.0010459s
-Runtime decision procedure: 0.00128842s
+Runtime Solver: 0.000490079s
+Runtime decision procedure: 0.000606033s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 27097 variables, 39763 clauses
 SAT checker: instance is UNSATISFIABLE
-Runtime Solver: 0.00222898s
-Runtime decision procedure: 0.00238555s
+Runtime Solver: 0.00133378s
+Runtime decision procedure: 0.0014146s
 
 RESULTS:
 Check 1: hitmap::HitMap::hit.assertion.1
@@ -2932,7 +2932,7 @@ SUMMARY:
  ** 0 of 568 failed (7 unreachable)
 
 VERIFICATION:- SUCCESSFUL
-Verification Time: 0.92125326s
+Verification Time: 0.47974855s
 
 Manual Harness Summary:
 Complete - 1 successfully verified harnesses, 0 failures, 1 total.

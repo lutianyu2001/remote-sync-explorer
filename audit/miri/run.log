@@ -2,19 +2,19 @@ $ cargo +nightly-2026-10-28 miri setup
 Preparing a sysroot for Miri (target: x86_64-unknown-linux-gnu)...
 [1m[92m    Updating[0m crates.io index
 [1m[92m Downloading[0m crates ...
-[1m[92m  Downloaded[0m adler2 v2.0.1
-[1m[92m  Downloaded[0m foldhash v0.2.0
-[1m[92m  Downloaded[0m getopts v0.2.24
+[1m[92m  Downloaded[0m hashbrown v0.17.1
 [1m[92m  Downloaded[0m cfg-if v1.0.4
-[1m[92m  Downloaded[0m addr2line v0.27.1
 [1m[92m  Downloaded[0m rustc-literal-escaper v0.0.8
+[1m[92m  Downloaded[0m adler2 v2.0.1
 [1m[92m  Downloaded[0m rustc-demangle v0.1.28
+[1m[92m  Downloaded[0m addr2line v0.27.1
+[1m[92m  Downloaded[0m foldhash v0.2.0
 [1m[92m  Downloaded[0m memchr v2.8.3
 [1m[92m  Downloaded[0m miniz_oxide v0.9.1
-[1m[92m  Downloaded[0m hashbrown v0.17.1
 [1m[92m  Downloaded[0m gimli v0.34.0
-[1m[92m  Downloaded[0m object v0.39.1
 [1m[92m  Downloaded[0m libc v0.2.191
+[1m[92m  Downloaded[0m getopts v0.2.24
+[1m[92m  Downloaded[0m object v0.39.1
 [1m[92m   Compiling[0m compiler_builtins v0.1.160 (~/.rustup/toolchains/nightly-2026-10-28-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/compiler-builtins/compiler-builtins)
 [1m[92m   Compiling[0m core v0.0.0 (~/.rustup/toolchains/nightly-2026-10-28-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core)
 [1m[92m   Compiling[0m libc v0.2.191
@@ -25,57 +25,58 @@ Preparing a sysroot for Miri (target: x86_64-unknown-linux-gnu)...
 [1m[92m   Compiling[0m alloc v0.0.0 (~/.rustup/toolchains/nightly-2026-10-28-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc)
 [1m[92m   Compiling[0m adler2 v2.0.1
 [1m[92m   Compiling[0m memchr v2.8.3
-[1m[92m   Compiling[0m cfg-if v1.0.4
 [1m[92m   Compiling[0m rustc-demangle v0.1.28
+[1m[92m   Compiling[0m cfg-if v1.0.4
 [1m[92m   Compiling[0m rustc-literal-escaper v0.0.8
 [1m[92m   Compiling[0m unwind v0.0.0 (~/.rustup/toolchains/nightly-2026-10-28-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/unwind)
 [1m[92m   Compiling[0m rustc-std-workspace-alloc v1.99.0 (~/.rustup/toolchains/nightly-2026-10-28-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/rustc-std-workspace-alloc)
-[1m[92m   Compiling[0m panic_abort v0.0.0 (~/.rustup/toolchains/nightly-2026-10-28-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/panic_abort)
 [1m[92m   Compiling[0m panic_unwind v0.0.0 (~/.rustup/toolchains/nightly-2026-10-28-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/panic_unwind)
+[1m[92m   Compiling[0m panic_abort v0.0.0 (~/.rustup/toolchains/nightly-2026-10-28-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/panic_abort)
 [1m[92m   Compiling[0m gimli v0.34.0
+[1m[92m   Compiling[0m std_detect v0.1.5 (~/.rustup/toolchains/nightly-2026-10-28-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std_detect)
 [1m[92m   Compiling[0m miniz_oxide v0.9.1
 [1m[92m   Compiling[0m hashbrown v0.17.1
-[1m[92m   Compiling[0m std_detect v0.1.5 (~/.rustup/toolchains/nightly-2026-10-28-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std_detect)
 [1m[92m   Compiling[0m addr2line v0.27.1
 [1m[92m   Compiling[0m rustc-std-workspace-std v1.99.0 (~/.rustup/toolchains/nightly-2026-10-28-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/rustc-std-workspace-std)
 [1m[92m   Compiling[0m proc_macro v0.0.0 (~/.rustup/toolchains/nightly-2026-10-28-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/proc_macro)
 [1m[92m   Compiling[0m getopts v0.2.24
 [1m[92m   Compiling[0m sysroot v0.0.0 (~/.rustup/toolchains/nightly-2026-10-28-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/sysroot)
-[1m[92m   Compiling[0m custom-local-sysroot v0.0.0 (/tmp/rustc-build-sysroot-jHQfG9)
-[1m[92m    Finished[0m `custom_sysroot` profile [optimized] target(s) in 15.75s
+[1m[92m   Compiling[0m custom-local-sysroot v0.0.0 (/tmp/rustc-build-sysroot-EJ4LPk)
+[1m[92m    Finished[0m `custom_sysroot` profile [optimized] target(s) in 20.16s
 A sysroot for Miri is now available in `~/.cache/miri`.
 $ cargo +nightly-2026-10-28 miri test --locked --no-default-features --lib -- rclone::obscure:: rclone::ssh_passwords:: config:: jobs:: event:: keymap:: location:: endpoint:: ui::text:: ui::panes::tests:: hitmap:: state:: engine:: --skip base64_round_trips_every_short_input
 [1m[92m   Compiling[0m proc-macro2 v1.0.107
 [1m[92m   Compiling[0m quote v1.0.47
 [1m[92m   Compiling[0m unicode-ident v1.0.27
 [1m[92m   Compiling[0m libc v0.2.191
-[1m[92m   Compiling[0m cfg-if v1.0.5
 [1m[92m   Compiling[0m proc-macro-hack v0.5.20+deprecated
+[1m[92m   Compiling[0m cfg-if v1.0.5
 [1m[92m   Compiling[0m thiserror v2.0.21
 [1m[92m   Compiling[0m bitflags v2.13.2
 [1m[92m   Compiling[0m syn v3.0.9
 [1m[92m   Compiling[0m syn v2.0.119
-[1m[92m   Compiling[0m heck v0.5.0
 [1m[92m   Compiling[0m rustversion v1.0.23
+[1m[92m   Compiling[0m heck v0.5.0
+[1m[92m   Compiling[0m smallvec v1.16.3
 [1m[92m   Compiling[0m errno v0.3.14
 [1m[92m   Compiling[0m foldhash v0.2.0
-[1m[92m   Compiling[0m rustix v1.1.5
 [1m[92m   Compiling[0m allocator-api2 v0.2.21
 [1m[92m   Compiling[0m unicode-width v0.2.2
-[1m[92m   Compiling[0m smallvec v1.16.3
+[1m[92m   Compiling[0m rustix v1.1.5
 [1m[92m   Compiling[0m ident_case v1.0.1
 [1m[92m   Compiling[0m equivalent v1.0.3
 [1m[92m   Compiling[0m strsim v0.11.1
 [1m[92m   Compiling[0m hashbrown v0.17.1
+[1m[92m   Compiling[0m signal-hook v0.3.18
 [1m[92m   Compiling[0m version_check v0.9.5
 [1m[92m   Compiling[0m unicode-segmentation v1.13.3
 [1m[92m   Compiling[0m log v0.4.34
 [1m[92m   Compiling[0m parking_lot_core v0.9.12
-[1m[92m   Compiling[0m either v1.19.0
-[1m[92m   Compiling[0m itoa v1.0.18
 [1m[92m   Compiling[0m linux-raw-sys v0.12.1
-[1m[92m   Compiling[0m signal-hook v0.3.18
+[1m[92m   Compiling[0m either v1.19.0
 [1m[92m   Compiling[0m serde_core v1.0.229
+[1m[92m   Compiling[0m itoa v1.0.18
+[1m[92m   Compiling[0m itertools v0.14.0
 [1m[92m   Compiling[0m darling_core v0.24.1
 [1m[92m   Compiling[0m strum_macros v0.28.0
 [1m[92m   Compiling[0m displaydoc v0.2.7
@@ -83,100 +84,99 @@ $ cargo +nightly-2026-10-28 miri test --locked --no-default-features --lib -- rc
 [1m[92m   Compiling[0m tinystr v0.8.5
 [1m[92m   Compiling[0m unic-langid-impl v0.9.6
 [1m[92m   Compiling[0m unic-langid-macros-impl v0.9.6
-[1m[92m   Compiling[0m itertools v0.14.0
-[1m[92m   Compiling[0m darling_macro v0.24.1
-[1m[92m   Compiling[0m unic-langid-macros v0.9.6
 [1m[92m   Compiling[0m convert_case v0.10.0
 [1m[92m   Compiling[0m generic-array v0.14.7
 [1m[92m   Compiling[0m castaway v0.2.4
+[1m[92m   Compiling[0m unic-langid-macros v0.9.6
 [1m[92m   Compiling[0m signal-hook-registry v1.4.8
+[1m[92m   Compiling[0m scopeguard v1.2.0
 [1m[92m   Compiling[0m ryu v1.0.23
 [1m[92m   Compiling[0m static_assertions v1.1.0
-[1m[92m   Compiling[0m scopeguard v1.2.0
 [1m[92m   Compiling[0m compact_str v0.9.1
-[1m[92m   Compiling[0m lock_api v0.4.14
 [1m[92m   Compiling[0m derive_more-impl v2.1.1
-[1m[92m   Compiling[0m darling v0.24.1
-[1m[92m   Compiling[0m kasuari v0.4.13
+[1m[92m   Compiling[0m unicode-truncate v2.0.1
+[1m[92m   Compiling[0m lock_api v0.4.14
 [1m[92m   Compiling[0m unic-langid v0.9.6
+[1m[92m   Compiling[0m kasuari v0.4.13
 [1m[92m   Compiling[0m strum v0.28.0
 [1m[92m   Compiling[0m mio v1.2.4
 [1m[92m   Compiling[0m lru v0.18.5
-[1m[92m   Compiling[0m unicode-truncate v2.0.1
-[1m[92m   Compiling[0m indoc v2.0.8
-[1m[92m   Compiling[0m litrs v1.0.1
 [1m[92m   Compiling[0m typenum v1.20.1
-[1m[92m   Compiling[0m instability v0.3.14
+[1m[92m   Compiling[0m litrs v1.0.1
+[1m[92m   Compiling[0m darling_macro v0.24.1
+[1m[92m   Compiling[0m darling v0.24.1
+[1m[92m   Compiling[0m indoc v2.0.8
 [1m[92m   Compiling[0m document-features v0.2.12
+[1m[92m   Compiling[0m instability v0.3.14
+[1m[92m   Compiling[0m signal-hook-mio v0.2.5
 [1m[92m   Compiling[0m ratatui-core v0.1.2
 [1m[92m   Compiling[0m derive_more v2.1.1
-[1m[92m   Compiling[0m signal-hook-mio v0.2.5
 [1m[92m   Compiling[0m parking_lot v0.12.5
+[1m[92m   Compiling[0m rustc-hash v2.1.3
+[1m[92m   Compiling[0m utf8parse v0.2.2
 [1m[92m   Compiling[0m getrandom v0.4.3
 [1m[92m   Compiling[0m memchr v2.8.3
 [1m[92m   Compiling[0m autocfg v1.5.1
-[1m[92m   Compiling[0m rustc-hash v2.1.3
-[1m[92m   Compiling[0m utf8parse v0.2.2
-[1m[92m   Compiling[0m type-map v0.5.1
-[1m[92m   Compiling[0m anstyle-parse v1.0.0
 [1m[92m   Compiling[0m crossterm v0.29.0
+[1m[92m   Compiling[0m anstyle-parse v1.0.0
+[1m[92m   Compiling[0m type-map v0.5.1
 [1m[92m   Compiling[0m num-traits v0.2.19
 [1m[92m   Compiling[0m line-clipping v0.3.8
+[1m[92m   Compiling[0m anstyle v1.0.14
+[1m[92m   Compiling[0m zmij v1.0.23
+[1m[92m   Compiling[0m anstyle-query v1.1.5
 [1m[92m   Compiling[0m same-file v1.0.6
 [1m[92m   Compiling[0m colorchoice v1.0.5
 [1m[92m   Compiling[0m crossbeam-utils v0.8.23
 [1m[92m   Compiling[0m is_terminal_polyfill v1.70.2
-[1m[92m   Compiling[0m zmij v1.0.23
-[1m[92m   Compiling[0m anstyle v1.0.14
-[1m[92m   Compiling[0m anstyle-query v1.1.5
 [1m[92m   Compiling[0m anstream v1.0.0
-[1m[92m   Compiling[0m ratatui-widgets v0.3.2
 [1m[92m   Compiling[0m walkdir v2.5.0
-[1m[92m   Compiling[0m intl-memoizer v0.5.3
+[1m[92m   Compiling[0m ratatui-widgets v0.3.2
 [1m[92m   Compiling[0m ratatui-crossterm v0.1.2
+[1m[92m   Compiling[0m intl-memoizer v0.5.3
 [1m[92m   Compiling[0m fluent-syntax v0.12.0
-[1m[92m   Compiling[0m inout v0.1.4
 [1m[92m   Compiling[0m crypto-common v0.1.7
+[1m[92m   Compiling[0m inout v0.1.4
 [1m[92m   Compiling[0m intl_pluralrules v7.0.2
 [1m[92m   Compiling[0m fluent-langneg v0.13.1
+[1m[92m   Compiling[0m serde v1.0.229
+[1m[92m   Compiling[0m self_cell v1.3.0
 [1m[92m   Compiling[0m unicase v2.10.0
-[1m[92m   Compiling[0m fastrand v2.5.0
-[1m[92m   Compiling[0m clap_lex v1.1.1
-[1m[92m   Compiling[0m anyhow v1.0.104
 [1m[92m   Compiling[0m once_cell v1.21.4
 [1m[92m   Compiling[0m serde_json v1.0.154
-[1m[92m   Compiling[0m serde v1.0.229
+[1m[92m   Compiling[0m clap_lex v1.1.1
 [1m[92m   Compiling[0m winnow v1.0.4
-[1m[92m   Compiling[0m self_cell v1.3.0
-[1m[92m   Compiling[0m fluent-bundle v0.16.0
-[1m[92m   Compiling[0m ratatui v0.30.2
-[1m[92m   Compiling[0m tempfile v3.27.0
-[1m[92m   Compiling[0m toml_parser v1.1.5+spec-1.1.0
+[1m[92m   Compiling[0m anyhow v1.0.104
+[1m[92m   Compiling[0m fastrand v2.5.0
 [1m[92m   Compiling[0m clap_builder v4.6.7
+[1m[92m   Compiling[0m toml_parser v1.1.5+spec-1.1.0
+[1m[92m   Compiling[0m tempfile v3.27.0
+[1m[92m   Compiling[0m ratatui v0.30.2
+[1m[92m   Compiling[0m fluent-bundle v0.16.0
 [1m[92m   Compiling[0m cipher v0.4.4
 [1m[92m   Compiling[0m fluent-template-macros v0.15.1
-[1m[92m   Compiling[0m serde_spanned v1.1.2
 [1m[92m   Compiling[0m toml_datetime v1.1.2+spec-1.1.0
-[1m[92m   Compiling[0m clap_derive v4.6.7
+[1m[92m   Compiling[0m serde_spanned v1.1.2
 [1m[92m   Compiling[0m serde_derive v1.0.229
-[1m[92m   Compiling[0m rtoolbox v0.0.6
+[1m[92m   Compiling[0m clap_derive v4.6.7
 [1m[92m   Compiling[0m console v0.16.6
-[1m[92m   Compiling[0m iana-time-zone v0.1.65
-[1m[92m   Compiling[0m rse v0.1.0 (.)
+[1m[92m   Compiling[0m rtoolbox v0.0.6
+[1m[92m   Compiling[0m cpufeatures v0.2.17
 [1m[92m   Compiling[0m toml_writer v1.1.3+spec-1.1.0
 [1m[92m   Compiling[0m similar v2.7.0
-[1m[92m   Compiling[0m cpufeatures v0.2.17
-[1m[92m   Compiling[0m aes v0.8.4
-[1m[92m   Compiling[0m toml v1.1.8+spec-1.1.0
+[1m[92m   Compiling[0m iana-time-zone v0.1.65
+[1m[92m   Compiling[0m rse v0.1.0 (.)
 [1m[92m   Compiling[0m insta v1.49.0
-[1m[92m   Compiling[0m clap v4.6.7
 [1m[92m   Compiling[0m chrono v0.4.45
+[1m[92m   Compiling[0m clap v4.6.7
+[1m[92m   Compiling[0m toml v1.1.8+spec-1.1.0
+[1m[92m   Compiling[0m aes v0.8.4
 [1m[92m   Compiling[0m rpassword v7.5.4
-[1m[92m   Compiling[0m fluent-templates v0.15.1
 [1m[92m   Compiling[0m crossbeam-channel v0.5.17
+[1m[92m   Compiling[0m fluent-templates v0.15.1
 [1m[92m   Compiling[0m lazyui-ratatui v0.1.0
 [1m[92m   Compiling[0m sys-locale v0.3.2
-[1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 15.30s
+[1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 18.79s
 [1m[92m     Running[0m unittests src/lib.rs (target/miri/x86_64-unknown-linux-gnu/debug/build/rse/87ff4bea0531ebb2/out/rse-87ff4bea0531ebb2)
 
 running 74 tests
@@ -255,6 +255,6 @@ test ui::text::tests::time_in_given_zone ... ok
 test ui::text::tests::what_cannot_be_seen_is_shown_as_a_mark ... ok
 test ui::text::tests::wide_characters_count_double ... ok
 
-test result: ok. 74 passed; 0 failed; 0 ignored; 0 measured; 159 filtered out; finished in 150.08s
+test result: ok. 74 passed; 0 failed; 0 ignored; 0 measured; 159 filtered out; finished in 258.82s
 
 xtask: miri: succeeded
