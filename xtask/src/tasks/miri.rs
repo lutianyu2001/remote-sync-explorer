@@ -1,3 +1,4 @@
+use std::env;
 use std::path::Path;
 
 use crate::run::{capped, nightly, status};
@@ -33,6 +34,10 @@ pub fn run(root: &Path) -> Result<(), String> {
     if MODULES.is_empty() {
         return Err("no module to test: list them in xtask/src/tasks/miri.rs".to_owned());
     }
+    // Miri's standard library is built first, outside the repository: built inside, it
+    // follows .cargo/config.toml, which may take crates from vendor/ alone, offline, where
+    // the versions the standard library locks are missing. Once built, it is reused.
+    status(nightly(&env::temp_dir(), &["miri", "setup"]))?;
     let mut miri = nightly(root, &["miri", "test", "--locked"]);
     miri.args(BUILD).arg("--").args(MODULES);
     for test in SKIP {
