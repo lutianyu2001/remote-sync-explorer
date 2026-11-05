@@ -248,6 +248,13 @@ const BUILT_ONLY_BY: [(&str, &[&str]); 0] = [];
 // input of. inputs.txt keeps the output, or how the command failed, as `<output>\t(<name>)`.
 const PROBES: [(&str, &str, &[&str]); 0] = [];
 
+// Per project: files that are no documentation yet that no task reads, such as what only a
+// release uses (the script collecting the dependencies' license texts, its configuration): a
+// change to them changes no result. A directory counts with all under it. What every task
+// reads (the manifests, .cargo/, xtask/) counts whether listed or not. Here what the release
+// job runs to collect the license texts.
+const READ_BY_NO_TASK: [&str; 3] = ["about.hbs", "about.toml", "scripts/third-party-licenses.sh"];
+
 /// Whether a change to `path` can change what `task` finds, besides the tools pinned for
 /// it. Documentation, CI and the results themselves change nothing.
 fn affects(task: &str, path: &str) -> bool {
@@ -283,6 +290,9 @@ fn affects(task: &str, path: &str) -> bool {
         || under(&["xtask"]) && !other && !style && !none.iter().any(|f| path == f);
     if every {
         return true;
+    }
+    if under(&READ_BY_NO_TASK) {
+        return false;
     }
     let top = path.split('/').next().unwrap_or(path);
     let documentation = Path::new(path).extension().is_some_and(|e| e.eq_ignore_ascii_case("md"))
@@ -540,6 +550,10 @@ mod tests {
         ] {
             assert_eq!(reads(path), Vec::<&str>::new(), "{path}");
         }
+        for path in super::READ_BY_NO_TASK {
+            assert_eq!(reads(path), Vec::<&str>::new(), "{path}");
+            assert_eq!(reads(&format!("{path}/a.rs")), Vec::<&str>::new(), "{path}");
+        }
         assert_eq!(reads("xtask/src/tasks/kani.rs"), only(&["kani"]));
         assert_eq!(reads("xtask/src/json.rs"), only(&["geiger", "coverage", "kani"]));
         assert_eq!(reads("xtask/src/tasks/fuzz.rs"), only(&["fuzz"]));
@@ -567,6 +581,11 @@ mod tests {
         assert_eq!(reads("fuzz/Cargo.lock"), only(&["deny", "fuzz"]));
         assert_eq!(reads("fuzz/fuzz_targets/text.rs"), only(&["fuzz"]));
         assert_eq!(reads("tests/startup.rs"), only(&["coverage"]));
+        assert_eq!(reads("scripts/third-party-licenses.sh"), Vec::<&str>::new());
+        assert_eq!(
+            reads("scripts/build-librclone.sh"),
+            only(&["geiger", "miri", "coverage", "kani", "fuzz"])
+        );
         assert_eq!(reads("src/lib.rs"), only(&["geiger", "miri", "coverage", "kani", "fuzz"]));
         let code = only(&["geiger", "miri", "coverage", "kani", "fuzz"]);
         assert_eq!(reads("locales/en/main.ftl"), code);
