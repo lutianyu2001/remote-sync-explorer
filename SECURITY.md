@@ -103,12 +103,15 @@ which results stand, and `--if-needed` skips a task whose result does; `cargo xt
 ### CI
 
 The Verify workflow runs at each release (the release job starts it once the release is
-published) the tasks whose length is known before they start: deny, vet, geiger,
-coverage and fuzz, four hours a target (`FUZZ_SECONDS`), all at once on a runner's four
-cores, going on from the corpus of the last run. Kani and Miri never start by themselves:
-one new proof or test can take them from seconds to hours, so try them with
-`--no-record` first, then run them on a workstation, or start Verify by hand with the
-tasks `kani miri`. Nothing in the audit runs on a push. Each task runs in a job of its
+published) the tasks whose length is known before they start or that are short: deny,
+vet, geiger, coverage and fuzz, four hours a target (`FUZZ_SECONDS`), all at once on a
+runner's four cores, going on from the corpus of the last run; and Kani and Miri, which
+take minutes here, with jobs that time out at 30 minutes. One new proof or test can take
+them from seconds to hours, so after changing the proofs or what Miri tests, see how long
+they take first, with `--no-record` on a workstation or by starting Verify by hand with the
+tasks `kani miri`; one grown long is taken out of the release's tasks, and run in either
+of those ways. Nothing in the
+audit runs on a push. Each task runs in a job of its
 own, and only if its committed result does not stand; the last job commits the results to
 `audit/` on main (failures too, beside the last success), as results for the release's
 commit, keeping any committed there since. As CI pushes to main, pull with

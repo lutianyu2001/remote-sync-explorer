@@ -105,8 +105,7 @@ independent third party: it raises confidence in the code but is no guarantee. T
 is repeated rather than done once: its latest results are committed with the code in
 [`audit/`](audit/), and the badges above (with `audit` under the title for them all)
 show whether each still holds for the code on main. At each release CI reruns the parts
-whose results no longer hold and whose length is known beforehand (fuzzing four hours a
-target); Kani and Miri are rerun by hand.
+whose results no longer hold (fuzzing four hours a target, Kani and Miri a few minutes).
 [SECURITY.md](SECURITY.md) describes each part and how to run it, and
 [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md) the dependencies. The figures below are from the runs
 of 2026-11-02.

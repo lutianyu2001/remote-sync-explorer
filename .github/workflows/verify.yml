@@ -1,18 +1,21 @@
 name: Verify
 
 # The security audit of SECURITY.md, kept out of the pipeline that builds and tests. The
-# maintainer's decision is to run on GitHub's runners every task whose length is known before
-# it starts, and so make full use of GitHub Actions; and only those:
+# maintainer's decision is to run on GitHub's runners every task that is short or whose
+# length is known before it starts, and so make full use of GitHub Actions; and only those:
 #
-# - At each release published on GitHub, deny, vet, geiger, coverage and fuzz run by
-#   themselves. Fuzzing runs FUZZ_SECONDS a target, the targets at once on a runner's four
-#   cores (up to four of them), stopping on time whatever it finds: four hours, well within
-#   the six a job may take.
-# - Kani and Miri never start by themselves. How long they take depends on the proofs and
-#   tests, and one change can take them from seconds to hours (a single test took Miri from
-#   a minute to three hours). A run left to time out, release after release, would waste the
-#   runners and could draw GitHub's notice. Try them on a workstation first (cargo xtask kani
-#   --no-record), then run them there, or start this workflow by hand with tasks "kani miri".
+# - At each release published on GitHub, the tasks of ON_RELEASE run by themselves: deny,
+#   vet, geiger, coverage and fuzz, and Kani and Miri where their runs are known to be
+#   short. Fuzzing runs FUZZ_SECONDS a target, the targets at once on a runner's four cores
+#   (up to four of them), stopping on time whatever it finds: four hours, well within the
+#   six a job may take.
+# - How long Kani and Miri take depends on the proofs and tests, and one change can take
+#   them from seconds to hours (a single test took Miri from a minute to three hours). A run
+#   left to time out, release after release, would waste the runners and could draw
+#   GitHub's notice. After a change to the proofs or to what Miri tests, see how long they
+#   take first: on a workstation (cargo xtask kani --no-record), or by starting this
+#   workflow by hand with tasks "kani miri". Where they are not short, they stay out of
+#   ON_RELEASE, and run on a workstation or by hand.
 # - Never on a push: it takes hours, and a push does not need it.
 # - A release does not wait for it, and a result out of date holds no release back; the
 #   README's badges, kept by advisories.yml, show which results stand.
@@ -33,7 +36,7 @@ on:
         description: "Tasks to run, among: deny vet geiger miri coverage kani fuzz"
         type: string
         # Per project: what a release runs, as ON_RELEASE below.
-        default: "deny vet geiger coverage fuzz"
+        default: "deny vet geiger miri coverage kani fuzz"
 
 concurrency: { group: "verify-${{ github.ref }}", cancel-in-progress: true }
 
@@ -59,10 +62,11 @@ jobs:
     steps:
       - id: plan
         env:
-          # Per project: TASKS in xtask/src/tasks/mod.rs, and those of them whose length is
-          # known before they start.
+          # Per project: TASKS in xtask/src/tasks/mod.rs, and those of them a release runs:
+          # those whose length is known before they start, and kani and miri where their
+          # runs are known to be short.
           KNOWN: "deny vet geiger miri coverage kani fuzz"
-          ON_RELEASE: "deny vet geiger coverage fuzz"
+          ON_RELEASE: "deny vet geiger miri coverage kani fuzz"
           EVENT: ${{ github.event_name }}
           ASKED: ${{ github.event.inputs.tasks }}
         run: |
@@ -90,8 +94,9 @@ jobs:
         task: ${{ fromJSON(needs.plan.outputs.tasks) }}
     runs-on: ubuntu-latest
     # Per project: well past each task's usual time, for a run that hangs, not to stop one
-    # that is merely slow: fuzz takes FUZZ_SECONDS and its building.
-    timeout-minutes: ${{ matrix.task == 'fuzz' && 300 || 120 }}
+    # that is merely slow: fuzz takes FUZZ_SECONDS and its building. Kani and Miri, where a
+    # release runs them, a few times theirs, so that one grown long ends early.
+    timeout-minutes: ${{ matrix.task == 'fuzz' && 300 || contains(fromJSON('["kani", "miri"]'), matrix.task) && 30 || 120 }}
     permissions:
       contents: read
       # The fuzz corpus of the last run, kept as an artifact.
