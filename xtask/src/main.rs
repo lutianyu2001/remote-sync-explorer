@@ -253,8 +253,13 @@ const PROBES: [(&str, &str, &[&str]); 0] = [];
 // change to them changes no result. A directory counts with all under it. What every task
 // reads (the manifests, .cargo/, xtask/) counts whether listed or not. Here what the release
 // job runs to collect the license texts.
-const READ_BY_NO_TASK: [&str; 4] =
-    ["about.hbs", "about.toml", "scripts/notices.py", "scripts/third-party-licenses.sh"];
+const READ_BY_NO_TASK: [&str; 5] = [
+    "about.hbs",
+    "about.toml",
+    "scripts/check-embedded-licenses.sh",
+    "scripts/notices.py",
+    "scripts/third-party-licenses.sh",
+];
 
 /// Whether a change to `path` can change what `task` finds, besides the tools pinned for
 /// it. Documentation, CI and the results themselves change nothing.

@@ -39,13 +39,14 @@
 
 ## Licenses in a Release
 
-- A release archive holds `third-party/`: the license texts of every Rust crate and Go
-  module built into `rse`, with the NOTICE files of the Go modules that have one, and the
-  GPL-3.0's text, which the LGPL-3.0 below builds on (`licenses.txt`, one block a
-  component; `rust-licenses.html`, `GPL-3.0.txt`, `go/librse/` and the list
-  `go-licenses.csv`), collected at the release by `scripts/third-party-licenses.sh` from
-  the same lock files as the build. The script fails on a Go module under a license it
-  does not accept, but for the modules below, let through one by one.
+- `rse --licenses` prints the license texts of every Rust crate and Go module built into
+  it, one block a component (name and version, license, source, then the texts), with
+  the NOTICE files of the Go modules that have one, and the GPL-3.0's text, which the
+  LGPL-3.0 below builds on: the release build embeds them, collected at the release by
+  `scripts/third-party-licenses.sh` from the same lock files as the build, and checks the
+  program prints them (`scripts/check-embedded-licenses.sh`). Other builds print a note.
+- A release archive also holds them in `third-party/` (`licenses.txt`,
+  `rust-licenses.html`, `GPL-3.0.txt`, `go/librse/` and the list `go-licenses.csv`).
 - Go links everything statically, and a few of the modules rclone brings in ask more of a
   binary than their license texts:
   - `github.com/cloudsoda/sddl`, under LGPL-3.0, comes in through rclone's SMB backend.

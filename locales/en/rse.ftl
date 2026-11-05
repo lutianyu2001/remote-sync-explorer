@@ -242,6 +242,7 @@ cli-user-value = USER
 cli-rc-pass = Password for --rcd (better: the RCLONE_RC_PASS environment variable)
 cli-pass-value = PASS
 cli-version = Print the remote-sync-explorer and rclone versions
+cli-licenses = Print the licenses of remote-sync-explorer and of the third-party code built into it
 cli-help = Print help
 cli-error = error:
 cli-tip = tip:

@@ -46,6 +46,7 @@ const EXPECTED_LIBINTL: &str =
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
+    third_party_licenses();
     // A directory: cargo looks at every file in it.
     println!("cargo:rerun-if-changed={LIBRSE}");
     println!("cargo:rerun-if-env-changed=RSE_RCLONE_VERSION");
@@ -393,4 +394,27 @@ fn emit_platform_link_args() {
 
 fn env_or_panic(name: &str) -> String {
     env::var(name).unwrap_or_else(|_| panic!("{name} is not set"))
+}
+
+/// Puts the third-party license texts into `OUT_DIR/third-party-licenses.txt`, for
+/// `include_str!`: the file `THIRD_PARTY_LICENSES` names, or nothing.
+fn third_party_licenses() {
+    use std::path::{Path, PathBuf};
+    use std::{env, fs};
+
+    println!("cargo:rerun-if-env-changed=THIRD_PARTY_LICENSES");
+    let out_dir = env::var_os("OUT_DIR").unwrap_or_else(|| panic!("cargo sets OUT_DIR"));
+    let out = PathBuf::from(out_dir).join("third-party-licenses.txt");
+    let texts = match env::var_os("THIRD_PARTY_LICENSES") {
+        Some(path) => {
+            let path = Path::new(&path);
+            println!("cargo:rerun-if-changed={}", path.display());
+            let texts = fs::read_to_string(path)
+                .unwrap_or_else(|e| panic!("THIRD_PARTY_LICENSES: {}: {e}", path.display()));
+            assert!(!texts.trim().is_empty(), "THIRD_PARTY_LICENSES: {} is empty", path.display());
+            texts
+        }
+        None => String::new(),
+    };
+    fs::write(&out, texts).unwrap_or_else(|e| panic!("{}: {e}", out.display()));
 }

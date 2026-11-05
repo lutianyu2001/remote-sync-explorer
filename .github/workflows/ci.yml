@@ -148,15 +148,22 @@ jobs:
           cargo install --locked --features cli cargo-about@0.9.3
           cargo install --locked cargo-auditable@0.7.7
           go install github.com/google/go-licenses@v1.6.0
+      # Before the build, which embeds licenses.txt for rse --licenses to print.
+      - name: License texts
+        run: PATH="$(go env GOPATH)/bin:$PATH" scripts/third-party-licenses.sh "$RUNNER_TEMP/third-party"
       # cargo auditable embeds the dependency list, so cargo audit bin can check a release.
       - name: Build
-        run: cargo auditable build --release --locked
+        run: |
+          export THIRD_PARTY_LICENSES="$RUNNER_TEMP/third-party/licenses.txt"
+          cargo auditable build --release --locked
+      - name: Check that rse prints its license texts
+        run: scripts/check-embedded-licenses.sh target/release/rse "$RUNNER_TEMP/third-party/licenses.txt"
       - name: Package
         run: |
           dir="rse-${GITHUB_REF_NAME}-${{ matrix.name }}"
           mkdir -p "$dir"
           cp target/release/rse README.md LICENSE "$dir/"
-          PATH="$(go env GOPATH)/bin:$PATH" scripts/third-party-licenses.sh "$dir/third-party"
+          cp -R "$RUNNER_TEMP/third-party" "$dir/third-party"
           ./target/release/rse --version > "$dir/VERSIONS"
           tar czf "$dir.tar.gz" "$dir"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

@@ -137,7 +137,7 @@ cargo build --release --locked
 | `MACOSX_DEPLOYMENT_TARGET` | 构建产物能运行的最低 macOS 版本；`.cargo/config.toml` 设为 `13.0`，即内置 Go 运行时支持的最低版本 |
 | `CC_<target>` / `TARGET_CC` | cgo 为目标平台使用的 C 编译器，例如 `CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc` |
 
-注：发布的二进制文件包含 rclone（MIT）及其 Go 依赖，必须随附它们的协议文本。`scripts/third-party-licenses.sh` 会收集 Rust 和 Go 依赖的协议文本（需要 `cargo-about` 和 `go-licenses`）。其中有 LGPL-3.0 和 MPL-2.0 的 Go 模块，它们的源码随发布包一起提供，见 [SUPPLY_CHAIN.md](../SUPPLY_CHAIN.md#licenses-in-a-release)。
+注：发布的二进制文件包含 rclone（MIT）及其 Go 依赖，必须随附它们的协议文本。`scripts/third-party-licenses.sh` 会收集 Rust 和 Go 依赖的协议文本（需要 `cargo-about` 和 `go-licenses`）；构建时把 `THIRD_PARTY_LICENSES` 指向它生成的 `licenses.txt`，这些文本就会嵌进程序，由 `rse --licenses` 打印，其他构建只打印一句说明。其中有 LGPL-3.0 和 MPL-2.0 的 Go 模块，它们的源码随发布包一起提供，见 [SUPPLY_CHAIN.md](../SUPPLY_CHAIN.md#licenses-in-a-release)。
 
 ### 交叉编译
 
@@ -172,7 +172,7 @@ RCLONE_RC_PASS=<password> rse --rcd http://localhost:5572 --rc-user <user>
 ```text
 rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
      [--forget-password <LOGIN>] [--rcd <URL> --rc-user <USER> --rc-pass <PASS>]
-     [--version] [-h] [LEFT] [RIGHT]
+     [--version] [--licenses] [-h] [LEFT] [RIGHT]
 ```
 
 - `LEFT`
@@ -193,6 +193,8 @@ rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
     - `--rcd` 的用户名和密码；未给出时读取 `RCLONE_RC_USER` 和 `RCLONE_RC_PASS`，这样密码不会出现在 `ps` 里
 - `--version`
     - 显示 remote-sync-explorer 和 rclone 的版本
+- `--licenses`
+    - 显示 remote-sync-explorer 及其中第三方代码的许可协议
 - `-h, --help`
     - 显示帮助
 

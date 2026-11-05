@@ -185,7 +185,9 @@ Build-time environment variables, for either way of building:
 
 Note: release binaries include rclone (MIT) and its Go dependencies, and must ship with
 their license texts. `scripts/third-party-licenses.sh` collects the license texts of the
-Rust and Go dependencies (needs `cargo-about` and `go-licenses`). Among them are Go
+Rust and Go dependencies (needs `cargo-about` and `go-licenses`); a build with
+`THIRD_PARTY_LICENSES` pointing at its `licenses.txt` embeds them, for `rse --licenses` to
+print, and other builds print a note instead. Among them are Go
 modules under LGPL-3.0 and MPL-2.0, whose source ships with a release; see
 [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md#licenses-in-a-release).
 
@@ -228,7 +230,7 @@ rcd elsewhere needs `https://` (`rclone rcd --rc-cert … --rc-key …`).
 ```text
 rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
      [--forget-password <LOGIN>] [--rcd <URL> --rc-user <USER> --rc-pass <PASS>]
-     [--version] [-h] [LEFT] [RIGHT]
+     [--version] [--licenses] [-h] [LEFT] [RIGHT]
 ```
 
 - `LEFT`
@@ -252,6 +254,8 @@ rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
       they are not given, and keep the password out of `ps`
 - `--version`
     - Print the remote-sync-explorer and rclone versions
+- `--licenses`
+    - Print the licenses of remote-sync-explorer and of the third-party code built into it
 - `-h, --help`
     - Print help
 

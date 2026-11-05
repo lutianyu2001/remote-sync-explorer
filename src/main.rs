@@ -12,6 +12,8 @@ use clap::builder::StyledStr;
 use clap::builder::styling::{Style, Styles};
 use clap::error::{ContextKind, ContextValue, ErrorFormatter, ErrorKind};
 use clap::{Arg, ArgAction, CommandFactory, FromArgMatches, Parser};
+mod licenses;
+
 use crossbeam_channel::{Sender, unbounded};
 use crossterm::event::{self as ct, DisableMouseCapture, EnableMouseCapture, KeyEventKind};
 use crossterm::execute;
@@ -61,6 +63,8 @@ struct Cli {
     rc_pass: Option<String>,
     #[arg(long)]
     version: bool,
+    #[arg(long)]
+    licenses: bool,
 }
 
 /// `Cli` with its help in the interface language.
@@ -92,6 +96,7 @@ fn command() -> clap::Command {
         .mut_arg("rc_user", |a| a.help(tr!("cli-rc-user")).value_name(tr!("cli-user-value")))
         .mut_arg("rc_pass", |a| a.help(tr!("cli-rc-pass")).value_name(tr!("cli-pass-value")))
         .mut_arg("version", |a| a.help(tr!("cli-version")))
+        .mut_arg("licenses", |a| a.help(tr!("cli-licenses")))
         .arg(Arg::new("help").short('h').long("help").action(ArgAction::Help).help(tr!("cli-help")))
 }
 
@@ -209,6 +214,13 @@ fn main() {
     }
     rse::i18n::set(language_before_parsing());
     let cli = parse_cli();
+    if cli.licenses {
+        if let Err(e) = licenses::print() {
+            eprintln!("rse: {e}");
+            std::process::exit(1);
+        }
+        return;
+    }
     if let Err(e) = run(&cli) {
         let causes: Vec<_> = e.chain().map(ToString::to_string).collect();
         eprintln!("rse: {}", shown(&causes.join(&tr!("cause-separator"))));

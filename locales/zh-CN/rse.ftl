@@ -227,6 +227,7 @@ cli-user-value = 用户名
 cli-rc-pass = --rcd 的密码（更好的做法：用环境变量 RCLONE_RC_PASS）
 cli-pass-value = 密码
 cli-version = 显示 remote-sync-explorer 和 rclone 的版本
+cli-licenses = 显示 remote-sync-explorer 及其中第三方代码的许可协议
 cli-help = 显示帮助
 cli-error = 错误：
 cli-tip = 提示：
