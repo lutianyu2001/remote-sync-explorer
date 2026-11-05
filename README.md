@@ -185,7 +185,9 @@ Build-time environment variables, for either way of building:
 
 Note: release binaries include rclone (MIT) and its Go dependencies, and must ship with
 their license texts. `scripts/third-party-licenses.sh` collects the license texts of the
-Rust and Go dependencies (needs `cargo-about` and `go-licenses`).
+Rust and Go dependencies (needs `cargo-about` and `go-licenses`). Among them are Go
+modules under LGPL-3.0 and MPL-2.0, whose source ships with a release; see
+[SUPPLY_CHAIN.md](SUPPLY_CHAIN.md#licenses-in-a-release).
 
 ### Cross-Compiling
 

@@ -37,6 +37,22 @@
   build librclone once with `scripts/build-librclone.sh <dir>` and point
   `RSE_LIBRCLONE_DIR` at it, or build the `rcd` feature, which needs no Go.
 
+## Licenses in a Release
+
+- A release archive holds `third-party/`: the license texts of every Rust crate and Go
+  module built into `rse` (`rust-licenses.html`, `go/librse/` and the list
+  `go-licenses.csv`), with the NOTICE files of the Go modules that have one, collected at
+  the release by `scripts/third-party-licenses.sh` from the same lock files as the build.
+- Go links everything statically, and a few of the modules rclone brings in ask more of a
+  binary than their license texts:
+  - `github.com/cloudsoda/sddl`, under LGPL-3.0, comes in through rclone's SMB backend.
+    The LGPL lets users run rse with a modified version of it: its source is in
+    `third-party/go/librse/github.com/cloudsoda/sddl/`, and rse's own source is public,
+    so rse can be rebuilt with a modified copy, for example through a `replace`
+    directive in `librse/go.mod`.
+  - `github.com/hashicorp/errwrap`, `go-cleanhttp`, `go-multierror`, `go-retryablehttp`
+    and `go-uuid`, under MPL-2.0: their source is in `third-party/go/librse/` as well.
+
 ## Audit
 
 `cargo xtask deny` and `cargo xtask vet` run the two below with the versions pinned in

@@ -137,7 +137,7 @@ cargo build --release --locked
 | `MACOSX_DEPLOYMENT_TARGET` | 构建产物能运行的最低 macOS 版本；`.cargo/config.toml` 设为 `13.0`，即内置 Go 运行时支持的最低版本 |
 | `CC_<target>` / `TARGET_CC` | cgo 为目标平台使用的 C 编译器，例如 `CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc` |
 
-注：发布的二进制文件包含 rclone（MIT）及其 Go 依赖，必须随附它们的协议文本。`scripts/third-party-licenses.sh` 会收集 Rust 和 Go 依赖的协议文本（需要 `cargo-about` 和 `go-licenses`）。
+注：发布的二进制文件包含 rclone（MIT）及其 Go 依赖，必须随附它们的协议文本。`scripts/third-party-licenses.sh` 会收集 Rust 和 Go 依赖的协议文本（需要 `cargo-about` 和 `go-licenses`）。其中有 LGPL-3.0 和 MPL-2.0 的 Go 模块，它们的源码随发布包一起提供，见 [SUPPLY_CHAIN.md](../SUPPLY_CHAIN.md#licenses-in-a-release)。
 
 ### 交叉编译
 
