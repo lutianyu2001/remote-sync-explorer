@@ -1,4 +1,8 @@
-# cargo about generate about.hbs — license texts of the Rust dependencies.
+# cargo about generate about.hbs: the license texts of the Rust dependencies, collected by
+# scripts/third-party-licenses.sh. Copied to the repository's root as about.toml.
+#
+# Per project: the licenses accepted, only those the dependency tree uses and that the
+# project's own license can take in (compatibility.md, table A), as SPDX identifiers.
 accepted = [
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
