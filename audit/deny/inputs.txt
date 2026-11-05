@@ -7,7 +7,7 @@ f9e1cdcf67684b3c0da40c2003ef39a8bc617aa6	fuzz/Cargo.lock
 733eb23993cc32919ed57fd317f650f06c1831ca	fuzz/Cargo.toml
 9ec55b3b621dbc75fc68817cd51b96e407d3c94c	rust-toolchain.toml
 4c2e4f5ee4049364970ae460748291e36140fbbb	xtask/Cargo.toml
-1ad150fffb216e3496145f88e3cfd7049748d24d	xtask/src/main.rs
+f9f8cc90e5f01a270292c20149303ebd25e1aa2c	xtask/src/main.rs
 c1930b545baab252c81e949bf4b04144be5c14e9	xtask/src/run.rs
 474d6c3d7076c28a02dc6cb57447bf56f948b2f0	xtask/src/tasks/deny.rs
 8e6d71765cce475cb622d1b62bc6afedec9e05c5	xtask/src/tasks/mod.rs

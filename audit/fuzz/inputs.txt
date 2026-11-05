@@ -2,8 +2,6 @@
 ea30e7752b0a869d9d0d8530380575fcd0ae9e6a	.cargo/config.toml
 ef856cdad694ceca72ae8b85de3a6d1ee32fccbd	Cargo.lock
 ce10733873a8a20febe495e53d4078e406ccb9d5	Cargo.toml
-8bbd9fdb5116fdabe50dcc66b382becdb613d63a	about.hbs
-fe1f859b407081ec799351f9bbb4a06058ea9ae4	about.toml
 e4cfbc475199ea6462bd04d276d549f1e0335598	build.rs
 401a0abbe0700574919e10002590f14a17ae28b2	fuzz/.gitignore
 f9e1cdcf67684b3c0da40c2003ef39a8bc617aa6	fuzz/Cargo.lock
@@ -26,7 +24,6 @@ f1d8bfad23280e5d409431d2902a8c96edb02ca2	librse/resume/resume.go
 9ec55b3b621dbc75fc68817cd51b96e407d3c94c	rust-toolchain.toml
 d61bc60965e99ae36229ce32c5e4490fe50fe895	scripts/build-librclone.sh
 1c48e27a76b5c6a045d32e55146bfca36138cbdc	scripts/cargo-online.sh
-f0c8de29b016d7d65434e65ebc3c40f50401332f	scripts/third-party-licenses.sh
 5d06c70cfe9a9d5b04eed1730e88f8d7ab0e0d86	src/app.rs
 c312d1796e5dc85dc5b8613a15cad09b528d8351	src/app_tests.rs
 5c76077398be91a3c1e5ab982ea6bea2e648a5b6	src/config.rs
@@ -68,7 +65,7 @@ e8d7a9c8b4f563ddc077dd1acddc6478ed51ab70	src/ui/snapshots/rse__ui__tests__long_p
 36a96d5c09ceb116712be2aaf5579f5adb90e12a	src/ui/tests.rs
 97594d544b2b22539775f3b03549ad44eb1b8a21	src/ui/text.rs
 4c2e4f5ee4049364970ae460748291e36140fbbb	xtask/Cargo.toml
-1ad150fffb216e3496145f88e3cfd7049748d24d	xtask/src/main.rs
+f9f8cc90e5f01a270292c20149303ebd25e1aa2c	xtask/src/main.rs
 c1930b545baab252c81e949bf4b04144be5c14e9	xtask/src/run.rs
 2732ef272fb7a177e568bc03fe19b3eb84d3dc04	xtask/src/tasks/fuzz.rs
 8e6d71765cce475cb622d1b62bc6afedec9e05c5	xtask/src/tasks/mod.rs
