@@ -2,7 +2,7 @@
 ea30e7752b0a869d9d0d8530380575fcd0ae9e6a	.cargo/config.toml
 ef856cdad694ceca72ae8b85de3a6d1ee32fccbd	Cargo.lock
 ce10733873a8a20febe495e53d4078e406ccb9d5	Cargo.toml
-4ac3565349e0cfd780d7bae9717e50dda6137821	deny.toml
+7ecf6283a5e9d7eae3b2390f059e66e56e728d6f	deny.toml
 f9e1cdcf67684b3c0da40c2003ef39a8bc617aa6	fuzz/Cargo.lock
 733eb23993cc32919ed57fd317f650f06c1831ca	fuzz/Cargo.toml
 9ec55b3b621dbc75fc68817cd51b96e407d3c94c	rust-toolchain.toml
