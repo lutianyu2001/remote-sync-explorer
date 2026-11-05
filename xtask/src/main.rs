@@ -253,7 +253,8 @@ const PROBES: [(&str, &str, &[&str]); 0] = [];
 // change to them changes no result. A directory counts with all under it. What every task
 // reads (the manifests, .cargo/, xtask/) counts whether listed or not. Here what the release
 // job runs to collect the license texts.
-const READ_BY_NO_TASK: [&str; 3] = ["about.hbs", "about.toml", "scripts/third-party-licenses.sh"];
+const READ_BY_NO_TASK: [&str; 4] =
+    ["about.hbs", "about.toml", "scripts/notices.py", "scripts/third-party-licenses.sh"];
 
 /// Whether a change to `path` can change what `task` finds, besides the tools pinned for
 /// it. Documentation, CI and the results themselves change nothing.
@@ -582,6 +583,7 @@ mod tests {
         assert_eq!(reads("fuzz/fuzz_targets/text.rs"), only(&["fuzz"]));
         assert_eq!(reads("tests/startup.rs"), only(&["coverage"]));
         assert_eq!(reads("scripts/third-party-licenses.sh"), Vec::<&str>::new());
+        assert_eq!(reads("scripts/notices.py"), Vec::<&str>::new());
         assert_eq!(
             reads("scripts/build-librclone.sh"),
             only(&["geiger", "miri", "coverage", "kani", "fuzz"])
