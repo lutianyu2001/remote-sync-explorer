@@ -1,6 +1,6 @@
-result: failed: cargo +nightly-2026-10-28 miri test --locked --no-default-features --lib -- rclone::obscure:: rclone::ssh_passwords:: config:: jobs:: event:: keymap:: location:: endpoint:: ui::text:: ui::panes::tests:: hitmap:: state:: engine:: --skip base64_round_trips_every_short_input: exit status: 1
-started: 2026-11-04 18:21 UTC
-seconds: 0
-commit: d4f078f6738c6198c8d40f8599d8689edfb9d280
+result: succeeded
+started: 2026-11-05 02:37 UTC
+seconds: 189
+commit: 765a14c930e3411b2f626ea9a2f31514dc78225a
 args: 
 tools: nightly-2026-10-28

@@ -61,5 +61,5 @@ e8d7a9c8b4f563ddc077dd1acddc6478ed51ab70	src/ui/snapshots/rse__ui__tests__long_p
 2ba761b32e745a1e6181cf7ef51308850484f2cc	xtask/Cargo.toml
 db8e23c2c4374ba63216e8254e306f7b572f137b	xtask/src/main.rs
 c1930b545baab252c81e949bf4b04144be5c14e9	xtask/src/run.rs
-6ab0efab5799144e9c1d1a67ab0efd8899191304	xtask/src/tasks/miri.rs
+74be6e00a155493d82b69aa71464cf2285ec5dcc	xtask/src/tasks/miri.rs
 8e6d71765cce475cb622d1b62bc6afedec9e05c5	xtask/src/tasks/mod.rs
