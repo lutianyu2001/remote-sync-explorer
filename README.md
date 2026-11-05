@@ -632,6 +632,8 @@ Tested on:
 
 This project is not affiliated with, endorsed by, or sponsored by rclone or its maintainers. "rclone" refers to the software developed by Nick Craig-Wood (https://github.com/rclone/rclone) and is referenced here solely for descriptive purposes.
 
+This project is not affiliated with, endorsed by, or sponsored by rsync or its maintainers. "rsync" refers to the software developed by the rsync project (https://github.com/RsyncProject/rsync) and is referenced here solely for descriptive purposes.
+
 ## License
 
 Copyright 2026 Tianyu (Sky) Lu
