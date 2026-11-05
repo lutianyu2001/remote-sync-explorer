@@ -12,10 +12,10 @@
 use std::env;
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
-use std::process::ExitCode;
+use std::process::{Command, ExitCode};
 
 use run::{scope, size};
-use tasks::{KNOWN, TASKS, fuzz, memory, pins};
+use tasks::{KNOWN, TASKS, fuzz, memory, miri, pins};
 
 mod badges;
 mod digest;
@@ -33,7 +33,8 @@ pub const USAGE: &str = "usage: cargo xtask <task> [args]
   deny              cargo deny over the workspace: sources, licenses, bans, advisories;
                     the fuzz workspace's advisories and sources
   vet               cargo vet: every dependency is audited
-  geiger            unsafe code in the dependencies, into geiger.txt
+  geiger            unsafe code in the dependencies, into geiger.txt (geiger-<package>.txt
+                    for each member, when the workspace has several)
   miri              the tests of the pure modules under Miri
   coverage          branch coverage of the tests: a table per file into summary.txt, and
                     HTML in target/llvm-cov/html
@@ -238,6 +239,15 @@ const READ_AS_DATA: [&str; 0] = [];
 // Per project: what only Kani compiles (`#[cfg(kani)]`), which no other task can find changed.
 const PROOFS: [&str; 0] = [];
 
+// Per project: a workspace member that some of the tasks reading code never build, with the
+// tasks that do: its files are no input of the others (its Cargo.toml still is).
+const BUILT_ONLY_BY: [(&str, &[&str]); 0] = [];
+
+// Per project: what can change what a task finds besides the files and the pinned tools, as
+// a command (run with `sh -c` from the root) whose output says it, and the tasks it is an
+// input of. inputs.txt keeps the output, or how the command failed, as `<output>\t(<name>)`.
+const PROBES: [(&str, &str, &[&str]); 0] = [];
+
 /// Whether a change to `path` can change what `task` finds, besides the tools pinned for
 /// it. Documentation, CI and the results themselves change nothing.
 fn affects(task: &str, path: &str) -> bool {
@@ -280,31 +290,69 @@ fn affects(task: &str, path: &str) -> bool {
         || top.starts_with("LICENSE")
         || under(&[".github", ".gitignore"])
         || style;
+    // The integration tests: a tests/ directory of the workspace or of a member, not a module
+    // of src/ named so, whose unit tests `--lib` builds.
+    let integration = {
+        let dirs: Vec<&str> = path.split('/').collect();
+        let dirs = &dirs[..dirs.len() - 1];
+        dirs.iter().position(|d| *d == "tests").is_some_and(|i| !dirs[..i].contains(&"src"))
+    };
+    let unbuilt = BUILT_ONLY_BY.iter().any(|(dir, by)| under(&[dir]) && !by.contains(&task));
     // What the code reads counts for every code task, wherever it is: a sample under tests/
     // that a unit test reads too.
-    let code = |also: &[&str]| {
+    let code = |also: &[&str], tests: bool| {
         READ_AS_DATA.contains(&path)
-            || !documentation && !under(&["xtask", "deny.toml", "supply-chain"]) && !under(also)
+            || !documentation
+                && !unbuilt
+                && (tests || !integration)
+                && !under(&["xtask", "deny.toml", "supply-chain"])
+                && !under(also)
     };
     match task {
         "deny" => under(&["deny.toml", "fuzz/Cargo.toml", "fuzz/Cargo.lock"]),
         "vet" => under(&["supply-chain"]),
-        "fuzz" => code(&["tests"]),
-        // `--lib`: not the integration tests.
-        "geiger" | "kani" | "miri" => code(&["tests", "fuzz"]),
-        _ => code(&["fuzz"]),
+        "fuzz" => code(&[], false),
+        "geiger" | "kani" => code(&["fuzz"], false),
+        // Of the integration tests, the Rust ones: Python tests are left to coverage.
+        "miri" => {
+            let rust = Path::new(path).extension().is_some_and(|e| e.eq_ignore_ascii_case("rs"));
+            code(&["fuzz"], miri_runs_integration_tests() && rust)
+        }
+        _ => code(&["fuzz"], true),
     }
+}
+
+/// Whether Miri runs integration tests: its BUILD names them where they are all a package has;
+/// otherwise it runs the unit tests (`--lib`).
+fn miri_runs_integration_tests() -> bool {
+    miri::BUILD.iter().any(|a| matches!(*a, "--tests" | "--test" | "--all-targets"))
 }
 
 /// The files `task` reads, with the hashes of what can change a run in them (see
 /// digest.rs), as inputs.txt has them.
 fn inputs(root: &Path, task: &str) -> Result<String, String> {
     let read = record::files(root)?.into_iter().filter(|(path, _)| affects(task, path)).collect();
-    let mut text = format!("{}\n", digest::FORMAT);
-    for (path, hash) in digest::hashes(root, read, &READ_AS_DATA)? {
+    let mut text = format!("{}\n", digest::format(task));
+    for (path, hash) in digest::hashes(root, task, read, &READ_AS_DATA)? {
         let _ = writeln!(text, "{hash}\t{path}");
     }
+    for (name, command, tasks) in PROBES {
+        if tasks.contains(&task) {
+            let _ = writeln!(text, "{}\t({name})", probe(root, command));
+        }
+    }
     Ok(text)
+}
+
+/// What `command` prints, on one line, or how it failed.
+fn probe(root: &Path, command: &str) -> String {
+    let said = match Command::new("sh").arg("-c").arg(command).current_dir(root).output() {
+        Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout).into_owned(),
+        Ok(out) => format!("failed: {}", out.status),
+        Err(e) => format!("failed: {e}"),
+    };
+    let said: String = said.chars().map(|c| if c.is_control() { ' ' } else { c }).collect();
+    said.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 /// Why `task`, run with `params`, needs a run; empty when its latest run stands.
@@ -495,6 +543,19 @@ mod tests {
         assert_eq!(reads("xtask/src/tasks/kani.rs"), only(&["kani"]));
         assert_eq!(reads("xtask/src/json.rs"), only(&["geiger", "coverage", "kani"]));
         assert_eq!(reads("xtask/src/tasks/fuzz.rs"), only(&["fuzz"]));
+        // A member's integration tests are coverage's, and Miri's when it runs them; a module
+        // of src/ named tests is code.
+        let tests = if super::miri_runs_integration_tests() {
+            &["miri", "coverage"][..]
+        } else {
+            &["coverage"]
+        };
+        assert_eq!(reads("crates/a/tests/t.rs"), only(tests));
+        assert_eq!(reads("tests/t.rs"), only(tests));
+        assert_eq!(
+            reads("crates/a/src/tests/t.rs"),
+            only(&["geiger", "miri", "coverage", "kani", "fuzz"])
+        );
         // Per project: paths of this project, by which files each task reads.
         assert_eq!(reads("README.md"), Vec::<&str>::new());
         assert_eq!(reads("README/README_CN.md"), Vec::<&str>::new());

@@ -7,7 +7,9 @@ use crate::tasks::limit;
 // Per project: the modules, the features and the skipped tests.
 /// The modules whose tests Miri runs: those that start no process, open no socket and
 /// wait on no worker thread. The names end in `::`, since test filters match parts of
-/// names, and an interface test whose name merely contains one would time out.
+/// names, and an interface test whose name merely contains one would time out. Where a
+/// package's tests are all integration tests, whose names have no module, BUILD picks
+/// their programs (`-p <crate> --tests`) and `""` runs every test in them.
 const MODULES: &[&str] = &[
     "rclone::obscure::",
     "rclone::ssh_passwords::",
@@ -23,9 +25,9 @@ const MODULES: &[&str] = &[
     "state::",
     "engine::",
 ];
-/// What the tests are built with: here without the default features, which bring in
-/// librclone.
-const BUILD: &[&str] = &["--no-default-features", "--lib"];
+/// What the tests are built with: here `--lib` without the default features, which bring
+/// in librclone.
+pub const BUILD: &[&str] = &["--no-default-features", "--lib"];
 /// Tests too slow under Miri: the exhaustive base64 test.
 const SKIP: &[&str] = &["base64_round_trips_every_short_input"];
 

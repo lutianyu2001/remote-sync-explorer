@@ -10,7 +10,7 @@
 //!
 //! The version of the workspace's own packages is left out of each Cargo.toml and Cargo.lock:
 //! a release changes it and nothing else, and no task finds anything else for it, unless the
-//! code reads its version (`OWN_VERSION_READ`).
+//! task runs code that reads its version (`OWN_VERSION_READ`).
 
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -20,24 +20,28 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use std::thread;
 
-/// The first line of inputs.txt, which says how its hashes were made: with another first
-/// line, none of them compare.
-pub const FORMAT: &str = if OWN_VERSION_READ {
-    "# Rust as tokens, TOML as values, the rest as git blobs (1)"
-} else {
-    "# Rust as tokens, TOML as values, the rest as git blobs, own versions left out (1)"
-};
+/// The first line of `task`'s inputs.txt, which says how its hashes were made: with another
+/// first line, none of them compare.
+pub fn format(task: &str) -> &'static str {
+    if OWN_VERSION_READ.contains(&task) {
+        "# Rust as tokens, TOML as values, the rest as git blobs (1)"
+    } else {
+        "# Rust as tokens, TOML as values, the rest as git blobs, own versions left out (1)"
+    }
+}
 
-/// Per project: true when the code reads its own version (`env!("CARGO_PKG_VERSION")`,
-/// clap's `version` attribute and the like), so that a new version can change what a task
-/// finds; Cargo.toml and Cargo.lock are then hashed with it. Here true: `rse --version`
-/// prints it (src/main.rs).
-const OWN_VERSION_READ: bool = true;
+/// Per project: the tasks that run code which reads the workspace's own version
+/// (`env!("CARGO_PKG_VERSION")`, clap's `version` attribute and the like): a test, a proof
+/// or a fuzz target of it, so that a new version can change what they find. Their
+/// Cargo.toml and Cargo.lock are hashed with it; for the others a release changes nothing.
+/// Here coverage: tests/startup.rs runs `rse --version`, which prints it (src/main.rs).
+const OWN_VERSION_READ: &[&str] = &["coverage"];
 
-/// The text that stands for a file's contents; none when they are hashed as they are.
-fn normal(path: &str, bytes: &[u8]) -> Option<String> {
+/// The text that stands for a file's contents, with the workspace's own version where
+/// `kept`; none when they are hashed as they are.
+fn normal(path: &str, bytes: &[u8], kept: bool) -> Option<String> {
     let text = std::str::from_utf8(bytes).ok()?;
-    let own = !OWN_VERSION_READ && is_cargo_file(path);
+    let own = !kept && is_cargo_file(path);
     let text = if own { Cow::Owned(without_own_versions(path, text)) } else { Cow::Borrowed(text) };
     match Path::new(path).extension().and_then(|e| e.to_str()).unwrap_or_default() {
         // Outside a procedural macro, proc-macro2 reads the text itself, leaving out the
@@ -109,14 +113,16 @@ fn push_table(out: &mut String, lines: &[&str], lock: bool) {
     }
 }
 
-/// The files given with their git hashes (as `git ls-files -s` has them), with the hash of
-/// what stands for each instead, as inputs.txt has them; those in `data` are hashed as they
-/// are.
+/// The files `task` reads, given with their git hashes (as `git ls-files -s` has them), with
+/// the hash of what stands for each instead, as inputs.txt has them; those in `data` are
+/// hashed as they are.
 pub fn hashes(
     root: &Path,
+    task: &str,
     files: Vec<(String, String)>,
     data: &[&str],
 ) -> Result<Vec<(String, String)>, String> {
+    let kept = OWN_VERSION_READ.contains(&task);
     let wanted: Vec<usize> = (0..files.len())
         .filter(|&i| !data.contains(&files[i].0.as_str()))
         .filter(|&i| {
@@ -128,7 +134,7 @@ pub fn hashes(
     let normals: Vec<(usize, String)> = wanted
         .into_iter()
         .zip(blobs)
-        .filter_map(|(i, bytes)| Some((i, normal(&files[i].0, &bytes)?)))
+        .filter_map(|(i, bytes)| Some((i, normal(&files[i].0, &bytes, kept)?)))
         .collect();
     let new = hash(root, normals.iter().map(|(_, text)| text.as_str()))?;
     let mut files = files;
@@ -211,10 +217,10 @@ fn piped(root: &Path, args: &[&str], input: Vec<u8>) -> Result<Vec<u8>, String> 
 
 #[cfg(test)]
 mod tests {
-    use super::{OWN_VERSION_READ, normal, without_own_versions};
+    use super::{normal, without_own_versions};
 
     fn same(path: &str, a: &str, b: &str) -> bool {
-        let (a, b) = (normal(path, a.as_bytes()), normal(path, b.as_bytes()));
+        let (a, b) = (normal(path, a.as_bytes(), false), normal(path, b.as_bytes(), false));
         assert!(a.is_some() && b.is_some(), "{path}: {a:?} {b:?}");
         a == b
     }
@@ -243,7 +249,7 @@ mod tests {
             "fn a<'a>(_: &'a u8) -> char { '*' }"
         ));
         assert!(!same("a.rs", "a += b;", "a + = b;"));
-        assert_eq!(normal("a.rs", b"fn a() { \"open"), None);
+        assert_eq!(normal("a.rs", b"fn a() { \"open", false), None);
     }
 
     #[test]
@@ -251,8 +257,8 @@ mod tests {
         assert!(same("a.toml", "a = 1 # one\nb = \"x\"\n", "b = 'x'\n\n a = 1\n"));
         assert!(!same("a.toml", "a = 1", "a = 2"));
         assert!(!same("a.toml", "a = [1, 2]", "a = [2, 1]"));
-        assert_eq!(normal("a.toml", b"a = "), None);
-        assert_eq!(normal("a.md", b"a"), None);
+        assert_eq!(normal("a.toml", b"a = ", false), None);
+        assert_eq!(normal("a.md", b"a", false), None);
     }
 
     #[test]
@@ -288,12 +294,12 @@ mod tests {
         let inherited = "[package]\nversion.workspace = true\n";
         assert_eq!(blank("Cargo.toml", inherited), inherited);
         // Both reach normal, and the rest of the text stays: with their own versions left out,
-        // or as they are where the code reads its version (a Cargo.toml then still as TOML,
-        // unless the toml branch is gone).
-        let manifest_read = normal("Cargo.toml", manifest("0.2.0").as_bytes());
-        assert!(manifest_read.is_some() || OWN_VERSION_READ);
-        let lock_read = normal("fuzz/Cargo.lock", lock("0.2.0", "1.0.0").as_bytes());
-        assert_eq!(lock_read.is_some(), !OWN_VERSION_READ);
-        assert_eq!(normal("a.md", b"version = \"1\""), None);
+        // or as they are for a task that runs code reading its version (a Cargo.toml then
+        // still as TOML, unless the toml branch is gone), whose inputs.txt says so.
+        assert!(normal("Cargo.toml", manifest("0.2.0").as_bytes(), false).is_some());
+        let lock = lock("0.2.0", "1.0.0");
+        assert!(normal("fuzz/Cargo.lock", lock.as_bytes(), false).is_some());
+        assert_eq!(normal("fuzz/Cargo.lock", lock.as_bytes(), true), None);
+        assert_eq!(normal("a.md", b"version = \"1\"", false), None);
     }
 }

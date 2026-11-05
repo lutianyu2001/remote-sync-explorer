@@ -6,6 +6,8 @@ use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use serde_json::Value;
+
 use crate::record;
 use crate::run::{capped, cargo, shown, status};
 use crate::tasks::{limit, own_target};
@@ -18,28 +20,89 @@ pub fn run(root: &Path, dir: &Path) -> Result<(), String> {
     // only for the host's targets.
     status(cargo(root, &["fetch", "--locked"]))?;
     own_target(root, "geiger")?;
+    let members = members(root)?;
     let copy = copy(root)?;
-    let path = dir.join("geiger.txt");
+    for (package, manifest) in &members {
+        // A table for each member when there are several.
+        let name = match members.len() {
+            1 => "geiger.txt".to_owned(),
+            _ => format!("geiger-{package}.txt"),
+        };
+        scan(root, &copy, dir, &name, package, manifest)?;
+    }
+    Ok(())
+}
+
+/// The workspace's default members, each scanned on its own: the root package where there
+/// is one, the members a virtual manifest lists otherwise, which cargo-geiger 0.14.0 does
+/// not take (nor `-p`). Each one's package name, and its manifest relative to the root;
+/// xtask, which is not shipped, is no default member.
+fn members(root: &Path) -> Result<Vec<(String, PathBuf)>, String> {
+    let out = cargo(root, &["metadata", "--no-deps", "--format-version", "1", "--locked"])
+        .output()
+        .map_err(|e| format!("cargo metadata: {e}"))?;
+    if !out.status.success() {
+        return Err(format!("cargo metadata: {}", out.status));
+    }
+    let meta: Value =
+        serde_json::from_slice(&out.stdout).map_err(|e| format!("cargo metadata: {e}"))?;
+    let ids: Vec<&str> = meta["workspace_default_members"]
+        .as_array()
+        .ok_or("cargo metadata: no default members")?
+        .iter()
+        .filter_map(Value::as_str)
+        .collect();
+    let base = fs::canonicalize(root).map_err(|e| format!("{}: {e}", root.display()))?;
+    let mut members = Vec::new();
+    for package in meta["packages"].as_array().ok_or("cargo metadata: no packages")? {
+        let field = |k: &str| package[k].as_str().ok_or(format!("cargo metadata: a package's {k}"));
+        if !ids.contains(&field("id")?) {
+            continue;
+        }
+        let manifest = Path::new(field("manifest_path")?);
+        let relative = manifest.strip_prefix(&base).map_err(|_| {
+            format!("cargo metadata: {} is outside the workspace", manifest.display())
+        })?;
+        members.push((field("name")?.to_owned(), relative.to_path_buf()));
+    }
+    if members.is_empty() {
+        return Err("cargo metadata: no default member to scan".to_owned());
+    }
+    members.sort();
+    Ok(members)
+}
+
+/// Scans `package` of the copy, whose manifest is `manifest`, into the table `name` in `dir`.
+fn scan(
+    root: &Path,
+    copy: &Path,
+    dir: &Path,
+    name: &str,
+    package: &str,
+    manifest: &Path,
+) -> Result<(), String> {
+    let path = dir.join(name);
     let file = fs::File::create(&path).map_err(|e| format!("{}: {e}", path.display()))?;
     // geiger cleans before it builds; in target/debug that would take everyone's build.
-    let mut scan = cargo(&copy, &["geiger", "--locked", "--offline", "--output-format", "Ascii"]);
+    let mut scan = cargo(copy, &["geiger", "--locked", "--offline", "--output-format", "Ascii"]);
+    scan.arg("--manifest-path").arg(copy.join(manifest));
     scan.env("CARGO_TARGET_DIR", root.join("target/geiger"));
     // It colours the table as cargo's own output is coloured, and CI sets that to always.
     scan.env("CARGO_TERM_COLOR", "never");
     let mut cmd = capped(scan, &limit("geiger"));
-    record::say(&format!("$ {} > geiger.txt", shown(&cmd)));
+    record::say(&format!("$ {} > {name}", shown(&cmd)));
     let ended = record::exec(&mut cmd, Some(file)).map_err(|e| format!("cargo geiger: {e}"))?;
     let table = fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
     // geiger exits non-zero when files it was shown are not Rust (READMEs, included
     // text), so the table itself tells whether it ran; a signal says it did not finish.
     if ended.code().is_none() {
-        return Err(format!("cargo geiger did not finish: {ended}"));
+        return Err(format!("cargo geiger did not finish on {package}: {ended}"));
     }
     if !complete(&table) {
-        return Err(format!("cargo geiger wrote no whole table: {ended}"));
+        return Err(format!("cargo geiger wrote no whole table of {package}: {ended}"));
     }
     if !ended.success() {
-        record::say(&format!("cargo geiger: {ended}, with a whole table"));
+        record::say(&format!("cargo geiger: {ended}, with a whole table of {package}"));
     }
     Ok(())
 }
