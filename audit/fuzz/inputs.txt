@@ -2,7 +2,7 @@
 ea30e7752b0a869d9d0d8530380575fcd0ae9e6a	.cargo/config.toml
 ef856cdad694ceca72ae8b85de3a6d1ee32fccbd	Cargo.lock
 ce10733873a8a20febe495e53d4078e406ccb9d5	Cargo.toml
-e4cfbc475199ea6462bd04d276d549f1e0335598	build.rs
+d91f83aeba720825785ea6066d4661f84f40b1f9	build.rs
 401a0abbe0700574919e10002590f14a17ae28b2	fuzz/.gitignore
 f9e1cdcf67684b3c0da40c2003ef39a8bc617aa6	fuzz/Cargo.lock
 733eb23993cc32919ed57fd317f650f06c1831ca	fuzz/Cargo.toml
@@ -19,8 +19,8 @@ d3526dc4f28335cf77bc9fa5aa25de0775f3549f	librse/resume/file.go
 f1d8bfad23280e5d409431d2902a8c96edb02ca2	librse/resume/resume.go
 4fc93f716aa2308d360fc12fe18c78dd2868c31f	librse/resume/resume_test.go
 822f76d655d3b4b0e2496f4807e67d7343bb6c36	librse/resume/target.go
-9ca38a14973bb70d39c235bc79938a7f441aea47	locales/en/rse.ftl
-48b870f668ec37896994a7d2b860d7bdb717e0ae	locales/zh-CN/rse.ftl
+9b84c6bf889913cee6ace41dfd424edac2348045	locales/en/rse.ftl
+34a9f13d87c8a090442f6cefc16cdd7f0bc2a03e	locales/zh-CN/rse.ftl
 9ec55b3b621dbc75fc68817cd51b96e407d3c94c	rust-toolchain.toml
 d61bc60965e99ae36229ce32c5e4490fe50fe895	scripts/build-librclone.sh
 1c48e27a76b5c6a045d32e55146bfca36138cbdc	scripts/cargo-online.sh
@@ -37,8 +37,9 @@ c82bab3fe0ea1fa3411746c6a6d0634288537641	src/i18n.rs
 57701f6739050bd6efcc681572a428056ae1818d	src/jobs.rs
 da1a909da3f5e7a36dbb115132a35948f6e0bb76	src/keymap.rs
 45ed69b5694ac72abdbe143f2b4b975024933a7c	src/lib.rs
+488bc25da4f45e51db302aa02bda3d37b6045390	src/licenses.rs
 87e3e0802f02d5ba394fab95664080004f294554	src/location.rs
-84d888811e12321a76c6e772aecc3aec2b937771	src/main.rs
+4947e3eb02381b2a1094d3462278f31726aa0318	src/main.rs
 ff922fbd3448ec46d7e6cbdb1255981a8011e1dc	src/rclone/api.rs
 5763172fb4142c4ecc3180a2f3836b1011add127	src/rclone/backend.rs
 da156f1fdb2d5571c4fe098e6c44a787c3f17688	src/rclone/ffi.rs
@@ -65,7 +66,7 @@ e8d7a9c8b4f563ddc077dd1acddc6478ed51ab70	src/ui/snapshots/rse__ui__tests__long_p
 36a96d5c09ceb116712be2aaf5579f5adb90e12a	src/ui/tests.rs
 97594d544b2b22539775f3b03549ad44eb1b8a21	src/ui/text.rs
 4c2e4f5ee4049364970ae460748291e36140fbbb	xtask/Cargo.toml
-f9f8cc90e5f01a270292c20149303ebd25e1aa2c	xtask/src/main.rs
+614c986a02ad56d902b454996e1d830f9fd5fafc	xtask/src/main.rs
 c1930b545baab252c81e949bf4b04144be5c14e9	xtask/src/run.rs
 2732ef272fb7a177e568bc03fe19b3eb84d3dc04	xtask/src/tasks/fuzz.rs
 8e6d71765cce475cb622d1b62bc6afedec9e05c5	xtask/src/tasks/mod.rs
