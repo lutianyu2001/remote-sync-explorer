@@ -92,6 +92,7 @@ jobs:
             echo "the badges are not all plain files" >&2
             exit 1
           fi
+          # shellcheck disable=SC2086 # NAMES is split into words, with globbing off (set -f)
           expected=$(printf '%s.json\n' $NAMES | sort)
           if [ "$(find . -type f -printf '%P\n' | sort)" != "$expected" ]; then
             echo "the badges are not the files expected" >&2

@@ -125,7 +125,9 @@ jobs:
           fi
       # Per project: with vendor/ (an application), restore it first, the fuzz workspace's
       # dependencies too; xtask itself builds from it. A library has no such steps.
-      - id: vendor-cache
+      # This runs on a release or by hand, and so restores only caches written on the default
+      # branch or on its own ref, which a pull request's code cannot write.
+      - id: vendor-cache # zizmor: ignore[cache-poisoning]
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: vendor
@@ -146,6 +148,7 @@ jobs:
           ARGS: ${{ steps.args.outputs.args }}
         run: |
           set +e
+          # shellcheck disable=SC2086 # ARGS is empty or one number, and nothing when empty
           why=$(cargo xtask needed "$TASK" $ARGS)
           c=$?
           echo "$why"
@@ -174,7 +177,8 @@ jobs:
           version=$(grep -o 'RCLONE_VERSION: &str = "v[^"]*"' build.rs | grep -o 'v[0-9.]*')
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "RSE_LIBRCLONE_DIR=$HOME/librclone" >> "$GITHUB_ENV"
-      - name: Cache librclone
+      # As the vendor/ cache above.
+      - name: Cache librclone # zizmor: ignore[cache-poisoning]
         id: librclone
         if: steps.go.outcome == 'success'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -191,7 +195,9 @@ jobs:
         if: steps.needed.outputs.code == '0'
         env:
           ARGS: ${{ steps.args.outputs.args }}
-        run: cargo xtask "$TASK" $ARGS
+        run: |
+          # shellcheck disable=SC2086 # ARGS is empty or one number, and nothing when empty
+          cargo xtask "$TASK" $ARGS
       # The artifact holds the task's directory itself, not just what is in it: the record job
       # finds each task's results under the task's name, however many tasks ran, as
       # download-artifact puts a lone artifact's files straight into its path.
@@ -233,7 +239,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          # The job pushes the results with these credentials, and uploads no artifact.
+          fetch-depth: 0 # zizmor: ignore[artipacked]
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: audit-*
@@ -247,7 +254,7 @@ jobs:
         run: |
           shopt -s nullglob
           sha=$GITHUB_SHA
-          for attempt in 1 2 3; do
+          for _ in 1 2 3; do
             git fetch --quiet origin "$BRANCH"
             if ! git merge-base --is-ancestor "$sha" "origin/$BRANCH"; then
               echo "${sha::7} is not on $BRANCH; not recording."
