@@ -12,9 +12,7 @@ use unicode_segmentation::UnicodeSegmentation as _;
 use super::text::{
     ellipsize_middle, ellipsize_name, fit, fit_right, format_time, human_size, shown, width,
 };
-use crate::app::{
-    App, Dialog, Drag, Focus, InputPurpose, Pane, PaneStatus, Row, SortKey, visible_offset,
-};
+use crate::app::{App, Dialog, Drag, Focus, InputPurpose, Pane, PaneStatus, Row, SortKey};
 use crate::event::PaneId;
 use crate::hitmap::PaneArea;
 use crate::keymap::Action;
@@ -119,8 +117,7 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) -> PaneArea {
         super::named(app, action, &name).note(&marked).border_style(border),
     );
 
-    let height = usize::from(list.height);
-    let offset = visible_offset(pane.offset, pane.cursor, height, pane.view.len());
+    let offset = pane.first_shown(usize::from(list.height));
     draw_list(buf, list, app, id, offset);
 
     PaneArea { frame, bar, title, button, edit, list, offset, rows: pane.view.len() }

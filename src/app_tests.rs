@@ -1501,11 +1501,32 @@ fn wheel_scrolls_the_pane_under_the_pointer_without_focus() {
     h.settle();
     assert_eq!(h.app.active, 0);
     assert_eq!(h.app.panes[1].offset, 6);
-    assert!(h.app.panes[1].cursor >= 6);
     assert!(h.screen.contains("f005") && !h.screen.contains("f004 "), "{}", h.screen);
     h.mouse_at(MouseEventKind::ScrollUp, x, y, KeyModifiers::NONE, Instant::now());
     h.settle();
     assert_eq!(h.app.panes[1].offset, 3);
+}
+
+/// The wheel moves the view, not the highlight: the cursor stays on its entry out of view,
+/// and the view comes back to it when the cursor moves.
+#[test]
+fn wheel_leaves_the_cursor_on_its_entry() {
+    let entries: Vec<Value> = (0..100).map(|i| file(&format!("f{i:03}"), 1)).collect();
+    let (backend, _) = fake_fs(&[("/home/sky", vec![]), ("nas:backup", entries)], &[]);
+    let mut h = Harness::new(backend, home(), nas());
+    h.press(KeyCode::Tab);
+    h.press(KeyCode::Down);
+    assert_eq!(h.app.panes[1].cursor, 1);
+    for _ in 0..4 {
+        h.mouse_at(MouseEventKind::ScrollDown, 60, 5, KeyModifiers::NONE, Instant::now());
+    }
+    h.settle();
+    assert_eq!(h.app.panes[1].offset, 12, "the view stays where it was scrolled to");
+    assert_eq!(h.app.panes[1].cursor, 1);
+    assert_eq!(h.app.panes[1].current().unwrap().name, "f000");
+    h.press(KeyCode::Down);
+    assert_eq!(h.app.panes[1].current().unwrap().name, "f001");
+    assert_eq!(h.app.panes[1].offset, 2, "back to the cursor");
 }
 
 #[test]

@@ -82,6 +82,9 @@ pub struct Pane {
     pub status: PaneStatus,
     pub filter: String,
     pub sort: SortKey,
+    /// The wheel or a drag scrolled the view away from the cursor: the view stays where it
+    /// was scrolled to, the cursor on its entry, until the cursor moves.
+    pub detached: bool,
     /// Entry to put the cursor on when the pending listing arrives.
     select: Option<Mark>,
     /// The listing request being worked on. At most one per pane, so a hung remote
@@ -102,6 +105,7 @@ impl Pane {
             status: PaneStatus::Loading,
             filter: String::new(),
             sort: SortKey::Name,
+            detached: false,
             select: None,
             in_flight: None,
         }
@@ -175,8 +179,23 @@ impl Pane {
     }
 
     fn move_cursor(&mut self, delta: isize) {
-        let last = self.view.len().saturating_sub(1);
-        self.cursor = self.cursor.saturating_add_signed(delta).min(last);
+        self.set_cursor(self.cursor.saturating_add_signed(delta));
+    }
+
+    /// Puts the cursor on `row` (the last row when past it), bringing it into view.
+    fn set_cursor(&mut self, row: usize) {
+        self.cursor = row.min(self.view.len().saturating_sub(1));
+        self.detached = false;
+    }
+
+    /// The first row to show in `height` rows: where the view was scrolled to, or else
+    /// so that the cursor is visible.
+    pub fn first_shown(&self, height: usize) -> usize {
+        if self.detached {
+            self.offset.min(self.view.len().saturating_sub(height))
+        } else {
+            visible_offset(self.offset, self.cursor, height, self.view.len())
+        }
     }
 }
 
@@ -756,6 +775,7 @@ impl App {
         p.filter.clear();
         p.cursor = 0;
         p.offset = 0;
+        p.detached = false;
         self.request_listing(pane);
         let effects = self.queue.set_shown(self.shown());
         self.run_effects(effects);
@@ -977,8 +997,8 @@ impl App {
             Action::PageDown => {
                 self.panes[pane].move_cursor(isize::try_from(rows_per_page).unwrap_or(1));
             }
-            Action::Home => self.panes[pane].cursor = 0,
-            Action::End => self.panes[pane].cursor = self.panes[pane].view.len().saturating_sub(1),
+            Action::Home => self.panes[pane].set_cursor(0),
+            Action::End => self.panes[pane].set_cursor(usize::MAX),
             Action::Enter => self.enter(pane, self.panes[pane].cursor),
             Action::Parent => self.go_parent(pane),
             Action::Mark => {
@@ -1885,10 +1905,10 @@ impl App {
                 let opens = self.panes[pane].view.get(row) == Some(&Row::Parent)
                     || self.panes[pane].entry(row).is_some_and(|e| e.is_dir);
                 if multi {
-                    self.panes[pane].cursor = row;
+                    self.panes[pane].set_cursor(row);
                     self.toggle_mark(pane, row);
                 } else if double && opens {
-                    self.panes[pane].cursor = row;
+                    self.panes[pane].set_cursor(row);
                     self.enter(pane, row);
                 } else {
                     let mark = self.panes[pane].entry(row).map(Entry::mark);
@@ -2019,10 +2039,8 @@ impl App {
         } else {
             return;
         }
+        p.detached = true;
         self.hitmap.panes[pane].offset = p.offset;
-        let height = usize::from(list.height);
-        p.cursor =
-            p.cursor.clamp(p.offset, p.offset + height - 1).min(p.view.len().saturating_sub(1));
         self.update_drop_target(at);
     }
 
@@ -2032,7 +2050,7 @@ impl App {
                 // A plain click: move the cursor there and drop other marks.
                 let p = &mut self.panes[pane];
                 let row = mark.as_ref().and_then(|m| p.row_of(m)).unwrap_or(row);
-                p.cursor = row.min(p.view.len().saturating_sub(1));
+                p.set_cursor(row);
                 p.marks.clear();
             }
             Drag::Dragging { src_dir, items, target, .. } => {
@@ -2093,9 +2111,8 @@ impl App {
         } else {
             p.offset.saturating_sub(WHEEL_STEP)
         };
-        // Scrolling moves the view, not the focus; drag the cursor along so it stays visible.
-        p.cursor =
-            p.cursor.clamp(p.offset, p.offset + height - 1).min(p.view.len().saturating_sub(1));
+        // Scrolling moves the view, not the cursor, which stays on its entry out of view.
+        p.detached = true;
         self.hitmap.panes[pane].offset = p.offset;
     }
 }

@@ -366,7 +366,7 @@ Mouse support is on by default (`[ui] mouse = true`). Every mouse action also ha
 | Click | Move the cursor there, clear marks, focus that pane |
 | Ctrl+click or right click | Mark or unmark, keep the other marks |
 | Double click | Open a directory; on `..` go up |
-| Wheel | Scroll the pane under the pointer (focus does not move) |
+| Wheel | Scroll the pane under the pointer (focus and cursor do not move) |
 | Click blank space in a pane | Clear marks, focus that pane |
 | Click the address bar | Edit the address |
 | Click the ↻ / > button right of the address | Reload that pane / go to the edited address |
