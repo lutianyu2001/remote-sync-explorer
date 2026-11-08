@@ -251,7 +251,26 @@ impl Session {
     ) -> io::Result<Self> {
         use rustix::pty::{OpenptFlags, grantpt, openpt, ptsname, unlockpt};
         let (rows, cols) = (nonzero(rows), nonzero(cols));
+        // posix_openpt takes O_CLOEXEC on Linux and the BSDs that have it, not on macOS, where
+        // the flag is set once the terminal is open, before any command is started.
+        #[cfg(any(
+            target_os = "linux",
+            target_os = "android",
+            target_os = "freebsd",
+            target_os = "netbsd"
+        ))]
         let master = openpt(OpenptFlags::RDWR | OpenptFlags::NOCTTY | OpenptFlags::CLOEXEC)?;
+        #[cfg(not(any(
+            target_os = "linux",
+            target_os = "android",
+            target_os = "freebsd",
+            target_os = "netbsd"
+        )))]
+        let master = {
+            let master = openpt(OpenptFlags::RDWR | OpenptFlags::NOCTTY)?;
+            rustix::io::fcntl_setfd(&master, rustix::io::FdFlags::CLOEXEC)?;
+            master
+        };
         grantpt(&master)?;
         unlockpt(&master)?;
         let name = ptsname(&master, Vec::new())?;
