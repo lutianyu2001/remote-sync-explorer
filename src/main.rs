@@ -644,8 +644,9 @@ fn event_loop(
     spawn_input(tx.clone());
     spawn_ticker(tx.clone());
     loop {
-        let mut map = HitMap::default();
-        terminal.draw(|f| map = rse::ui::draw(f, app))?;
+        let (mut map, mut cursor_shown) = (HitMap::default(), false);
+        terminal.draw(|f| (map, cursor_shown) = rse::ui::draw(f, app))?;
+        rse::ui::park_cursor(&mut terminal, cursor_shown)?;
         app.set_hitmap(map);
 
         let Ok(first) = rx.recv() else { bail!("{}", tr!("startup-events-closed")) };

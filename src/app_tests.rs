@@ -2073,3 +2073,16 @@ fn a_terminal_turned_off_never_opens() {
     assert_eq!(h.app.focus, Focus::Panes);
     assert!(h.screen.contains("turned off"), "{}", h.screen);
 }
+
+#[test]
+fn the_hidden_cursor_waits_at_the_bottom_row_for_an_input_method() {
+    let mut h = standard();
+    let (shown, at) = h.draw_and_park();
+    assert!(!shown);
+    assert_eq!((at.x, at.y), (0, 23)); // 80 by 24: the start of the last row
+    // Typing in the address bar shows the cursor there, and it stays there.
+    h.press(KeyCode::Char(':'));
+    let (shown, at) = h.draw_and_park();
+    assert!(shown);
+    assert!(at.y < 23, "{at:?}");
+}

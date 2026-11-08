@@ -204,6 +204,16 @@ impl Harness {
         self.render();
     }
 
+    /// Draws a frame as the event loop does, the cursor put away after it; whether the text
+    /// cursor is shown, and where the terminal's cursor is.
+    pub fn draw_and_park(&mut self) -> (bool, ratatui::layout::Position) {
+        let app = &self.app;
+        let mut shown = false;
+        self.terminal.draw(|f| shown = crate::ui::draw(f, app).1).unwrap_or_else(|e| panic!("{e}"));
+        crate::ui::park_cursor(&mut self.terminal, shown).unwrap_or_else(|e| panic!("{e}"));
+        (shown, self.terminal.get_cursor_position().unwrap_or_else(|e| panic!("{e}")))
+    }
+
     pub fn render(&mut self) -> &str {
         let mut map = HitMap::default();
         let app = &self.app;
@@ -211,7 +221,7 @@ impl Harness {
         // keeps stale cells beside wide characters, which a terminal would have cleared.
         self.frame = self
             .terminal
-            .draw(|f| map = crate::ui::draw(f, app))
+            .draw(|f| map = crate::ui::draw(f, app).0)
             .unwrap_or_else(|e| panic!("{e}"))
             .buffer
             .clone();

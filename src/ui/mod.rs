@@ -30,13 +30,33 @@ const HINTS: [(Action, fn() -> String); 8] = [
     (Action::Quit, || tr!("hint-quit")),
 ];
 
-pub fn draw(frame: &mut Frame, app: &App) -> HitMap {
+/// Draws the frame; returns the hit map, and whether the text cursor is shown (in a text
+/// field, or in the terminal).
+pub fn draw(frame: &mut Frame, app: &App) -> (HitMap, bool) {
     let area = frame.area();
     let (map, cursor) = draw_buffer(frame.buffer_mut(), area, app);
     if let Some((x, y)) = cursor {
         frame.set_cursor_position(Position::new(x, y));
     }
-    map
+    (map, cursor.is_some())
+}
+
+/// Puts the hidden cursor at the start of the bottom row while no text is typed: an input
+/// method shows what it is composing (a key pressed with a Chinese one on) where the
+/// cursor is, which would otherwise be wherever the last frame's drawing ended. There, it
+/// is where vim's command line is.
+///
+/// # Errors
+/// Fails when the terminal cannot be written to.
+pub fn park_cursor<B: ratatui::backend::Backend>(
+    terminal: &mut ratatui::Terminal<B>,
+    shown: bool,
+) -> Result<(), B::Error> {
+    if shown {
+        return Ok(());
+    }
+    let size = terminal.size()?;
+    terminal.set_cursor_position(Position::new(0, size.height.saturating_sub(1)))
 }
 
 /// Draws into a buffer; returns the hit map and where the text cursor should be.
