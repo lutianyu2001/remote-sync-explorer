@@ -9,7 +9,6 @@ warning: function `parse_reply` is never used
    |
    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
 
-[1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 0.06s
 warning: use of an unstable feature
  --> <crate attribute>:1:12
   |
@@ -25,10 +24,11 @@ warning: Found the following unsupported constructs:
          Verification will fail if one or more of these constructs is reachable.
          See https://model-checking.github.io/kani/rust-feature-support.html for more details.
 
+[1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 0.06s
 Checking harness keymap::proofs::prefixes_are_cut_at_character_boundaries...
 CBMC 6.11.0 (cbmc-6.11.0)
 CBMC version 6.11.0 (cbmc-6.11.0) 64-bit x86_64 linux
-Reading GOTO program from file ./target/kani/x86_64-unknown-linux-gnu/debug/build/rse/37bd05c5be3219e0/out/rse-37bd05c5be3219e0__RNvNtNtCs7PtYkJRCJHS_3rse6keymap6proofs40prefixes_are_cut_at_character_boundaries.out
+Reading GOTO program from file ./target/kani/x86_64-unknown-linux-gnu/debug/build/rse/4a40e030d9ca5685/out/rse-4a40e030d9ca5685__RNvNtNtCsawFEXHnzwJ5_3rse6keymap6proofs40prefixes_are_cut_at_character_boundaries.out
 Generating GOTO Program
 Adding CPROVER library (x86_64)
 Removal of function pointers and virtual functions
@@ -495,7 +495,7 @@ Not unwinding loop _RNvNtNtCs8xvirJzNMvV_4core3str11validations19run_utf8_valida
 aborting path on assume(false) at file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/converts.rs line 91 column 11 function std::str::from_utf8 thread 0
 aborting path on assume(false) at file library/kani/src/lib.rs line 57 column 1 function kani::mem::cbmc::same_allocation thread 0
 aborting path on assume(false) at file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs line 2869 column 15 function <std::option::Option<(&str, &str)> as std::ops::Try>::branch thread 0
-aborting path on assume(false) at file src/keymap.rs line 219 column 24 function keymap::strip_prefix_ci thread 0
+aborting path on assume(false) at file src/keymap.rs line 230 column 24 function keymap::strip_prefix_ci thread 0
 aborting path on assume(false) at file library/kani_core/src/models.rs line 203 column 17 function <usize as kani::rustc_intrinsics::ToISize>::to_isize thread 0
 aborting path on assume(false) at file library/kani/src/lib.rs line 57 column 1 function <usize as kani::rustc_intrinsics::ToISize>::to_isize thread 0
 aborting path on assume(false) at file library/kani/src/lib.rs line 57 column 1 function <usize as kani::rustc_intrinsics::ToISize>::to_isize thread 0
@@ -508,11 +508,11 @@ aborting path on assume(false) at file library/kani/src/lib.rs line 57 column 1 
 aborting path on assume(false) at file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs line 1962 column 15 function core::slice::<impl [u8]>::split_at thread 0
 aborting path on assume(false) at file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs line 1964 column 21 function core::slice::<impl [u8]>::split_at thread 0
 aborting path on assume(false) at file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs line 119 column 5 function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16> thread 0
-Unwinding loop _RNvMNtNtCs8xvirJzNMvV_4core5slice5asciiSh27eq_ignore_ascii_case_simpleCs7PtYkJRCJHS_3rse.0 iteration 1 file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs line 93 column 9 function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_simple thread 0
-Unwinding loop _RNvMNtNtCs8xvirJzNMvV_4core5slice5asciiSh27eq_ignore_ascii_case_simpleCs7PtYkJRCJHS_3rse.0 iteration 2 file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs line 93 column 9 function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_simple thread 0
-Unwinding loop _RNvMNtNtCs8xvirJzNMvV_4core5slice5asciiSh27eq_ignore_ascii_case_simpleCs7PtYkJRCJHS_3rse.0 iteration 3 file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs line 93 column 9 function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_simple thread 0
-Unwinding loop _RNvMNtNtCs8xvirJzNMvV_4core5slice5asciiSh27eq_ignore_ascii_case_simpleCs7PtYkJRCJHS_3rse.0 iteration 4 file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs line 93 column 9 function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_simple thread 0
-aborting path on assume(false) at file src/keymap.rs line 467 column 5 function keymap::proofs::prefixes_are_cut_at_character_boundaries thread 0
+Unwinding loop _RNvMNtNtCs8xvirJzNMvV_4core5slice5asciiSh27eq_ignore_ascii_case_simpleCsawFEXHnzwJ5_3rse.0 iteration 1 file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs line 93 column 9 function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_simple thread 0
+Unwinding loop _RNvMNtNtCs8xvirJzNMvV_4core5slice5asciiSh27eq_ignore_ascii_case_simpleCsawFEXHnzwJ5_3rse.0 iteration 2 file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs line 93 column 9 function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_simple thread 0
+Unwinding loop _RNvMNtNtCs8xvirJzNMvV_4core5slice5asciiSh27eq_ignore_ascii_case_simpleCsawFEXHnzwJ5_3rse.0 iteration 3 file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs line 93 column 9 function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_simple thread 0
+Unwinding loop _RNvMNtNtCs8xvirJzNMvV_4core5slice5asciiSh27eq_ignore_ascii_case_simpleCsawFEXHnzwJ5_3rse.0 iteration 4 file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs line 93 column 9 function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_simple thread 0
+aborting path on assume(false) at file src/keymap.rs line 478 column 5 function keymap::proofs::prefixes_are_cut_at_character_boundaries thread 0
 aborting path on assume(false) at file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs line 41 column 9 function core::slice::index::slice_index_fail::do_panic::runtime thread 0
 aborting path on assume(false) at file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/intrinsics/mod.rs line 2641 column 9 function core::slice::index::slice_index_fail::do_panic thread 0
 aborting path on assume(false) at file ~/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/panic.rs line 177 column 9 function core::slice::index::slice_index_fail thread 0
@@ -539,622 +539,622 @@ Unwinding loop memcmp.0 iteration 6 file <builtin-library-memcmp> line 25 functi
 Unwinding loop memcmp.0 iteration 7 file <builtin-library-memcmp> line 25 function memcmp thread 0
 Unwinding loop memcmp.0 iteration 8 file <builtin-library-memcmp> line 25 function memcmp thread 0
 Not unwinding loop memcmp.0 iteration 9 file <builtin-library-memcmp> line 25 function memcmp thread 0
-Runtime Symex: 14.1529s
+Runtime Symex: 14.8573s
 size of program expression: 173824 steps
 slicing removed 132977 assignments
 Generated 3681 VCC(s), 2259 remaining after simplification
-Runtime Postprocess Equation: 0.260249s
+Runtime Postprocess Equation: 0.32648s
 Passing problem to propositional reduction
 converting SSA
-Runtime Convert SSA: 0.858188s
+Runtime Convert SSA: 0.801832s
 Running propositional reduction
 Post-processing
-Runtime Post-process: 0.0245873s
+Runtime Post-process: 0.0251927s
 Solving with CaDiCaL 3.0.0
 573410 variables, 1908161 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 4.18544s
-Runtime decision procedure: 5.07532s
+Runtime Solver: 4.11009s
+Runtime decision procedure: 4.94298s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573411 variables, 1908162 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.202343s
-Runtime decision procedure: 0.218181s
+Runtime Solver: 0.207681s
+Runtime decision procedure: 0.2222s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573412 variables, 1908163 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.132243s
-Runtime decision procedure: 0.142767s
+Runtime Solver: 0.148603s
+Runtime decision procedure: 0.158209s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573413 variables, 1908164 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.0705862s
-Runtime decision procedure: 0.0812369s
+Runtime Solver: 0.074086s
+Runtime decision procedure: 0.0838613s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573414 variables, 1908165 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.0741218s
-Runtime decision procedure: 0.0847849s
+Runtime Solver: 0.0801208s
+Runtime decision procedure: 0.0897656s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573415 variables, 1908166 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.298719s
-Runtime decision procedure: 0.309357s
+Runtime Solver: 0.338811s
+Runtime decision procedure: 0.348361s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573416 variables, 1908167 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.151227s
-Runtime decision procedure: 0.161881s
+Runtime Solver: 0.156719s
+Runtime decision procedure: 0.166286s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573417 variables, 1908168 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.333223s
-Runtime decision procedure: 0.342525s
+Runtime Solver: 0.334046s
+Runtime decision procedure: 0.342971s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573418 variables, 1908169 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 0.131388s
-Runtime decision procedure: 0.13877s
+Runtime Solver: 0.13128s
+Runtime decision procedure: 0.138261s
 Running propositional reduction
 Solving with CaDiCaL 3.0.0
 573419 variables, 1908170 clauses
 SAT checker: instance is UNSATISFIABLE
-Runtime Solver: 4.07861s
-Runtime decision procedure: 4.07973s
+Runtime Solver: 3.86603s
+Runtime decision procedure: 3.86752s
 
 RESULTS:
-Check 1: core::slice::<impl [u8]>::split_at_unchecked.arithmetic_overflow.1
-	 - Status: SUCCESS
-	 - Description: "attempt to compute `unchecked_sub` which would overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:2062:74 in function core::slice::<impl [u8]>::split_at_unchecked
-
-Check 2: memcmp.precondition.1
-	 - Status: SUCCESS
-	 - Description: "memcmp region 1 readable"
-	 - Location: <builtin-library-memcmp>:19 in function memcmp
-
-Check 3: memcmp.precondition.2
-	 - Status: SUCCESS
-	 - Description: "memcpy region 2 readable"
-	 - Location: <builtin-library-memcmp>:21 in function memcmp
-
-Check 4: std::fmt::Arguments::<'_>::from_str.assertion.1
-	 - Status: UNREACHABLE
-	 - Description: "attempt to shift left with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/fmt/mod.rs:820:38 in function std::fmt::Arguments::<'_>::from_str
-
-Check 5: kani::rustc_intrinsics::offset::<usize, *const usize, usize>.safety_check.1
-	 - Status: SUCCESS
-	 - Description: "Offset in bytes overflows isize"
-	 - Location: library/kani/src/lib.rs:57:1 in function kani::rustc_intrinsics::offset::<usize, *const usize, usize>
-
-Check 6: kani::rustc_intrinsics::offset::<usize, *const usize, usize>.safety_check.2
-	 - Status: SUCCESS
-	 - Description: "Offset result address must equal original pointer address plus offset"
-	 - Location: library/kani/src/lib.rs:57:1 in function kani::rustc_intrinsics::offset::<usize, *const usize, usize>
-
-Check 7: kani::rustc_intrinsics::offset::<usize, *const usize, usize>.safety_check.3
-	 - Status: SUCCESS
-	 - Description: "Offset result and original pointer must point to the same allocation"
-	 - Location: library/kani/src/lib.rs:57:1 in function kani::rustc_intrinsics::offset::<usize, *const usize, usize>
-
-Check 8: std::panic::Location::<'_>::caller.unsupported_construct.1
-	 - Status: SUCCESS
-	 - Description: "caller_location is not currently supported by Kani. Please post your example at https://github.com/model-checking/kani/issues/374"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/panic/location.rs:181:9 in function std::panic::Location::<'_>::caller
-
-Check 9: std::ptr::align_offset::<u8>.arithmetic_overflow.1
-	 - Status: SUCCESS
-	 - Description: "attempt to compute `unchecked_sub` which would overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2353:32 in function std::ptr::align_offset::<u8>
-
-Check 10: std::ptr::align_offset::<u8>.arithmetic_overflow.2
-	 - Status: SUCCESS
-	 - Description: "attempt to calculate the remainder with a divisor of zero"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2364:33 in function std::ptr::align_offset::<u8>
-
-Check 11: std::ptr::align_offset::<u8>.assume.1
-	 - Status: SUCCESS
-	 - Description: "Rust intrinsic assumption failed"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2387:18 in function std::ptr::align_offset::<u8>
-
-Check 12: std::ptr::align_offset::<u8>.arithmetic_overflow.3
-	 - Status: SUCCESS
-	 - Description: "attempt to calculate the remainder with a divisor of zero"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2390:40 in function std::ptr::align_offset::<u8>
-
-Check 13: std::ptr::align_offset::<u8>.exact_div.1
-	 - Status: SUCCESS
-	 - Description: "exact_div arguments divide exactly"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2395:22 in function std::ptr::align_offset::<u8>
-
-Check 14: std::ptr::align_offset::<u8>.exact_div.2
-	 - Status: SUCCESS
-	 - Description: "exact_div divisor is nonzero"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2395:22 in function std::ptr::align_offset::<u8>
-
-Check 15: std::ptr::align_offset::<u8>.exact_div.3
-	 - Status: SUCCESS
-	 - Description: "exact_div division does not overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2395:22 in function std::ptr::align_offset::<u8>
-
-Check 16: std::ptr::align_offset::<u8>.arithmetic_overflow.4
-	 - Status: SUCCESS
-	 - Description: "attempt to shift by excessive shift distance"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2415:24 in function std::ptr::align_offset::<u8>
-
-Check 17: std::ptr::align_offset::<u8>.arithmetic_overflow.5
-	 - Status: SUCCESS
-	 - Description: "attempt to compute `unchecked_sub` which would overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2417:24 in function std::ptr::align_offset::<u8>
-
-Check 18: std::ptr::align_offset::<u8>.arithmetic_overflow.6
-	 - Status: SUCCESS
-	 - Description: "attempt to shift by excessive shift distance"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2441:27 in function std::ptr::align_offset::<u8>
-
-Check 19: std::ptr::align_offset::<u8>.arithmetic_overflow.7
-	 - Status: SUCCESS
-	 - Description: "attempt to compute `unchecked_sub` which would overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2444:33 in function std::ptr::align_offset::<u8>
-
-Check 20: std::ptr::align_offset::<u8>.arithmetic_overflow.8
-	 - Status: SUCCESS
-	 - Description: "attempt to shift by excessive shift distance"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2447:27 in function std::ptr::align_offset::<u8>
-
-Check 21: std::ptr::align_offset::<u8>.arithmetic_overflow.9
-	 - Status: SUCCESS
-	 - Description: "attempt to shift by excessive shift distance"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2451:50 in function std::ptr::align_offset::<u8>
-
-Check 22: std::ptr::align_offset::<u8>.arithmetic_overflow.10
-	 - Status: SUCCESS
-	 - Description: "attempt to compute `unchecked_sub` which would overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2451:32 in function std::ptr::align_offset::<u8>
-
-Check 23: std::str::from_utf8.unreachable.1
-	 - Status: SUCCESS
-	 - Description: "unreachable code"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/converts.rs:91:11 in function std::str::from_utf8
-
-Check 24: <std::ops::Range<usize> as std::slice::SliceIndex<[u8]>>::index.unreachable.1
-	 - Status: SUCCESS
-	 - Description: "unreachable code"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:405:5 in function <std::ops::Range<usize> as std::slice::SliceIndex<[u8]>>::index
-
-Check 25: <std::ops::Range<usize> as std::slice::SliceIndex<[u8]>>::index.safety_check.1
-	 - Status: SUCCESS
-	 - Description: "misaligned pointer to reference cast: address must be a multiple of its type's alignment"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:411:22 in function <std::ops::Range<usize> as std::slice::SliceIndex<[u8]>>::index
-
-Check 26: <std::ops::Range<usize> as std::slice::SliceIndex<[u8]>>::index.safety_check.2
-	 - Status: SUCCESS
-	 - Description: "dereference failure: pointer invalid"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:411:22 in function <std::ops::Range<usize> as std::slice::SliceIndex<[u8]>>::index
-
-Check 27: core::str::<impl str>::is_char_boundary.assertion.1
+Check 1: core::str::<impl str>::is_char_boundary.assertion.1
 	 - Status: SUCCESS
 	 - Description: "index out of bounds: the length is less than or equal to the given index"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/mod.rs:396:13 in function core::str::<impl str>::is_char_boundary
 
-Check 28: core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::eq_ignore_ascii_inner::<16>.assertion.1
-	 - Status: UNREACHABLE
-	 - Description: "index out of bounds: the length is less than or equal to the given index"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs:132:32 in function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::eq_ignore_ascii_inner::<16>
-
-Check 29: core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::eq_ignore_ascii_inner::<16>.assertion.2
-	 - Status: UNREACHABLE
-	 - Description: "index out of bounds: the length is less than or equal to the given index"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs:132:61 in function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::eq_ignore_ascii_inner::<16>
-
-Check 30: core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::eq_ignore_ascii_inner::<16>.assertion.3
-	 - Status: UNREACHABLE
-	 - Description: "attempt to add with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs:133:17 in function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::eq_ignore_ascii_inner::<16>
-
-Check 31: std::slice::from_raw_parts::<'_, [u8; 16]>.safety_check.1
-	 - Status: SUCCESS
-	 - Description: "misaligned pointer to reference cast: address must be a multiple of its type's alignment"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/raw.rs:139:9 in function std::slice::from_raw_parts::<'_, [u8; 16]>
-
-Check 32: std::slice::from_raw_parts::<'_, [u8; 16]>.safety_check.2
-	 - Status: SUCCESS
-	 - Description: "dereference failure: pointer invalid"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/raw.rs:139:9 in function std::slice::from_raw_parts::<'_, [u8; 16]>
-
-Check 33: kani::rustc_intrinsics::offset::<u8, *const u8, usize>.safety_check.1
-	 - Status: SUCCESS
-	 - Description: "Offset in bytes overflows isize"
-	 - Location: library/kani/src/lib.rs:57:1 in function kani::rustc_intrinsics::offset::<u8, *const u8, usize>
-
-Check 34: kani::rustc_intrinsics::offset::<u8, *const u8, usize>.safety_check.2
-	 - Status: SUCCESS
-	 - Description: "Offset result address must equal original pointer address plus offset"
-	 - Location: library/kani/src/lib.rs:57:1 in function kani::rustc_intrinsics::offset::<u8, *const u8, usize>
-
-Check 35: kani::rustc_intrinsics::offset::<u8, *const u8, usize>.safety_check.3
-	 - Status: SUCCESS
-	 - Description: "Offset result and original pointer must point to the same allocation"
-	 - Location: library/kani/src/lib.rs:57:1 in function kani::rustc_intrinsics::offset::<u8, *const u8, usize>
-
-Check 36: core::slice::index::slice_index_fail::do_panic::runtime.assertion.4
-	 - Status: SUCCESS
-	 - Description: "This is a placeholder message; Kani doesn't support message formatted at runtime"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:50:9 in function core::slice::index::slice_index_fail::do_panic::runtime
-
-Check 37: std::ptr::align_offset::mod_inv.arithmetic_overflow.1
-	 - Status: SUCCESS
-	 - Description: "attempt to compute `unchecked_sub` which would overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2316:36 in function std::ptr::align_offset::mod_inv
-
-Check 38: std::ptr::align_offset::mod_inv.assertion.1
-	 - Status: UNREACHABLE
-	 - Description: "attempt to subtract with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2317:49 in function std::ptr::align_offset::mod_inv
-
-Check 39: std::ptr::align_offset::mod_inv.assertion.2
-	 - Status: UNREACHABLE
-	 - Description: "attempt to shift right with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2317:44 in function std::ptr::align_offset::mod_inv
-
-Check 40: std::ptr::align_offset::mod_inv.assertion.3
-	 - Status: UNREACHABLE
-	 - Description: "index out of bounds: the length is less than or equal to the given index"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2317:27 in function std::ptr::align_offset::mod_inv
-
-Check 41: core::slice::<impl [u8]>::as_chunks::<16>.assertion.1
+Check 2: core::ub_checks::is_valid_allocation_size.assertion.1
 	 - Status: UNREACHABLE
 	 - Description: "attempt to divide by zero"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1399:32 in function core::slice::<impl [u8]>::as_chunks::<16>
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ub_checks.rs:148:54 in function core::ub_checks::is_valid_allocation_size
 
-Check 42: core::slice::<impl [u8]>::as_chunks::<16>.arithmetic_overflow.1
+Check 3: core::ub_checks::is_valid_allocation_size.arithmetic_overflow.1
 	 - Status: SUCCESS
 	 - Description: "attempt to divide by zero"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1399:32 in function core::slice::<impl [u8]>::as_chunks::<16>
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ub_checks.rs:148:54 in function core::ub_checks::is_valid_allocation_size
 
-Check 43: core::slice::<impl [u8]>::as_chunks::<16>.assertion.2
-	 - Status: UNREACHABLE
-	 - Description: "attempt to multiply with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1399:32 in function core::slice::<impl [u8]>::as_chunks::<16>
-
-Check 44: core::slice::<impl [u8]>::as_chunks::<16>.assertion.3
-	 - Status: SUCCESS
-	 - Description: "This is a placeholder message; Kani doesn't support message formatted at runtime"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1398:9 in function core::slice::<impl [u8]>::as_chunks::<16>
-
-Check 45: <std::option::Option<&str> as std::ops::FromResidual<std::option::Option<std::convert::Infallible>>>::from_residual.unreachable.1
-	 - Status: SUCCESS
-	 - Description: "unreachable code"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs:2883:15 in function <std::option::Option<&str> as std::ops::FromResidual<std::option::Option<std::convert::Infallible>>>::from_residual
-
-Check 46: core::num::<impl usize>::checked_sub.arithmetic_overflow.1
-	 - Status: SUCCESS
-	 - Description: "attempt to compute `unchecked_sub` which would overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs:1096:31 in function core::num::<impl usize>::checked_sub
-
-Check 47: core::slice::index::slice_index_fail::do_panic::runtime.assertion.2
-	 - Status: SUCCESS
-	 - Description: "This is a placeholder message; Kani doesn't support message formatted at runtime"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:59:9 in function core::slice::index::slice_index_fail::do_panic::runtime
-
-Check 48: core::slice::<impl [u8]>::last_chunk::<16>.unreachable.1
-	 - Status: SUCCESS
-	 - Description: "unreachable code"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:509:5 in function core::slice::<impl [u8]>::last_chunk::<16>
-
-Check 49: core::slice::<impl [u8]>::last_chunk::<16>.safety_check.1
-	 - Status: SUCCESS
-	 - Description: "misaligned pointer to reference cast: address must be a multiple of its type's alignment"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:516:23 in function core::slice::<impl [u8]>::last_chunk::<16>
-
-Check 50: core::slice::<impl [u8]>::last_chunk::<16>.safety_check.2
-	 - Status: SUCCESS
-	 - Description: "dereference failure: pointer invalid"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:516:23 in function core::slice::<impl [u8]>::last_chunk::<16>
-
-Check 51: core::slice::index::slice_index_fail::do_panic::runtime.assertion.1
-	 - Status: SUCCESS
-	 - Description: "This is a placeholder message; Kani doesn't support message formatted at runtime"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:41:9 in function core::slice::index::slice_index_fail::do_panic::runtime
-
-Check 52: core::str::validations::run_utf8_validation.assertion.1
-	 - Status: SUCCESS
-	 - Description: "attempt to multiply with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:132:28 in function core::str::validations::run_utf8_validation
-
-Check 53: core::str::validations::run_utf8_validation.assertion.2
-	 - Status: UNREACHABLE
-	 - Description: "attempt to subtract with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:133:51 in function core::str::validations::run_utf8_validation
-
-Check 54: core::str::validations::run_utf8_validation.assertion.3
-	 - Status: UNREACHABLE
-	 - Description: "attempt to add with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:133:51 in function core::str::validations::run_utf8_validation
-
-Check 55: core::str::validations::run_utf8_validation.assertion.4
-	 - Status: SUCCESS
-	 - Description: "index out of bounds: the length is less than or equal to the given index"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:164:21 in function core::str::validations::run_utf8_validation
-
-Check 56: core::str::validations::run_utf8_validation.assertion.5
-	 - Status: SUCCESS
-	 - Description: "attempt to add with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:155:17 in function core::str::validations::run_utf8_validation
-
-Check 57: core::str::validations::run_utf8_validation.assertion.6
-	 - Status: SUCCESS
-	 - Description: "index out of bounds: the length is less than or equal to the given index"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
-
-Check 58: core::str::validations::run_utf8_validation.assertion.7
-	 - Status: SUCCESS
-	 - Description: "attempt to add with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:155:17 in function core::str::validations::run_utf8_validation
-
-Check 59: core::str::validations::run_utf8_validation.assertion.8
-	 - Status: SUCCESS
-	 - Description: "index out of bounds: the length is less than or equal to the given index"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
-
-Check 60: core::str::validations::run_utf8_validation.assertion.9
-	 - Status: SUCCESS
-	 - Description: "attempt to add with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:155:17 in function core::str::validations::run_utf8_validation
-
-Check 61: core::str::validations::run_utf8_validation.assertion.10
-	 - Status: SUCCESS
-	 - Description: "index out of bounds: the length is less than or equal to the given index"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
-
-Check 62: core::str::validations::run_utf8_validation.assertion.11
-	 - Status: SUCCESS
-	 - Description: "attempt to add with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:155:17 in function core::str::validations::run_utf8_validation
-
-Check 63: core::str::validations::run_utf8_validation.assertion.12
-	 - Status: SUCCESS
-	 - Description: "index out of bounds: the length is less than or equal to the given index"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
-
-Check 64: core::str::validations::run_utf8_validation.assertion.13
-	 - Status: SUCCESS
-	 - Description: "attempt to add with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:155:17 in function core::str::validations::run_utf8_validation
-
-Check 65: core::str::validations::run_utf8_validation.assertion.14
-	 - Status: SUCCESS
-	 - Description: "index out of bounds: the length is less than or equal to the given index"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
-
-Check 66: core::str::validations::run_utf8_validation.assertion.15
-	 - Status: SUCCESS
-	 - Description: "attempt to add with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:155:17 in function core::str::validations::run_utf8_validation
-
-Check 67: core::str::validations::run_utf8_validation.assertion.16
-	 - Status: SUCCESS
-	 - Description: "index out of bounds: the length is less than or equal to the given index"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
-
-Check 68: core::str::validations::run_utf8_validation.assertion.17
-	 - Status: SUCCESS
-	 - Description: "attempt to add with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:217:13 in function core::str::validations::run_utf8_validation
-
-Check 69: core::str::validations::run_utf8_validation.assertion.18
-	 - Status: UNREACHABLE
-	 - Description: "attempt to add with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:238:21 in function core::str::validations::run_utf8_validation
-
-Check 70: core::str::validations::run_utf8_validation.assertion.19
-	 - Status: SUCCESS
-	 - Description: "index out of bounds: the length is less than or equal to the given index"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:241:38 in function core::str::validations::run_utf8_validation
-
-Check 71: core::str::validations::run_utf8_validation.assertion.20
-	 - Status: SUCCESS
-	 - Description: "attempt to add with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:242:21 in function core::str::validations::run_utf8_validation
-
-Check 72: core::str::validations::run_utf8_validation.assertion.21
-	 - Status: SUCCESS
-	 - Description: "attempt to add with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:245:17 in function core::str::validations::run_utf8_validation
-
-Check 73: std::ptr::const_ptr::<impl *const ()>::is_aligned_to.assertion.1
-	 - Status: UNREACHABLE
-	 - Description: "attempt to subtract with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/const_ptr.rs:1360:23 in function std::ptr::const_ptr::<impl *const ()>::is_aligned_to
-
-Check 74: std::ptr::const_ptr::<impl *const ()>::is_aligned_to.assertion.2
-	 - Status: SUCCESS
-	 - Description: "This is a placeholder message; Kani doesn't support message formatted at runtime"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/const_ptr.rs:1357:13 in function std::ptr::const_ptr::<impl *const ()>::is_aligned_to
-
-Check 75: core::str::utf8_char_width.assertion.1
-	 - Status: SUCCESS
-	 - Description: "index out of bounds: the length is less than or equal to the given index"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:279:5 in function core::str::utf8_char_width
-
-Check 76: <std::option::Option<(&str, &str)> as std::ops::Try>::branch.unreachable.1
-	 - Status: SUCCESS
-	 - Description: "unreachable code"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs:2869:15 in function <std::option::Option<(&str, &str)> as std::ops::Try>::branch
-
-Check 77: core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>.assertion.1
-	 - Status: UNREACHABLE
-	 - Description: "index out of bounds: the length is less than or equal to the given index"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs:142:40 in function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>
-
-Check 78: core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>.assertion.2
-	 - Status: UNREACHABLE
-	 - Description: "index out of bounds: the length is less than or equal to the given index"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs:142:57 in function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>
-
-Check 79: core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>.assertion.3
-	 - Status: UNREACHABLE
-	 - Description: "attempt to add with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs:145:13 in function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>
-
-Check 80: core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>.unreachable.1
-	 - Status: SUCCESS
-	 - Description: "unreachable code"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs:119:5 in function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>
-
-Check 81: core::num::<impl usize>::is_multiple_of.assertion.1
-	 - Status: SUCCESS
-	 - Description: "attempt to calculate the remainder with a divisor of zero"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs:3875:22 in function core::num::<impl usize>::is_multiple_of
-
-Check 82: core::num::<impl usize>::is_multiple_of.arithmetic_overflow.1
-	 - Status: SUCCESS
-	 - Description: "attempt to calculate the remainder with a divisor of zero"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs:3875:22 in function core::num::<impl usize>::is_multiple_of
-
-Check 83: keymap::proofs::prefixes_are_cut_at_character_boundaries.unreachable.1
-	 - Status: SUCCESS
-	 - Description: "unreachable code"
-	 - Location: src/keymap.rs:467:5 in function keymap::proofs::prefixes_are_cut_at_character_boundaries
-
-Check 84: keymap::proofs::prefixes_are_cut_at_character_boundaries.assertion.1
-	 - Status: SUCCESS
-	 - Description: "attempt to add with overflow"
-	 - Location: src/keymap.rs:472:45 in function keymap::proofs::prefixes_are_cut_at_character_boundaries
-
-Check 85: keymap::proofs::prefixes_are_cut_at_character_boundaries.assertion.2
-	 - Status: SUCCESS
-	 - Description: "assertion failed: text.ends_with(rest) && rest.len() + 4 == text.len()"
-	 - Location: src/keymap.rs:472:13 in function keymap::proofs::prefixes_are_cut_at_character_boundaries
-
-Check 86: <u8 as core::slice::cmp::SlicePartialEq<u8>>::equal_same_length.arithmetic_overflow.1
-	 - Status: SUCCESS
-	 - Description: "attempt to compute `unchecked_mul` which would overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/cmp.rs:156:24 in function <u8 as core::slice::cmp::SlicePartialEq<u8>>::equal_same_length
-
-Check 87: core::slice::index::slice_index_fail::do_panic::runtime.assertion.3
+Check 4: core::slice::index::slice_index_fail::do_panic::runtime.assertion.3
 	 - Status: SUCCESS
 	 - Description: "This is a placeholder message; Kani doesn't support message formatted at runtime"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:69:5 in function core::slice::index::slice_index_fail::do_panic::runtime
 
-Check 88: std::ptr::const_ptr::<impl *const u8>::align_offset.assertion.1
-	 - Status: SUCCESS
-	 - Description: "This is a placeholder message; Kani doesn't support message formatted at runtime"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/const_ptr.rs:1282:13 in function std::ptr::const_ptr::<impl *const u8>::align_offset
-
-Check 89: core::panicking::panic_nounwind_fmt::runtime.unsupported_construct.1
-	 - Status: SUCCESS
-	 - Description: "call to foreign "Rust" function `_RNvCskSgPeDzUGbv_7___rustc17rust_begin_unwind` is not currently supported by Kani. Please post your example at https://github.com/model-checking/kani/issues/new/choose"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/panicking.rs:110:17 in function core::panicking::panic_nounwind_fmt::runtime
-
-Check 90: <usize as kani::rustc_intrinsics::ToISize>::to_isize.unreachable.1
+Check 5: <std::option::Option<&str> as std::ops::FromResidual<std::option::Option<std::convert::Infallible>>>::from_residual.unreachable.1
 	 - Status: SUCCESS
 	 - Description: "unreachable code"
-	 - Location: library/kani_core/src/models.rs:203:17 in function <usize as kani::rustc_intrinsics::ToISize>::to_isize
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs:2883:15 in function <std::option::Option<&str> as std::ops::FromResidual<std::option::Option<std::convert::Infallible>>>::from_residual
 
-Check 91: <usize as kani::rustc_intrinsics::ToISize>::to_isize.safety_check.1
-	 - Status: SUCCESS
-	 - Description: "Offset value overflows isize"
-	 - Location: library/kani/src/lib.rs:57:1 in function <usize as kani::rustc_intrinsics::ToISize>::to_isize
-
-Check 92: <usize as kani::rustc_intrinsics::ToISize>::to_isize.assertion.1
-	 - Status: SUCCESS
-	 - Description: "internal error: entered unreachable code"
-	 - Location: library/kani/src/lib.rs:57:1 in function <usize as kani::rustc_intrinsics::ToISize>::to_isize
-
-Check 93: core::num::<impl u8>::to_ascii_lowercase.assertion.1
-	 - Status: SUCCESS
-	 - Description: "attempt to multiply with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/mod.rs:711:17 in function core::num::<impl u8>::to_ascii_lowercase
-
-Check 94: kani::mem::cbmc::same_allocation.unsupported_construct.1
-	 - Status: SUCCESS
-	 - Description: "Kani does not support reasoning about pointer to unallocated memory"
-	 - Location: library/kani/src/lib.rs:57:1 in function kani::mem::cbmc::same_allocation
-
-Check 95: core::str::<impl str>::split_at_unchecked.assertion.1
-	 - Status: SUCCESS
-	 - Description: "attempt to subtract with overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/mod.rs:1006:73 in function core::str::<impl str>::split_at_unchecked
-
-Check 96: keymap::strip_prefix_ci.unreachable.1
-	 - Status: SUCCESS
-	 - Description: "unreachable code"
-	 - Location: src/keymap.rs:219:24 in function keymap::strip_prefix_ci
-
-Check 97: core::ub_checks::is_valid_allocation_size.assertion.1
+Check 6: std::fmt::Arguments::<'_>::from_str.assertion.1
 	 - Status: UNREACHABLE
-	 - Description: "attempt to divide by zero"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ub_checks.rs:148:54 in function core::ub_checks::is_valid_allocation_size
+	 - Description: "attempt to shift left with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/fmt/mod.rs:820:38 in function std::fmt::Arguments::<'_>::from_str
 
-Check 98: core::ub_checks::is_valid_allocation_size.arithmetic_overflow.1
-	 - Status: SUCCESS
-	 - Description: "attempt to divide by zero"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ub_checks.rs:148:54 in function core::ub_checks::is_valid_allocation_size
-
-Check 99: core::slice::<impl [u8]>::as_chunks_unchecked::<16>.exact_div.1
-	 - Status: SUCCESS
-	 - Description: "exact_div arguments divide exactly"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1346:32 in function core::slice::<impl [u8]>::as_chunks_unchecked::<16>
-
-Check 100: core::slice::<impl [u8]>::as_chunks_unchecked::<16>.exact_div.2
-	 - Status: SUCCESS
-	 - Description: "exact_div divisor is nonzero"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1346:32 in function core::slice::<impl [u8]>::as_chunks_unchecked::<16>
-
-Check 101: core::slice::<impl [u8]>::as_chunks_unchecked::<16>.exact_div.3
-	 - Status: SUCCESS
-	 - Description: "exact_div division does not overflow"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1346:32 in function core::slice::<impl [u8]>::as_chunks_unchecked::<16>
-
-Check 102: core::slice::<impl [u8]>::split_at.unreachable.1
+Check 7: core::slice::<impl [u8]>::split_at.unreachable.1
 	 - Status: SUCCESS
 	 - Description: "unreachable code"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1962:15 in function core::slice::<impl [u8]>::split_at
 
-Check 103: core::slice::<impl [u8]>::split_at.assertion.1
+Check 8: core::slice::<impl [u8]>::split_at.assertion.1
 	 - Status: SUCCESS
 	 - Description: "This is a placeholder message; Kani doesn't support message formatted at runtime"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1964:21 in function core::slice::<impl [u8]>::split_at
 
-Check 104: <std::ops::RangeFrom<usize> as std::slice::SliceIndex<[u8]>>::index.arithmetic_overflow.1
+Check 9: <std::ops::RangeFrom<usize> as std::slice::SliceIndex<[u8]>>::index.arithmetic_overflow.1
 	 - Status: SUCCESS
 	 - Description: "attempt to compute `unchecked_sub` which would overflow"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:549:27 in function <std::ops::RangeFrom<usize> as std::slice::SliceIndex<[u8]>>::index
 
-Check 105: <std::ops::RangeFrom<usize> as std::slice::SliceIndex<[u8]>>::index.safety_check.1
+Check 10: <std::ops::RangeFrom<usize> as std::slice::SliceIndex<[u8]>>::index.safety_check.1
 	 - Status: SUCCESS
 	 - Description: "misaligned pointer to reference cast: address must be a multiple of its type's alignment"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:550:13 in function <std::ops::RangeFrom<usize> as std::slice::SliceIndex<[u8]>>::index
 
-Check 106: <std::ops::RangeFrom<usize> as std::slice::SliceIndex<[u8]>>::index.safety_check.2
+Check 11: <std::ops::RangeFrom<usize> as std::slice::SliceIndex<[u8]>>::index.safety_check.2
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer invalid"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:550:13 in function <std::ops::RangeFrom<usize> as std::slice::SliceIndex<[u8]>>::index
 
-Check 107: std::slice::from_raw_parts::<'_, u8>.safety_check.1
+Check 12: core::num::<impl usize>::is_multiple_of.assertion.1
+	 - Status: SUCCESS
+	 - Description: "attempt to calculate the remainder with a divisor of zero"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs:3875:22 in function core::num::<impl usize>::is_multiple_of
+
+Check 13: core::num::<impl usize>::is_multiple_of.arithmetic_overflow.1
+	 - Status: SUCCESS
+	 - Description: "attempt to calculate the remainder with a divisor of zero"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs:3875:22 in function core::num::<impl usize>::is_multiple_of
+
+Check 14: kani::rustc_intrinsics::offset::<u8, *const u8, usize>.safety_check.1
+	 - Status: SUCCESS
+	 - Description: "Offset in bytes overflows isize"
+	 - Location: library/kani/src/lib.rs:57:1 in function kani::rustc_intrinsics::offset::<u8, *const u8, usize>
+
+Check 15: kani::rustc_intrinsics::offset::<u8, *const u8, usize>.safety_check.2
+	 - Status: SUCCESS
+	 - Description: "Offset result address must equal original pointer address plus offset"
+	 - Location: library/kani/src/lib.rs:57:1 in function kani::rustc_intrinsics::offset::<u8, *const u8, usize>
+
+Check 16: kani::rustc_intrinsics::offset::<u8, *const u8, usize>.safety_check.3
+	 - Status: SUCCESS
+	 - Description: "Offset result and original pointer must point to the same allocation"
+	 - Location: library/kani/src/lib.rs:57:1 in function kani::rustc_intrinsics::offset::<u8, *const u8, usize>
+
+Check 17: <u8 as core::slice::cmp::SlicePartialEq<u8>>::equal_same_length.arithmetic_overflow.1
+	 - Status: SUCCESS
+	 - Description: "attempt to compute `unchecked_mul` which would overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/cmp.rs:156:24 in function <u8 as core::slice::cmp::SlicePartialEq<u8>>::equal_same_length
+
+Check 18: keymap::proofs::prefixes_are_cut_at_character_boundaries.unreachable.1
+	 - Status: SUCCESS
+	 - Description: "unreachable code"
+	 - Location: src/keymap.rs:478:5 in function keymap::proofs::prefixes_are_cut_at_character_boundaries
+
+Check 19: keymap::proofs::prefixes_are_cut_at_character_boundaries.assertion.1
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: src/keymap.rs:483:45 in function keymap::proofs::prefixes_are_cut_at_character_boundaries
+
+Check 20: keymap::proofs::prefixes_are_cut_at_character_boundaries.assertion.2
+	 - Status: SUCCESS
+	 - Description: "assertion failed: text.ends_with(rest) && rest.len() + 4 == text.len()"
+	 - Location: src/keymap.rs:483:13 in function keymap::proofs::prefixes_are_cut_at_character_boundaries
+
+Check 21: core::slice::<impl [u8]>::as_chunks::<16>.assertion.1
+	 - Status: UNREACHABLE
+	 - Description: "attempt to divide by zero"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1399:32 in function core::slice::<impl [u8]>::as_chunks::<16>
+
+Check 22: core::slice::<impl [u8]>::as_chunks::<16>.arithmetic_overflow.1
+	 - Status: SUCCESS
+	 - Description: "attempt to divide by zero"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1399:32 in function core::slice::<impl [u8]>::as_chunks::<16>
+
+Check 23: core::slice::<impl [u8]>::as_chunks::<16>.assertion.2
+	 - Status: UNREACHABLE
+	 - Description: "attempt to multiply with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1399:32 in function core::slice::<impl [u8]>::as_chunks::<16>
+
+Check 24: core::slice::<impl [u8]>::as_chunks::<16>.assertion.3
+	 - Status: SUCCESS
+	 - Description: "This is a placeholder message; Kani doesn't support message formatted at runtime"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1398:9 in function core::slice::<impl [u8]>::as_chunks::<16>
+
+Check 25: kani::mem::cbmc::same_allocation.unsupported_construct.1
+	 - Status: SUCCESS
+	 - Description: "Kani does not support reasoning about pointer to unallocated memory"
+	 - Location: library/kani/src/lib.rs:57:1 in function kani::mem::cbmc::same_allocation
+
+Check 26: core::num::<impl u8>::to_ascii_lowercase.assertion.1
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/mod.rs:711:17 in function core::num::<impl u8>::to_ascii_lowercase
+
+Check 27: std::slice::from_raw_parts::<'_, [u8; 16]>.safety_check.1
 	 - Status: SUCCESS
 	 - Description: "misaligned pointer to reference cast: address must be a multiple of its type's alignment"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/raw.rs:139:9 in function std::slice::from_raw_parts::<'_, u8>
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/raw.rs:139:9 in function std::slice::from_raw_parts::<'_, [u8; 16]>
 
-Check 108: std::slice::from_raw_parts::<'_, u8>.safety_check.2
+Check 28: std::slice::from_raw_parts::<'_, [u8; 16]>.safety_check.2
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer invalid"
-	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/raw.rs:139:9 in function std::slice::from_raw_parts::<'_, u8>
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/raw.rs:139:9 in function std::slice::from_raw_parts::<'_, [u8; 16]>
 
-Check 109: core::slice::<impl [u8]>::ends_with.assertion.1
+Check 29: core::str::<impl str>::split_at_unchecked.assertion.1
+	 - Status: SUCCESS
+	 - Description: "attempt to subtract with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/mod.rs:1006:73 in function core::str::<impl str>::split_at_unchecked
+
+Check 30: core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::eq_ignore_ascii_inner::<16>.assertion.1
+	 - Status: UNREACHABLE
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs:132:32 in function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::eq_ignore_ascii_inner::<16>
+
+Check 31: core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::eq_ignore_ascii_inner::<16>.assertion.2
+	 - Status: UNREACHABLE
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs:132:61 in function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::eq_ignore_ascii_inner::<16>
+
+Check 32: core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::eq_ignore_ascii_inner::<16>.assertion.3
+	 - Status: UNREACHABLE
+	 - Description: "attempt to add with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs:133:17 in function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::eq_ignore_ascii_inner::<16>
+
+Check 33: keymap::strip_prefix_ci.unreachable.1
+	 - Status: SUCCESS
+	 - Description: "unreachable code"
+	 - Location: src/keymap.rs:230:24 in function keymap::strip_prefix_ci
+
+Check 34: std::ptr::align_offset::<u8>.arithmetic_overflow.1
+	 - Status: SUCCESS
+	 - Description: "attempt to compute `unchecked_sub` which would overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2353:32 in function std::ptr::align_offset::<u8>
+
+Check 35: std::ptr::align_offset::<u8>.arithmetic_overflow.2
+	 - Status: SUCCESS
+	 - Description: "attempt to calculate the remainder with a divisor of zero"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2364:33 in function std::ptr::align_offset::<u8>
+
+Check 36: std::ptr::align_offset::<u8>.assume.1
+	 - Status: SUCCESS
+	 - Description: "Rust intrinsic assumption failed"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2387:18 in function std::ptr::align_offset::<u8>
+
+Check 37: std::ptr::align_offset::<u8>.arithmetic_overflow.3
+	 - Status: SUCCESS
+	 - Description: "attempt to calculate the remainder with a divisor of zero"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2390:40 in function std::ptr::align_offset::<u8>
+
+Check 38: std::ptr::align_offset::<u8>.exact_div.1
+	 - Status: SUCCESS
+	 - Description: "exact_div arguments divide exactly"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2395:22 in function std::ptr::align_offset::<u8>
+
+Check 39: std::ptr::align_offset::<u8>.exact_div.2
+	 - Status: SUCCESS
+	 - Description: "exact_div divisor is nonzero"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2395:22 in function std::ptr::align_offset::<u8>
+
+Check 40: std::ptr::align_offset::<u8>.exact_div.3
+	 - Status: SUCCESS
+	 - Description: "exact_div division does not overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2395:22 in function std::ptr::align_offset::<u8>
+
+Check 41: std::ptr::align_offset::<u8>.arithmetic_overflow.4
+	 - Status: SUCCESS
+	 - Description: "attempt to shift by excessive shift distance"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2415:24 in function std::ptr::align_offset::<u8>
+
+Check 42: std::ptr::align_offset::<u8>.arithmetic_overflow.5
+	 - Status: SUCCESS
+	 - Description: "attempt to compute `unchecked_sub` which would overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2417:24 in function std::ptr::align_offset::<u8>
+
+Check 43: std::ptr::align_offset::<u8>.arithmetic_overflow.6
+	 - Status: SUCCESS
+	 - Description: "attempt to shift by excessive shift distance"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2441:27 in function std::ptr::align_offset::<u8>
+
+Check 44: std::ptr::align_offset::<u8>.arithmetic_overflow.7
+	 - Status: SUCCESS
+	 - Description: "attempt to compute `unchecked_sub` which would overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2444:33 in function std::ptr::align_offset::<u8>
+
+Check 45: std::ptr::align_offset::<u8>.arithmetic_overflow.8
+	 - Status: SUCCESS
+	 - Description: "attempt to shift by excessive shift distance"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2447:27 in function std::ptr::align_offset::<u8>
+
+Check 46: std::ptr::align_offset::<u8>.arithmetic_overflow.9
+	 - Status: SUCCESS
+	 - Description: "attempt to shift by excessive shift distance"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2451:50 in function std::ptr::align_offset::<u8>
+
+Check 47: std::ptr::align_offset::<u8>.arithmetic_overflow.10
+	 - Status: SUCCESS
+	 - Description: "attempt to compute `unchecked_sub` which would overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2451:32 in function std::ptr::align_offset::<u8>
+
+Check 48: <usize as kani::rustc_intrinsics::ToISize>::to_isize.unreachable.1
+	 - Status: SUCCESS
+	 - Description: "unreachable code"
+	 - Location: library/kani_core/src/models.rs:203:17 in function <usize as kani::rustc_intrinsics::ToISize>::to_isize
+
+Check 49: <usize as kani::rustc_intrinsics::ToISize>::to_isize.safety_check.1
+	 - Status: SUCCESS
+	 - Description: "Offset value overflows isize"
+	 - Location: library/kani/src/lib.rs:57:1 in function <usize as kani::rustc_intrinsics::ToISize>::to_isize
+
+Check 50: <usize as kani::rustc_intrinsics::ToISize>::to_isize.assertion.1
+	 - Status: SUCCESS
+	 - Description: "internal error: entered unreachable code"
+	 - Location: library/kani/src/lib.rs:57:1 in function <usize as kani::rustc_intrinsics::ToISize>::to_isize
+
+Check 51: core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>.assertion.1
+	 - Status: UNREACHABLE
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs:142:40 in function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>
+
+Check 52: core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>.assertion.2
+	 - Status: UNREACHABLE
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs:142:57 in function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>
+
+Check 53: core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>.assertion.3
+	 - Status: UNREACHABLE
+	 - Description: "attempt to add with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs:145:13 in function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>
+
+Check 54: core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>.unreachable.1
+	 - Status: SUCCESS
+	 - Description: "unreachable code"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/ascii.rs:119:5 in function core::slice::ascii::<impl [u8]>::eq_ignore_ascii_case_chunks::<16>
+
+Check 55: std::ptr::const_ptr::<impl *const ()>::is_aligned_to.assertion.1
+	 - Status: UNREACHABLE
+	 - Description: "attempt to subtract with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/const_ptr.rs:1360:23 in function std::ptr::const_ptr::<impl *const ()>::is_aligned_to
+
+Check 56: std::ptr::const_ptr::<impl *const ()>::is_aligned_to.assertion.2
+	 - Status: SUCCESS
+	 - Description: "This is a placeholder message; Kani doesn't support message formatted at runtime"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/const_ptr.rs:1357:13 in function std::ptr::const_ptr::<impl *const ()>::is_aligned_to
+
+Check 57: core::slice::<impl [u8]>::ends_with.assertion.1
 	 - Status: SUCCESS
 	 - Description: "attempt to subtract with overflow"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:2666:35 in function core::slice::<impl [u8]>::ends_with
+
+Check 58: core::slice::<impl [u8]>::as_chunks_unchecked::<16>.exact_div.1
+	 - Status: SUCCESS
+	 - Description: "exact_div arguments divide exactly"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1346:32 in function core::slice::<impl [u8]>::as_chunks_unchecked::<16>
+
+Check 59: core::slice::<impl [u8]>::as_chunks_unchecked::<16>.exact_div.2
+	 - Status: SUCCESS
+	 - Description: "exact_div divisor is nonzero"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1346:32 in function core::slice::<impl [u8]>::as_chunks_unchecked::<16>
+
+Check 60: core::slice::<impl [u8]>::as_chunks_unchecked::<16>.exact_div.3
+	 - Status: SUCCESS
+	 - Description: "exact_div division does not overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:1346:32 in function core::slice::<impl [u8]>::as_chunks_unchecked::<16>
+
+Check 61: core::slice::index::slice_index_fail::do_panic::runtime.assertion.1
+	 - Status: SUCCESS
+	 - Description: "This is a placeholder message; Kani doesn't support message formatted at runtime"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:41:9 in function core::slice::index::slice_index_fail::do_panic::runtime
+
+Check 62: core::panicking::panic_nounwind_fmt::runtime.unsupported_construct.1
+	 - Status: SUCCESS
+	 - Description: "call to foreign "Rust" function `_RNvCskSgPeDzUGbv_7___rustc17rust_begin_unwind` is not currently supported by Kani. Please post your example at https://github.com/model-checking/kani/issues/new/choose"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/panicking.rs:110:17 in function core::panicking::panic_nounwind_fmt::runtime
+
+Check 63: std::slice::from_raw_parts::<'_, u8>.safety_check.1
+	 - Status: SUCCESS
+	 - Description: "misaligned pointer to reference cast: address must be a multiple of its type's alignment"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/raw.rs:139:9 in function std::slice::from_raw_parts::<'_, u8>
+
+Check 64: std::slice::from_raw_parts::<'_, u8>.safety_check.2
+	 - Status: SUCCESS
+	 - Description: "dereference failure: pointer invalid"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/raw.rs:139:9 in function std::slice::from_raw_parts::<'_, u8>
+
+Check 65: core::num::<impl usize>::checked_sub.arithmetic_overflow.1
+	 - Status: SUCCESS
+	 - Description: "attempt to compute `unchecked_sub` which would overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs:1096:31 in function core::num::<impl usize>::checked_sub
+
+Check 66: memcmp.precondition.1
+	 - Status: SUCCESS
+	 - Description: "memcmp region 1 readable"
+	 - Location: <builtin-library-memcmp>:19 in function memcmp
+
+Check 67: memcmp.precondition.2
+	 - Status: SUCCESS
+	 - Description: "memcpy region 2 readable"
+	 - Location: <builtin-library-memcmp>:21 in function memcmp
+
+Check 68: core::str::utf8_char_width.assertion.1
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:279:5 in function core::str::utf8_char_width
+
+Check 69: std::ptr::const_ptr::<impl *const u8>::align_offset.assertion.1
+	 - Status: SUCCESS
+	 - Description: "This is a placeholder message; Kani doesn't support message formatted at runtime"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/const_ptr.rs:1282:13 in function std::ptr::const_ptr::<impl *const u8>::align_offset
+
+Check 70: std::str::from_utf8.unreachable.1
+	 - Status: SUCCESS
+	 - Description: "unreachable code"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/converts.rs:91:11 in function std::str::from_utf8
+
+Check 71: core::slice::<impl [u8]>::last_chunk::<16>.unreachable.1
+	 - Status: SUCCESS
+	 - Description: "unreachable code"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:509:5 in function core::slice::<impl [u8]>::last_chunk::<16>
+
+Check 72: core::slice::<impl [u8]>::last_chunk::<16>.safety_check.1
+	 - Status: SUCCESS
+	 - Description: "misaligned pointer to reference cast: address must be a multiple of its type's alignment"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:516:23 in function core::slice::<impl [u8]>::last_chunk::<16>
+
+Check 73: core::slice::<impl [u8]>::last_chunk::<16>.safety_check.2
+	 - Status: SUCCESS
+	 - Description: "dereference failure: pointer invalid"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:516:23 in function core::slice::<impl [u8]>::last_chunk::<16>
+
+Check 74: core::str::validations::run_utf8_validation.assertion.1
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:132:28 in function core::str::validations::run_utf8_validation
+
+Check 75: core::str::validations::run_utf8_validation.assertion.2
+	 - Status: UNREACHABLE
+	 - Description: "attempt to subtract with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:133:51 in function core::str::validations::run_utf8_validation
+
+Check 76: core::str::validations::run_utf8_validation.assertion.3
+	 - Status: UNREACHABLE
+	 - Description: "attempt to add with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:133:51 in function core::str::validations::run_utf8_validation
+
+Check 77: core::str::validations::run_utf8_validation.assertion.4
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:164:21 in function core::str::validations::run_utf8_validation
+
+Check 78: core::str::validations::run_utf8_validation.assertion.5
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:155:17 in function core::str::validations::run_utf8_validation
+
+Check 79: core::str::validations::run_utf8_validation.assertion.6
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
+
+Check 80: core::str::validations::run_utf8_validation.assertion.7
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:155:17 in function core::str::validations::run_utf8_validation
+
+Check 81: core::str::validations::run_utf8_validation.assertion.8
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
+
+Check 82: core::str::validations::run_utf8_validation.assertion.9
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:155:17 in function core::str::validations::run_utf8_validation
+
+Check 83: core::str::validations::run_utf8_validation.assertion.10
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
+
+Check 84: core::str::validations::run_utf8_validation.assertion.11
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:155:17 in function core::str::validations::run_utf8_validation
+
+Check 85: core::str::validations::run_utf8_validation.assertion.12
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
+
+Check 86: core::str::validations::run_utf8_validation.assertion.13
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:155:17 in function core::str::validations::run_utf8_validation
+
+Check 87: core::str::validations::run_utf8_validation.assertion.14
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
+
+Check 88: core::str::validations::run_utf8_validation.assertion.15
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:155:17 in function core::str::validations::run_utf8_validation
+
+Check 89: core::str::validations::run_utf8_validation.assertion.16
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
+
+Check 90: core::str::validations::run_utf8_validation.assertion.17
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:217:13 in function core::str::validations::run_utf8_validation
+
+Check 91: core::str::validations::run_utf8_validation.assertion.18
+	 - Status: UNREACHABLE
+	 - Description: "attempt to add with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:238:21 in function core::str::validations::run_utf8_validation
+
+Check 92: core::str::validations::run_utf8_validation.assertion.19
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:241:38 in function core::str::validations::run_utf8_validation
+
+Check 93: core::str::validations::run_utf8_validation.assertion.20
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:242:21 in function core::str::validations::run_utf8_validation
+
+Check 94: core::str::validations::run_utf8_validation.assertion.21
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:245:17 in function core::str::validations::run_utf8_validation
+
+Check 95: core::slice::index::slice_index_fail::do_panic::runtime.assertion.2
+	 - Status: SUCCESS
+	 - Description: "This is a placeholder message; Kani doesn't support message formatted at runtime"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:59:9 in function core::slice::index::slice_index_fail::do_panic::runtime
+
+Check 96: std::ptr::align_offset::mod_inv.arithmetic_overflow.1
+	 - Status: SUCCESS
+	 - Description: "attempt to compute `unchecked_sub` which would overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2316:36 in function std::ptr::align_offset::mod_inv
+
+Check 97: std::ptr::align_offset::mod_inv.assertion.1
+	 - Status: UNREACHABLE
+	 - Description: "attempt to subtract with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2317:49 in function std::ptr::align_offset::mod_inv
+
+Check 98: std::ptr::align_offset::mod_inv.assertion.2
+	 - Status: UNREACHABLE
+	 - Description: "attempt to shift right with overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2317:44 in function std::ptr::align_offset::mod_inv
+
+Check 99: std::ptr::align_offset::mod_inv.assertion.3
+	 - Status: UNREACHABLE
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:2317:27 in function std::ptr::align_offset::mod_inv
+
+Check 100: <std::ops::Range<usize> as std::slice::SliceIndex<[u8]>>::index.unreachable.1
+	 - Status: SUCCESS
+	 - Description: "unreachable code"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:405:5 in function <std::ops::Range<usize> as std::slice::SliceIndex<[u8]>>::index
+
+Check 101: <std::ops::Range<usize> as std::slice::SliceIndex<[u8]>>::index.safety_check.1
+	 - Status: SUCCESS
+	 - Description: "misaligned pointer to reference cast: address must be a multiple of its type's alignment"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:411:22 in function <std::ops::Range<usize> as std::slice::SliceIndex<[u8]>>::index
+
+Check 102: <std::ops::Range<usize> as std::slice::SliceIndex<[u8]>>::index.safety_check.2
+	 - Status: SUCCESS
+	 - Description: "dereference failure: pointer invalid"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:411:22 in function <std::ops::Range<usize> as std::slice::SliceIndex<[u8]>>::index
+
+Check 103: core::slice::<impl [u8]>::split_at_unchecked.arithmetic_overflow.1
+	 - Status: SUCCESS
+	 - Description: "attempt to compute `unchecked_sub` which would overflow"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/mod.rs:2062:74 in function core::slice::<impl [u8]>::split_at_unchecked
+
+Check 104: std::panic::Location::<'_>::caller.unsupported_construct.1
+	 - Status: SUCCESS
+	 - Description: "caller_location is not currently supported by Kani. Please post your example at https://github.com/model-checking/kani/issues/374"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/panic/location.rs:181:9 in function std::panic::Location::<'_>::caller
+
+Check 105: <std::option::Option<(&str, &str)> as std::ops::Try>::branch.unreachable.1
+	 - Status: SUCCESS
+	 - Description: "unreachable code"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs:2869:15 in function <std::option::Option<(&str, &str)> as std::ops::Try>::branch
+
+Check 106: core::slice::index::slice_index_fail::do_panic::runtime.assertion.4
+	 - Status: SUCCESS
+	 - Description: "This is a placeholder message; Kani doesn't support message formatted at runtime"
+	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/slice/index.rs:50:9 in function core::slice::index::slice_index_fail::do_panic::runtime
+
+Check 107: kani::rustc_intrinsics::offset::<usize, *const usize, usize>.safety_check.1
+	 - Status: SUCCESS
+	 - Description: "Offset in bytes overflows isize"
+	 - Location: library/kani/src/lib.rs:57:1 in function kani::rustc_intrinsics::offset::<usize, *const usize, usize>
+
+Check 108: kani::rustc_intrinsics::offset::<usize, *const usize, usize>.safety_check.2
+	 - Status: SUCCESS
+	 - Description: "Offset result address must equal original pointer address plus offset"
+	 - Location: library/kani/src/lib.rs:57:1 in function kani::rustc_intrinsics::offset::<usize, *const usize, usize>
+
+Check 109: kani::rustc_intrinsics::offset::<usize, *const usize, usize>.safety_check.3
+	 - Status: SUCCESS
+	 - Description: "Offset result and original pointer must point to the same allocation"
+	 - Location: library/kani/src/lib.rs:57:1 in function kani::rustc_intrinsics::offset::<usize, *const usize, usize>
 
 Check 110: core::bool::<impl bool>::then_some::<&str>.pointer_dereference.1
 	 - Status: SUCCESS
@@ -1219,32 +1219,32 @@ Check 121: std::ptr::align_offset::<u8>.bit_count.2
 Check 122: keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}.pointer_dereference.1
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer NULL"
-	 - Location: src/keymap.rs:469:44 in function keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}
+	 - Location: src/keymap.rs:480:44 in function keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}
 
 Check 123: keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}.pointer_dereference.2
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer invalid"
-	 - Location: src/keymap.rs:469:44 in function keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}
+	 - Location: src/keymap.rs:480:44 in function keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}
 
 Check 124: keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}.pointer_dereference.3
 	 - Status: SUCCESS
 	 - Description: "dereference failure: deallocated dynamic object"
-	 - Location: src/keymap.rs:469:44 in function keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}
+	 - Location: src/keymap.rs:480:44 in function keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}
 
 Check 125: keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}.pointer_dereference.4
 	 - Status: SUCCESS
 	 - Description: "dereference failure: dead object"
-	 - Location: src/keymap.rs:469:44 in function keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}
+	 - Location: src/keymap.rs:480:44 in function keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}
 
 Check 126: keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}.pointer_dereference.5
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer outside object bounds"
-	 - Location: src/keymap.rs:469:44 in function keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}
+	 - Location: src/keymap.rs:480:44 in function keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}
 
 Check 127: keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}.pointer_dereference.6
 	 - Status: SUCCESS
 	 - Description: "dereference failure: invalid integer address"
-	 - Location: src/keymap.rs:469:44 in function keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}
+	 - Location: src/keymap.rs:480:44 in function keymap::proofs::prefixes_are_cut_at_character_boundaries::{closure#0}
 
 Check 128: core::str::<impl str>::is_char_boundary.pointer_dereference.1
 	 - Status: SUCCESS
@@ -1386,365 +1386,365 @@ Check 155: core::num::<impl usize>::is_multiple_of.division-by-zero.1
 	 - Description: "division by zero"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs:3875:22 in function core::num::<impl usize>::is_multiple_of
 
-Check 156: keymap::strip_prefix_ci.pointer_dereference.1
-	 - Status: SUCCESS
-	 - Description: "dereference failure: dead object"
-	 - Location: src/keymap.rs:219:24 in function keymap::strip_prefix_ci
-
-Check 157: core::ub_checks::is_valid_allocation_size.division-by-zero.1
+Check 156: core::ub_checks::is_valid_allocation_size.division-by-zero.1
 	 - Status: SUCCESS
 	 - Description: "division by zero"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ub_checks.rs:148:54 in function core::ub_checks::is_valid_allocation_size
 
-Check 158: keymap::proofs::prefixes_are_cut_at_character_boundaries.pointer_dereference.1
+Check 157: keymap::strip_prefix_ci.pointer_dereference.1
 	 - Status: SUCCESS
 	 - Description: "dereference failure: dead object"
-	 - Location: src/keymap.rs:471:29 in function keymap::proofs::prefixes_are_cut_at_character_boundaries
+	 - Location: src/keymap.rs:230:24 in function keymap::strip_prefix_ci
 
-Check 159: core::str::utf8_char_width.pointer_dereference.1
+Check 158: core::str::utf8_char_width.pointer_dereference.1
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer NULL"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:279:5 in function core::str::utf8_char_width
 
-Check 160: core::str::utf8_char_width.pointer_dereference.2
+Check 159: core::str::utf8_char_width.pointer_dereference.2
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer invalid"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:279:5 in function core::str::utf8_char_width
 
-Check 161: core::str::utf8_char_width.pointer_dereference.3
+Check 160: core::str::utf8_char_width.pointer_dereference.3
 	 - Status: SUCCESS
 	 - Description: "dereference failure: deallocated dynamic object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:279:5 in function core::str::utf8_char_width
 
-Check 162: core::str::utf8_char_width.pointer_dereference.4
+Check 161: core::str::utf8_char_width.pointer_dereference.4
 	 - Status: SUCCESS
 	 - Description: "dereference failure: dead object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:279:5 in function core::str::utf8_char_width
 
-Check 163: core::str::utf8_char_width.pointer_dereference.5
+Check 162: core::str::utf8_char_width.pointer_dereference.5
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer outside object bounds"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:279:5 in function core::str::utf8_char_width
 
-Check 164: core::str::utf8_char_width.pointer_dereference.6
+Check 163: core::str::utf8_char_width.pointer_dereference.6
 	 - Status: SUCCESS
 	 - Description: "dereference failure: invalid integer address"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:279:5 in function core::str::utf8_char_width
 
-Check 165: core::str::utf8_char_width.array_bounds.1
+Check 164: core::str::utf8_char_width.array_bounds.1
 	 - Status: SUCCESS
 	 - Description: "index out of bounds: the length is less than or equal to the given index"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:279:5 in function core::str::utf8_char_width
 
-Check 166: core::str::validations::run_utf8_validation.pointer_dereference.1
+Check 165: core::str::validations::run_utf8_validation.pointer_dereference.1
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer NULL"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:164:21 in function core::str::validations::run_utf8_validation
 
-Check 167: core::str::validations::run_utf8_validation.pointer_dereference.2
+Check 166: core::str::validations::run_utf8_validation.pointer_dereference.2
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer invalid"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:164:21 in function core::str::validations::run_utf8_validation
 
-Check 168: core::str::validations::run_utf8_validation.pointer_dereference.3
+Check 167: core::str::validations::run_utf8_validation.pointer_dereference.3
 	 - Status: SUCCESS
 	 - Description: "dereference failure: deallocated dynamic object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:164:21 in function core::str::validations::run_utf8_validation
 
-Check 169: core::str::validations::run_utf8_validation.pointer_dereference.4
+Check 168: core::str::validations::run_utf8_validation.pointer_dereference.4
 	 - Status: SUCCESS
 	 - Description: "dereference failure: dead object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:164:21 in function core::str::validations::run_utf8_validation
 
-Check 170: core::str::validations::run_utf8_validation.pointer_dereference.5
+Check 169: core::str::validations::run_utf8_validation.pointer_dereference.5
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer outside object bounds"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:164:21 in function core::str::validations::run_utf8_validation
 
-Check 171: core::str::validations::run_utf8_validation.pointer_dereference.6
+Check 170: core::str::validations::run_utf8_validation.pointer_dereference.6
 	 - Status: SUCCESS
 	 - Description: "dereference failure: invalid integer address"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:164:21 in function core::str::validations::run_utf8_validation
 
-Check 172: core::str::validations::run_utf8_validation.pointer_dereference.7
+Check 171: core::str::validations::run_utf8_validation.pointer_dereference.7
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer NULL"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 173: core::str::validations::run_utf8_validation.pointer_dereference.8
+Check 172: core::str::validations::run_utf8_validation.pointer_dereference.8
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer invalid"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 174: core::str::validations::run_utf8_validation.pointer_dereference.9
+Check 173: core::str::validations::run_utf8_validation.pointer_dereference.9
 	 - Status: SUCCESS
 	 - Description: "dereference failure: deallocated dynamic object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 175: core::str::validations::run_utf8_validation.pointer_dereference.10
+Check 174: core::str::validations::run_utf8_validation.pointer_dereference.10
 	 - Status: SUCCESS
 	 - Description: "dereference failure: dead object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 176: core::str::validations::run_utf8_validation.pointer_dereference.11
+Check 175: core::str::validations::run_utf8_validation.pointer_dereference.11
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer outside object bounds"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 177: core::str::validations::run_utf8_validation.pointer_dereference.12
+Check 176: core::str::validations::run_utf8_validation.pointer_dereference.12
 	 - Status: SUCCESS
 	 - Description: "dereference failure: invalid integer address"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 178: core::str::validations::run_utf8_validation.pointer_dereference.13
+Check 177: core::str::validations::run_utf8_validation.pointer_dereference.13
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer NULL"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 179: core::str::validations::run_utf8_validation.pointer_dereference.14
+Check 178: core::str::validations::run_utf8_validation.pointer_dereference.14
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer invalid"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 180: core::str::validations::run_utf8_validation.pointer_dereference.15
+Check 179: core::str::validations::run_utf8_validation.pointer_dereference.15
 	 - Status: SUCCESS
 	 - Description: "dereference failure: deallocated dynamic object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 181: core::str::validations::run_utf8_validation.pointer_dereference.16
+Check 180: core::str::validations::run_utf8_validation.pointer_dereference.16
 	 - Status: SUCCESS
 	 - Description: "dereference failure: dead object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 182: core::str::validations::run_utf8_validation.pointer_dereference.17
+Check 181: core::str::validations::run_utf8_validation.pointer_dereference.17
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer outside object bounds"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 183: core::str::validations::run_utf8_validation.pointer_dereference.18
+Check 182: core::str::validations::run_utf8_validation.pointer_dereference.18
 	 - Status: SUCCESS
 	 - Description: "dereference failure: invalid integer address"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 184: core::str::validations::run_utf8_validation.pointer_dereference.19
+Check 183: core::str::validations::run_utf8_validation.pointer_dereference.19
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer NULL"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 185: core::str::validations::run_utf8_validation.pointer_dereference.20
+Check 184: core::str::validations::run_utf8_validation.pointer_dereference.20
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer invalid"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 186: core::str::validations::run_utf8_validation.pointer_dereference.21
+Check 185: core::str::validations::run_utf8_validation.pointer_dereference.21
 	 - Status: SUCCESS
 	 - Description: "dereference failure: deallocated dynamic object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 187: core::str::validations::run_utf8_validation.pointer_dereference.22
+Check 186: core::str::validations::run_utf8_validation.pointer_dereference.22
 	 - Status: SUCCESS
 	 - Description: "dereference failure: dead object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 188: core::str::validations::run_utf8_validation.pointer_dereference.23
+Check 187: core::str::validations::run_utf8_validation.pointer_dereference.23
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer outside object bounds"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 189: core::str::validations::run_utf8_validation.pointer_dereference.24
+Check 188: core::str::validations::run_utf8_validation.pointer_dereference.24
 	 - Status: SUCCESS
 	 - Description: "dereference failure: invalid integer address"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 190: core::str::validations::run_utf8_validation.pointer_dereference.25
+Check 189: core::str::validations::run_utf8_validation.pointer_dereference.25
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer NULL"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 191: core::str::validations::run_utf8_validation.pointer_dereference.26
+Check 190: core::str::validations::run_utf8_validation.pointer_dereference.26
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer invalid"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 192: core::str::validations::run_utf8_validation.pointer_dereference.27
+Check 191: core::str::validations::run_utf8_validation.pointer_dereference.27
 	 - Status: SUCCESS
 	 - Description: "dereference failure: deallocated dynamic object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 193: core::str::validations::run_utf8_validation.pointer_dereference.28
+Check 192: core::str::validations::run_utf8_validation.pointer_dereference.28
 	 - Status: SUCCESS
 	 - Description: "dereference failure: dead object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 194: core::str::validations::run_utf8_validation.pointer_dereference.29
+Check 193: core::str::validations::run_utf8_validation.pointer_dereference.29
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer outside object bounds"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 195: core::str::validations::run_utf8_validation.pointer_dereference.30
+Check 194: core::str::validations::run_utf8_validation.pointer_dereference.30
 	 - Status: SUCCESS
 	 - Description: "dereference failure: invalid integer address"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 196: core::str::validations::run_utf8_validation.pointer_dereference.31
+Check 195: core::str::validations::run_utf8_validation.pointer_dereference.31
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer NULL"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 197: core::str::validations::run_utf8_validation.pointer_dereference.32
+Check 196: core::str::validations::run_utf8_validation.pointer_dereference.32
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer invalid"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 198: core::str::validations::run_utf8_validation.pointer_dereference.33
+Check 197: core::str::validations::run_utf8_validation.pointer_dereference.33
 	 - Status: SUCCESS
 	 - Description: "dereference failure: deallocated dynamic object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 199: core::str::validations::run_utf8_validation.pointer_dereference.34
+Check 198: core::str::validations::run_utf8_validation.pointer_dereference.34
 	 - Status: SUCCESS
 	 - Description: "dereference failure: dead object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 200: core::str::validations::run_utf8_validation.pointer_dereference.35
+Check 199: core::str::validations::run_utf8_validation.pointer_dereference.35
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer outside object bounds"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 201: core::str::validations::run_utf8_validation.pointer_dereference.36
+Check 200: core::str::validations::run_utf8_validation.pointer_dereference.36
 	 - Status: SUCCESS
 	 - Description: "dereference failure: invalid integer address"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 202: core::str::validations::run_utf8_validation.pointer_dereference.37
+Check 201: core::str::validations::run_utf8_validation.pointer_dereference.37
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer NULL"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 203: core::str::validations::run_utf8_validation.pointer_dereference.38
+Check 202: core::str::validations::run_utf8_validation.pointer_dereference.38
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer invalid"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 204: core::str::validations::run_utf8_validation.pointer_dereference.39
+Check 203: core::str::validations::run_utf8_validation.pointer_dereference.39
 	 - Status: SUCCESS
 	 - Description: "dereference failure: deallocated dynamic object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 205: core::str::validations::run_utf8_validation.pointer_dereference.40
+Check 204: core::str::validations::run_utf8_validation.pointer_dereference.40
 	 - Status: SUCCESS
 	 - Description: "dereference failure: dead object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 206: core::str::validations::run_utf8_validation.pointer_dereference.41
+Check 205: core::str::validations::run_utf8_validation.pointer_dereference.41
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer outside object bounds"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 207: core::str::validations::run_utf8_validation.pointer_dereference.42
+Check 206: core::str::validations::run_utf8_validation.pointer_dereference.42
 	 - Status: SUCCESS
 	 - Description: "dereference failure: invalid integer address"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:160:17 in function core::str::validations::run_utf8_validation
 
-Check 208: core::str::validations::run_utf8_validation.pointer_dereference.43
+Check 207: core::str::validations::run_utf8_validation.pointer_dereference.43
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer NULL"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:232:52 in function core::str::validations::run_utf8_validation
 
-Check 209: core::str::validations::run_utf8_validation.pointer_dereference.44
+Check 208: core::str::validations::run_utf8_validation.pointer_dereference.44
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer invalid"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:232:52 in function core::str::validations::run_utf8_validation
 
-Check 210: core::str::validations::run_utf8_validation.pointer_dereference.45
+Check 209: core::str::validations::run_utf8_validation.pointer_dereference.45
 	 - Status: SUCCESS
 	 - Description: "dereference failure: deallocated dynamic object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:232:52 in function core::str::validations::run_utf8_validation
 
-Check 211: core::str::validations::run_utf8_validation.pointer_dereference.46
+Check 210: core::str::validations::run_utf8_validation.pointer_dereference.46
 	 - Status: SUCCESS
 	 - Description: "dereference failure: dead object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:232:52 in function core::str::validations::run_utf8_validation
 
-Check 212: core::str::validations::run_utf8_validation.pointer_dereference.47
+Check 211: core::str::validations::run_utf8_validation.pointer_dereference.47
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer outside object bounds"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:232:52 in function core::str::validations::run_utf8_validation
 
-Check 213: core::str::validations::run_utf8_validation.pointer_dereference.48
+Check 212: core::str::validations::run_utf8_validation.pointer_dereference.48
 	 - Status: SUCCESS
 	 - Description: "dereference failure: invalid integer address"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:232:52 in function core::str::validations::run_utf8_validation
 
-Check 214: core::str::validations::run_utf8_validation.pointer_dereference.49
+Check 213: core::str::validations::run_utf8_validation.pointer_dereference.49
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer NULL"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:233:52 in function core::str::validations::run_utf8_validation
 
-Check 215: core::str::validations::run_utf8_validation.pointer_dereference.50
+Check 214: core::str::validations::run_utf8_validation.pointer_dereference.50
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer invalid"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:233:52 in function core::str::validations::run_utf8_validation
 
-Check 216: core::str::validations::run_utf8_validation.pointer_dereference.51
+Check 215: core::str::validations::run_utf8_validation.pointer_dereference.51
 	 - Status: SUCCESS
 	 - Description: "dereference failure: deallocated dynamic object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:233:52 in function core::str::validations::run_utf8_validation
 
-Check 217: core::str::validations::run_utf8_validation.pointer_dereference.52
+Check 216: core::str::validations::run_utf8_validation.pointer_dereference.52
 	 - Status: SUCCESS
 	 - Description: "dereference failure: dead object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:233:52 in function core::str::validations::run_utf8_validation
 
-Check 218: core::str::validations::run_utf8_validation.pointer_dereference.53
+Check 217: core::str::validations::run_utf8_validation.pointer_dereference.53
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer outside object bounds"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:233:52 in function core::str::validations::run_utf8_validation
 
-Check 219: core::str::validations::run_utf8_validation.pointer_dereference.54
+Check 218: core::str::validations::run_utf8_validation.pointer_dereference.54
 	 - Status: SUCCESS
 	 - Description: "dereference failure: invalid integer address"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:233:52 in function core::str::validations::run_utf8_validation
 
-Check 220: core::str::validations::run_utf8_validation.pointer_dereference.55
+Check 219: core::str::validations::run_utf8_validation.pointer_dereference.55
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer NULL"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:241:38 in function core::str::validations::run_utf8_validation
 
-Check 221: core::str::validations::run_utf8_validation.pointer_dereference.56
+Check 220: core::str::validations::run_utf8_validation.pointer_dereference.56
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer invalid"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:241:38 in function core::str::validations::run_utf8_validation
 
-Check 222: core::str::validations::run_utf8_validation.pointer_dereference.57
+Check 221: core::str::validations::run_utf8_validation.pointer_dereference.57
 	 - Status: SUCCESS
 	 - Description: "dereference failure: deallocated dynamic object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:241:38 in function core::str::validations::run_utf8_validation
 
-Check 223: core::str::validations::run_utf8_validation.pointer_dereference.58
+Check 222: core::str::validations::run_utf8_validation.pointer_dereference.58
 	 - Status: SUCCESS
 	 - Description: "dereference failure: dead object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:241:38 in function core::str::validations::run_utf8_validation
 
-Check 224: core::str::validations::run_utf8_validation.pointer_dereference.59
+Check 223: core::str::validations::run_utf8_validation.pointer_dereference.59
 	 - Status: SUCCESS
 	 - Description: "dereference failure: pointer outside object bounds"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:241:38 in function core::str::validations::run_utf8_validation
 
-Check 225: core::str::validations::run_utf8_validation.pointer_dereference.60
+Check 224: core::str::validations::run_utf8_validation.pointer_dereference.60
 	 - Status: SUCCESS
 	 - Description: "dereference failure: invalid integer address"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:241:38 in function core::str::validations::run_utf8_validation
 
-Check 226: core::str::validations::run_utf8_validation.pointer_dereference.61
+Check 225: core::str::validations::run_utf8_validation.pointer_dereference.61
 	 - Status: SUCCESS
 	 - Description: "dereference failure: dead object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/validations.rs:250:5 in function core::str::validations::run_utf8_validation
 
-Check 227: std::str::from_utf8.pointer_dereference.1
+Check 226: std::str::from_utf8.pointer_dereference.1
 	 - Status: SUCCESS
 	 - Description: "dereference failure: dead object"
 	 - Location: ../../../.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/str/converts.rs:91:11 in function std::str::from_utf8
+
+Check 227: keymap::proofs::prefixes_are_cut_at_character_boundaries.pointer_dereference.1
+	 - Status: SUCCESS
+	 - Description: "dereference failure: dead object"
+	 - Location: src/keymap.rs:482:29 in function keymap::proofs::prefixes_are_cut_at_character_boundaries
 
 Check 228: std::ptr::align_offset::mod_inv.array_bounds.1
 	 - Status: SUCCESS
@@ -1911,7 +1911,7 @@ SUMMARY:
  ** 0 of 259 failed (17 unreachable)
 
 VERIFICATION:- SUCCESSFUL
-Verification Time: 29.003191s
+Verification Time: 29.904926s
 
 Manual Harness Summary:
 Complete - 1 successfully verified harnesses, 0 failures, 1 total.

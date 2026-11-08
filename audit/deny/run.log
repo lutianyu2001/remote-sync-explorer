@@ -1,9 +1,9 @@
 $ cargo deny --locked --workspace check
 [0m[1m[38;5;11mwarning[duplicate][0m[1m: found 2 duplicate entries for crate 'syn'[0m
-    [0m[36m┌─[0m ./Cargo.lock:142:1
+    [0m[36m┌─[0m ./Cargo.lock:143:1
     [0m[36m│[0m  
-[0m[36m142[0m [0m[36m│[0m [0m[33m╭[0m [0m[33msyn 2.0.119 registry+https://github.com/rust-lang/crates.io-index[0m
-[0m[36m143[0m [0m[36m│[0m [0m[33m│[0m [0m[33msyn 3.0.9 registry+https://github.com/rust-lang/crates.io-index[0m
+[0m[36m143[0m [0m[36m│[0m [0m[33m╭[0m [0m[33msyn 2.0.119 registry+https://github.com/rust-lang/crates.io-index[0m
+[0m[36m144[0m [0m[36m│[0m [0m[33m│[0m [0m[33msyn 3.0.9 registry+https://github.com/rust-lang/crates.io-index[0m
     [0m[36m│[0m [0m[33m╰[0m[0m[33m───────────────────────────────────────────────────────────────┘ lock entries[0m
     [0m[36m│[0m  
     [0m[36m├[0m syn v2.0.119
@@ -117,10 +117,10 @@ $ cargo deny --locked --workspace check
                       └── iana-time-zone v0.1.65 (*)
 
 [0m[1m[38;5;11mwarning[duplicate][0m[1m: found 2 duplicate entries for crate 'windows-sys'[0m
-    [0m[36m┌─[0m ./Cargo.lock:187:1
+    [0m[36m┌─[0m ./Cargo.lock:190:1
     [0m[36m│[0m  
-[0m[36m187[0m [0m[36m│[0m [0m[33m╭[0m [0m[33mwindows-sys 0.52.0 registry+https://github.com/rust-lang/crates.io-index[0m
-[0m[36m188[0m [0m[36m│[0m [0m[33m│[0m [0m[33mwindows-sys 0.61.2 registry+https://github.com/rust-lang/crates.io-index[0m
+[0m[36m190[0m [0m[36m│[0m [0m[33m╭[0m [0m[33mwindows-sys 0.52.0 registry+https://github.com/rust-lang/crates.io-index[0m
+[0m[36m191[0m [0m[36m│[0m [0m[33m│[0m [0m[33mwindows-sys 0.61.2 registry+https://github.com/rust-lang/crates.io-index[0m
     [0m[36m│[0m [0m[33m╰[0m[0m[33m────────────────────────────────────────────────────────────────────────┘ lock entries[0m
     [0m[36m│[0m  
     [0m[36m├[0m windows-sys v0.52.0
@@ -213,7 +213,24 @@ $ cargo deny --locked --workspace check
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
    [0m[36m┌─[0m ./Cargo.lock:11:1
    [0m[36m│[0m
-[0m[36m11[0m [0m[36m│[0m autocfg 1.5.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m11[0m [0m[36m│[0m arrayvec 0.7.8 registry+https://github.com/rust-lang/crates.io-index
+   [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
+   [0m[36m│[0m
+   [0m[36m┌─[0m ./deny.toml:9:11
+   [0m[36m│[0m
+[0m[36m 9[0m [0m[36m│[0m yanked = "[0m[33mdeny[0m"
+   [0m[36m│[0m           [0m[33m━━━━[0m [0m[33mlint level defined here[0m
+   [0m[36m│[0m
+   [0m[36m├[0m unable to locate index entry for crate
+   [0m[36m├[0m arrayvec v0.7.8
+     └── vte v0.15.0
+         └── vt100 v0.18.1
+             └── rse v0.1.1
+
+[0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
+   [0m[36m┌─[0m ./Cargo.lock:12:1
+   [0m[36m│[0m
+[0m[36m12[0m [0m[36m│[0m autocfg 1.5.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -228,9 +245,9 @@ $ cargo deny --locked --workspace check
              └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:14:1
+   [0m[36m┌─[0m ./Cargo.lock:15:1
    [0m[36m│[0m
-[0m[36m14[0m [0m[36m│[0m bumpalo 3.20.3 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m15[0m [0m[36m│[0m bumpalo 3.20.3 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -250,9 +267,9 @@ $ cargo deny --locked --workspace check
                      └── iana-time-zone v0.1.65 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:16:1
+   [0m[36m┌─[0m ./Cargo.lock:17:1
    [0m[36m│[0m
-[0m[36m16[0m [0m[36m│[0m castaway 0.2.4 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m17[0m [0m[36m│[0m castaway 0.2.4 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -274,9 +291,9 @@ $ cargo deny --locked --workspace check
                  └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:19:1
+   [0m[36m┌─[0m ./Cargo.lock:20:1
    [0m[36m│[0m
-[0m[36m19[0m [0m[36m│[0m chrono 0.4.45 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m20[0m [0m[36m│[0m chrono 0.4.45 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -289,9 +306,9 @@ $ cargo deny --locked --workspace check
      └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:20:1
+   [0m[36m┌─[0m ./Cargo.lock:21:1
    [0m[36m│[0m
-[0m[36m20[0m [0m[36m│[0m cipher 0.4.4 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m21[0m [0m[36m│[0m cipher 0.4.4 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -305,9 +322,9 @@ $ cargo deny --locked --workspace check
          └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:23:1
+   [0m[36m┌─[0m ./Cargo.lock:24:1
    [0m[36m│[0m
-[0m[36m23[0m [0m[36m│[0m clap_derive 4.6.7 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m24[0m [0m[36m│[0m clap_derive 4.6.7 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -321,9 +338,9 @@ $ cargo deny --locked --workspace check
          └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:26:1
+   [0m[36m┌─[0m ./Cargo.lock:27:1
    [0m[36m│[0m
-[0m[36m26[0m [0m[36m│[0m compact_str 0.9.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m27[0m [0m[36m│[0m compact_str 0.9.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -344,9 +361,9 @@ $ cargo deny --locked --workspace check
              └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:28:1
+   [0m[36m┌─[0m ./Cargo.lock:29:1
    [0m[36m│[0m
-[0m[36m28[0m [0m[36m│[0m convert_case 0.10.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m29[0m [0m[36m│[0m convert_case 0.10.0 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -367,9 +384,9 @@ $ cargo deny --locked --workspace check
                  └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:29:1
+   [0m[36m┌─[0m ./Cargo.lock:30:1
    [0m[36m│[0m
-[0m[36m29[0m [0m[36m│[0m core-foundation-sys 0.8.7 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m30[0m [0m[36m│[0m core-foundation-sys 0.8.7 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -384,9 +401,9 @@ $ cargo deny --locked --workspace check
              └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:34:1
+   [0m[36m┌─[0m ./Cargo.lock:35:1
    [0m[36m│[0m
-[0m[36m34[0m [0m[36m│[0m crossterm 0.29.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m35[0m [0m[36m│[0m crossterm 0.29.0 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -404,9 +421,9 @@ $ cargo deny --locked --workspace check
      └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:35:1
+   [0m[36m┌─[0m ./Cargo.lock:36:1
    [0m[36m│[0m
-[0m[36m35[0m [0m[36m│[0m crossterm_winapi 0.9.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m36[0m [0m[36m│[0m crossterm_winapi 0.9.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -425,9 +442,9 @@ $ cargo deny --locked --workspace check
          └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:37:1
+   [0m[36m┌─[0m ./Cargo.lock:38:1
    [0m[36m│[0m
-[0m[36m37[0m [0m[36m│[0m darling 0.24.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m38[0m [0m[36m│[0m darling 0.24.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -448,9 +465,9 @@ $ cargo deny --locked --workspace check
              └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:38:1
+   [0m[36m┌─[0m ./Cargo.lock:39:1
    [0m[36m│[0m
-[0m[36m38[0m [0m[36m│[0m darling_core 0.24.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m39[0m [0m[36m│[0m darling_core 0.24.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -474,9 +491,9 @@ $ cargo deny --locked --workspace check
          └── darling v0.24.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:39:1
+   [0m[36m┌─[0m ./Cargo.lock:40:1
    [0m[36m│[0m
-[0m[36m39[0m [0m[36m│[0m darling_macro 0.24.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m40[0m [0m[36m│[0m darling_macro 0.24.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -498,9 +515,9 @@ $ cargo deny --locked --workspace check
                  └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:40:1
+   [0m[36m┌─[0m ./Cargo.lock:41:1
    [0m[36m│[0m
-[0m[36m40[0m [0m[36m│[0m derive_more 2.1.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m41[0m [0m[36m│[0m derive_more 2.1.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -519,9 +536,9 @@ $ cargo deny --locked --workspace check
          └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:41:1
+   [0m[36m┌─[0m ./Cargo.lock:42:1
    [0m[36m│[0m
-[0m[36m41[0m [0m[36m│[0m derive_more-impl 2.1.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m42[0m [0m[36m│[0m derive_more-impl 2.1.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -541,9 +558,9 @@ $ cargo deny --locked --workspace check
              └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:43:1
+   [0m[36m┌─[0m ./Cargo.lock:44:1
    [0m[36m│[0m
-[0m[36m43[0m [0m[36m│[0m document-features 0.2.12 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m44[0m [0m[36m│[0m document-features 0.2.12 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -562,9 +579,9 @@ $ cargo deny --locked --workspace check
          └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:51:1
+   [0m[36m┌─[0m ./Cargo.lock:52:1
    [0m[36m│[0m
-[0m[36m51[0m [0m[36m│[0m fluent-bundle 0.16.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m52[0m [0m[36m│[0m fluent-bundle 0.16.0 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -578,9 +595,9 @@ $ cargo deny --locked --workspace check
          └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:52:1
+   [0m[36m┌─[0m ./Cargo.lock:53:1
    [0m[36m│[0m
-[0m[36m52[0m [0m[36m│[0m fluent-langneg 0.13.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m53[0m [0m[36m│[0m fluent-langneg 0.13.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -596,9 +613,9 @@ $ cargo deny --locked --workspace check
      └── fluent-templates v0.15.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:53:1
+   [0m[36m┌─[0m ./Cargo.lock:54:1
    [0m[36m│[0m
-[0m[36m53[0m [0m[36m│[0m fluent-syntax 0.12.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m54[0m [0m[36m│[0m fluent-syntax 0.12.0 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -614,9 +631,9 @@ $ cargo deny --locked --workspace check
      └── fluent-templates v0.15.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:54:1
+   [0m[36m┌─[0m ./Cargo.lock:55:1
    [0m[36m│[0m
-[0m[36m54[0m [0m[36m│[0m fluent-template-macros 0.15.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m55[0m [0m[36m│[0m fluent-template-macros 0.15.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -630,9 +647,9 @@ $ cargo deny --locked --workspace check
          └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:55:1
+   [0m[36m┌─[0m ./Cargo.lock:56:1
    [0m[36m│[0m
-[0m[36m55[0m [0m[36m│[0m fluent-templates 0.15.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m56[0m [0m[36m│[0m fluent-templates 0.15.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -645,9 +662,9 @@ $ cargo deny --locked --workspace check
      └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:57:1
+   [0m[36m┌─[0m ./Cargo.lock:58:1
    [0m[36m│[0m
-[0m[36m57[0m [0m[36m│[0m futures-core 0.3.34 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m58[0m [0m[36m│[0m futures-core 0.3.34 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -664,9 +681,9 @@ $ cargo deny --locked --workspace check
                      └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:58:1
+   [0m[36m┌─[0m ./Cargo.lock:59:1
    [0m[36m│[0m
-[0m[36m58[0m [0m[36m│[0m futures-task 0.3.34 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m59[0m [0m[36m│[0m futures-task 0.3.34 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -683,9 +700,9 @@ $ cargo deny --locked --workspace check
                      └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:59:1
+   [0m[36m┌─[0m ./Cargo.lock:60:1
    [0m[36m│[0m
-[0m[36m59[0m [0m[36m│[0m futures-util 0.3.34 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m60[0m [0m[36m│[0m futures-util 0.3.34 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -701,9 +718,9 @@ $ cargo deny --locked --workspace check
                  └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:67:1
+   [0m[36m┌─[0m ./Cargo.lock:68:1
    [0m[36m│[0m
-[0m[36m67[0m [0m[36m│[0m iana-time-zone 0.1.65 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m68[0m [0m[36m│[0m iana-time-zone 0.1.65 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -717,9 +734,9 @@ $ cargo deny --locked --workspace check
          └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:68:1
+   [0m[36m┌─[0m ./Cargo.lock:69:1
    [0m[36m│[0m
-[0m[36m68[0m [0m[36m│[0m iana-time-zone-haiku 0.1.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m69[0m [0m[36m│[0m iana-time-zone-haiku 0.1.2 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -734,9 +751,9 @@ $ cargo deny --locked --workspace check
              └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:69:1
+   [0m[36m┌─[0m ./Cargo.lock:70:1
    [0m[36m│[0m
-[0m[36m69[0m [0m[36m│[0m ident_case 1.0.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m70[0m [0m[36m│[0m ident_case 1.0.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -761,9 +778,9 @@ $ cargo deny --locked --workspace check
              └── darling v0.24.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:70:1
+   [0m[36m┌─[0m ./Cargo.lock:71:1
    [0m[36m│[0m
-[0m[36m70[0m [0m[36m│[0m indoc 2.0.8 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m71[0m [0m[36m│[0m indoc 2.0.8 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -785,9 +802,9 @@ $ cargo deny --locked --workspace check
      └── ratatui-widgets v0.3.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:71:1
+   [0m[36m┌─[0m ./Cargo.lock:72:1
    [0m[36m│[0m
-[0m[36m71[0m [0m[36m│[0m inout 0.1.4 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m72[0m [0m[36m│[0m inout 0.1.4 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -802,9 +819,9 @@ $ cargo deny --locked --workspace check
              └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:73:1
+   [0m[36m┌─[0m ./Cargo.lock:74:1
    [0m[36m│[0m
-[0m[36m73[0m [0m[36m│[0m instability 0.3.14 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m74[0m [0m[36m│[0m instability 0.3.14 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -824,9 +841,9 @@ $ cargo deny --locked --workspace check
          └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:74:1
+   [0m[36m┌─[0m ./Cargo.lock:75:1
    [0m[36m│[0m
-[0m[36m74[0m [0m[36m│[0m intl-memoizer 0.5.3 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m75[0m [0m[36m│[0m intl-memoizer 0.5.3 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -842,9 +859,9 @@ $ cargo deny --locked --workspace check
      └── fluent-templates v0.15.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:75:1
+   [0m[36m┌─[0m ./Cargo.lock:76:1
    [0m[36m│[0m
-[0m[36m75[0m [0m[36m│[0m intl_pluralrules 7.0.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m76[0m [0m[36m│[0m intl_pluralrules 7.0.2 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -859,9 +876,9 @@ $ cargo deny --locked --workspace check
              └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:77:1
+   [0m[36m┌─[0m ./Cargo.lock:78:1
    [0m[36m│[0m
-[0m[36m77[0m [0m[36m│[0m itertools 0.14.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m78[0m [0m[36m│[0m itertools 0.14.0 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -885,9 +902,9 @@ $ cargo deny --locked --workspace check
          └── ratatui-core v0.1.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:79:1
+   [0m[36m┌─[0m ./Cargo.lock:80:1
    [0m[36m│[0m
-[0m[36m79[0m [0m[36m│[0m js-sys 0.3.106 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m80[0m [0m[36m│[0m js-sys 0.3.106 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -902,9 +919,9 @@ $ cargo deny --locked --workspace check
              └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:80:1
+   [0m[36m┌─[0m ./Cargo.lock:81:1
    [0m[36m│[0m
-[0m[36m80[0m [0m[36m│[0m kasuari 0.4.13 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m81[0m [0m[36m│[0m kasuari 0.4.13 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -925,9 +942,9 @@ $ cargo deny --locked --workspace check
              └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:81:1
+   [0m[36m┌─[0m ./Cargo.lock:82:1
    [0m[36m│[0m
-[0m[36m81[0m [0m[36m│[0m lazyui-ratatui 0.1.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m82[0m [0m[36m│[0m lazyui-ratatui 0.1.0 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -940,9 +957,9 @@ $ cargo deny --locked --workspace check
      └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:83:1
+   [0m[36m┌─[0m ./Cargo.lock:84:1
    [0m[36m│[0m
-[0m[36m83[0m [0m[36m│[0m line-clipping 0.3.8 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m84[0m [0m[36m│[0m line-clipping 0.3.8 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -959,9 +976,9 @@ $ cargo deny --locked --workspace check
              └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:85:1
+   [0m[36m┌─[0m ./Cargo.lock:86:1
    [0m[36m│[0m
-[0m[36m85[0m [0m[36m│[0m litrs 1.0.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m86[0m [0m[36m│[0m litrs 1.0.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -981,9 +998,9 @@ $ cargo deny --locked --workspace check
              └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:88:1
+   [0m[36m┌─[0m ./Cargo.lock:89:1
    [0m[36m│[0m
-[0m[36m88[0m [0m[36m│[0m lru 0.18.5 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m89[0m [0m[36m│[0m lru 0.18.5 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -1004,9 +1021,9 @@ $ cargo deny --locked --workspace check
              └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:91:1
+   [0m[36m┌─[0m ./Cargo.lock:92:1
    [0m[36m│[0m
-[0m[36m91[0m [0m[36m│[0m mio 1.2.4 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m92[0m [0m[36m│[0m mio 1.2.4 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -1027,9 +1044,9 @@ $ cargo deny --locked --workspace check
          └── crossterm v0.29.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:92:1
+   [0m[36m┌─[0m ./Cargo.lock:93:1
    [0m[36m│[0m
-[0m[36m92[0m [0m[36m│[0m num-traits 0.2.19 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m93[0m [0m[36m│[0m num-traits 0.2.19 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -1043,9 +1060,9 @@ $ cargo deny --locked --workspace check
          └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:98:1
+   [0m[36m┌─[0m ./Cargo.lock:99:1
    [0m[36m│[0m
-[0m[36m98[0m [0m[36m│[0m pin-project-lite 0.2.17 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m99[0m [0m[36m│[0m pin-project-lite 0.2.17 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m ./deny.toml:9:11
@@ -1062,41 +1079,41 @@ $ cargo deny --locked --workspace check
                      └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./Cargo.lock:99:1
-   [0m[36m│[0m
-[0m[36m99[0m [0m[36m│[0m proc-macro-hack 0.5.20+deprecated registry+https://github.com/rust-lang/crates.io-index
-   [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
-   [0m[36m│[0m
-   [0m[36m┌─[0m ./deny.toml:9:11
-   [0m[36m│[0m
-[0m[36m 9[0m [0m[36m│[0m yanked = "[0m[33mdeny[0m"
-   [0m[36m│[0m           [0m[33m━━━━[0m [0m[33mlint level defined here[0m
-   [0m[36m│[0m
-   [0m[36m├[0m unable to locate index entry for crate
-   [0m[36m├[0m proc-macro-hack v0.5.20+deprecated
-     ├── unic-langid-macros v0.9.6
-     │   └── unic-langid v0.9.6
-     │       ├── fluent-bundle v0.16.0
-     │       │   └── fluent-templates v0.15.1
-     │       │       └── rse v0.1.1
-     │       ├── fluent-langneg v0.13.1
-     │       │   ├── fluent-bundle v0.16.0 (*)
-     │       │   └── fluent-templates v0.15.1 (*)
-     │       ├── fluent-template-macros v0.15.1
-     │       │   └── fluent-templates v0.15.1 (*)
-     │       ├── fluent-templates v0.15.1 (*)
-     │       ├── intl-memoizer v0.5.3
-     │       │   ├── fluent-bundle v0.16.0 (*)
-     │       │   └── fluent-templates v0.15.1 (*)
-     │       └── intl_pluralrules v7.0.2
-     │           └── fluent-bundle v0.16.0 (*)
-     └── unic-langid-macros-impl v0.9.6
-         └── unic-langid-macros v0.9.6 (*)
+    [0m[36m┌─[0m ./Cargo.lock:100:1
+    [0m[36m│[0m
+[0m[36m100[0m [0m[36m│[0m proc-macro-hack 0.5.20+deprecated registry+https://github.com/rust-lang/crates.io-index
+    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
+    [0m[36m│[0m
+    [0m[36m┌─[0m ./deny.toml:9:11
+    [0m[36m│[0m
+[0m[36m  9[0m [0m[36m│[0m yanked = "[0m[33mdeny[0m"
+    [0m[36m│[0m           [0m[33m━━━━[0m [0m[33mlint level defined here[0m
+    [0m[36m│[0m
+    [0m[36m├[0m unable to locate index entry for crate
+    [0m[36m├[0m proc-macro-hack v0.5.20+deprecated
+      ├── unic-langid-macros v0.9.6
+      │   └── unic-langid v0.9.6
+      │       ├── fluent-bundle v0.16.0
+      │       │   └── fluent-templates v0.15.1
+      │       │       └── rse v0.1.1
+      │       ├── fluent-langneg v0.13.1
+      │       │   ├── fluent-bundle v0.16.0 (*)
+      │       │   └── fluent-templates v0.15.1 (*)
+      │       ├── fluent-template-macros v0.15.1
+      │       │   └── fluent-templates v0.15.1 (*)
+      │       ├── fluent-templates v0.15.1 (*)
+      │       ├── intl-memoizer v0.5.3
+      │       │   ├── fluent-bundle v0.16.0 (*)
+      │       │   └── fluent-templates v0.15.1 (*)
+      │       └── intl_pluralrules v7.0.2
+      │           └── fluent-bundle v0.16.0 (*)
+      └── unic-langid-macros-impl v0.9.6
+          └── unic-langid-macros v0.9.6 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:103:1
+    [0m[36m┌─[0m ./Cargo.lock:104:1
     [0m[36m│[0m
-[0m[36m103[0m [0m[36m│[0m ratatui 0.30.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m104[0m [0m[36m│[0m ratatui 0.30.2 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1111,9 +1128,9 @@ $ cargo deny --locked --workspace check
       └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:104:1
+    [0m[36m┌─[0m ./Cargo.lock:105:1
     [0m[36m│[0m
-[0m[36m104[0m [0m[36m│[0m ratatui-core 0.1.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m105[0m [0m[36m│[0m ratatui-core 0.1.2 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1133,9 +1150,9 @@ $ cargo deny --locked --workspace check
           └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:105:1
+    [0m[36m┌─[0m ./Cargo.lock:106:1
     [0m[36m│[0m
-[0m[36m105[0m [0m[36m│[0m ratatui-crossterm 0.1.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m106[0m [0m[36m│[0m ratatui-crossterm 0.1.2 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1151,9 +1168,9 @@ $ cargo deny --locked --workspace check
           └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:106:1
+    [0m[36m┌─[0m ./Cargo.lock:107:1
     [0m[36m│[0m
-[0m[36m106[0m [0m[36m│[0m ratatui-widgets 0.3.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m107[0m [0m[36m│[0m ratatui-widgets 0.3.2 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1169,9 +1186,9 @@ $ cargo deny --locked --workspace check
           └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:109:1
+    [0m[36m┌─[0m ./Cargo.lock:110:1
     [0m[36m│[0m
-[0m[36m109[0m [0m[36m│[0m rpassword 7.5.4 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m110[0m [0m[36m│[0m rpassword 7.5.4 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1184,9 +1201,9 @@ $ cargo deny --locked --workspace check
       └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:111:1
+    [0m[36m┌─[0m ./Cargo.lock:112:1
     [0m[36m│[0m
-[0m[36m111[0m [0m[36m│[0m rtoolbox 0.0.6 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m112[0m [0m[36m│[0m rtoolbox 0.0.6 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1200,9 +1217,9 @@ $ cargo deny --locked --workspace check
           └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:112:1
+    [0m[36m┌─[0m ./Cargo.lock:113:1
     [0m[36m│[0m
-[0m[36m112[0m [0m[36m│[0m rustc-hash 2.1.3 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m113[0m [0m[36m│[0m rustc-hash 2.1.3 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1221,9 +1238,9 @@ $ cargo deny --locked --workspace check
               └── fluent-templates v0.15.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:113:1
+    [0m[36m┌─[0m ./Cargo.lock:114:1
     [0m[36m│[0m
-[0m[36m113[0m [0m[36m│[0m rustc_version 0.4.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m114[0m [0m[36m│[0m rustc_version 0.4.1 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1244,9 +1261,9 @@ $ cargo deny --locked --workspace check
                   └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:118:1
+    [0m[36m┌─[0m ./Cargo.lock:119:1
     [0m[36m│[0m
-[0m[36m118[0m [0m[36m│[0m rustversion 1.0.23 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m119[0m [0m[36m│[0m rustversion 1.0.23 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1282,9 +1299,9 @@ $ cargo deny --locked --workspace check
               └── iana-time-zone v0.1.65 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:119:1
+    [0m[36m┌─[0m ./Cargo.lock:120:1
     [0m[36m│[0m
-[0m[36m119[0m [0m[36m│[0m ryu 1.0.23 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m120[0m [0m[36m│[0m ryu 1.0.23 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1306,9 +1323,9 @@ $ cargo deny --locked --workspace check
                   └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:122:1
+    [0m[36m┌─[0m ./Cargo.lock:123:1
     [0m[36m│[0m
-[0m[36m122[0m [0m[36m│[0m self_cell 1.3.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m123[0m [0m[36m│[0m self_cell 1.3.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1323,9 +1340,9 @@ $ cargo deny --locked --workspace check
               └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:128:1
+    [0m[36m┌─[0m ./Cargo.lock:129:1
     [0m[36m│[0m
-[0m[36m128[0m [0m[36m│[0m serde_spanned 1.1.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m129[0m [0m[36m│[0m serde_spanned 1.1.2 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1340,9 +1357,9 @@ $ cargo deny --locked --workspace check
           └── xtask v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:130:1
+    [0m[36m┌─[0m ./Cargo.lock:131:1
     [0m[36m│[0m
-[0m[36m130[0m [0m[36m│[0m signal-hook 0.3.18 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m131[0m [0m[36m│[0m signal-hook 0.3.18 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1363,9 +1380,9 @@ $ cargo deny --locked --workspace check
           └── crossterm v0.29.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:131:1
+    [0m[36m┌─[0m ./Cargo.lock:132:1
     [0m[36m│[0m
-[0m[36m131[0m [0m[36m│[0m signal-hook-mio 0.2.5 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m132[0m [0m[36m│[0m signal-hook-mio 0.2.5 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1384,9 +1401,9 @@ $ cargo deny --locked --workspace check
           └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:132:1
+    [0m[36m┌─[0m ./Cargo.lock:133:1
     [0m[36m│[0m
-[0m[36m132[0m [0m[36m│[0m signal-hook-registry 1.4.8 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m133[0m [0m[36m│[0m signal-hook-registry 1.4.8 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1408,9 +1425,9 @@ $ cargo deny --locked --workspace check
               └── crossterm v0.29.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:135:1
+    [0m[36m┌─[0m ./Cargo.lock:136:1
     [0m[36m│[0m
-[0m[36m135[0m [0m[36m│[0m slab 0.4.12 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m136[0m [0m[36m│[0m slab 0.4.12 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1427,9 +1444,9 @@ $ cargo deny --locked --workspace check
                       └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:137:1
+    [0m[36m┌─[0m ./Cargo.lock:138:1
     [0m[36m│[0m
-[0m[36m137[0m [0m[36m│[0m static_assertions 1.1.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m138[0m [0m[36m│[0m static_assertions 1.1.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1451,9 +1468,9 @@ $ cargo deny --locked --workspace check
                   └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:144:1
+    [0m[36m┌─[0m ./Cargo.lock:145:1
     [0m[36m│[0m
-[0m[36m144[0m [0m[36m│[0m sys-locale 0.3.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m145[0m [0m[36m│[0m sys-locale 0.3.2 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1466,9 +1483,9 @@ $ cargo deny --locked --workspace check
       └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:149:1
+    [0m[36m┌─[0m ./Cargo.lock:150:1
     [0m[36m│[0m
-[0m[36m149[0m [0m[36m│[0m toml 1.1.8+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m150[0m [0m[36m│[0m toml 1.1.8+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1482,9 +1499,9 @@ $ cargo deny --locked --workspace check
       └── xtask v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:150:1
+    [0m[36m┌─[0m ./Cargo.lock:151:1
     [0m[36m│[0m
-[0m[36m150[0m [0m[36m│[0m toml_datetime 1.1.2+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m151[0m [0m[36m│[0m toml_datetime 1.1.2+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1499,9 +1516,9 @@ $ cargo deny --locked --workspace check
           └── xtask v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:151:1
+    [0m[36m┌─[0m ./Cargo.lock:152:1
     [0m[36m│[0m
-[0m[36m151[0m [0m[36m│[0m toml_parser 1.1.5+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m152[0m [0m[36m│[0m toml_parser 1.1.5+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1516,9 +1533,9 @@ $ cargo deny --locked --workspace check
           └── xtask v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:152:1
+    [0m[36m┌─[0m ./Cargo.lock:153:1
     [0m[36m│[0m
-[0m[36m152[0m [0m[36m│[0m toml_writer 1.1.3+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m153[0m [0m[36m│[0m toml_writer 1.1.3+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1533,9 +1550,9 @@ $ cargo deny --locked --workspace check
           └── xtask v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:153:1
+    [0m[36m┌─[0m ./Cargo.lock:154:1
     [0m[36m│[0m
-[0m[36m153[0m [0m[36m│[0m type-map 0.5.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m154[0m [0m[36m│[0m type-map 0.5.1 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1552,9 +1569,9 @@ $ cargo deny --locked --workspace check
           └── fluent-templates v0.15.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:155:1
+    [0m[36m┌─[0m ./Cargo.lock:156:1
     [0m[36m│[0m
-[0m[36m155[0m [0m[36m│[0m unic-langid 0.9.6 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m156[0m [0m[36m│[0m unic-langid 0.9.6 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1580,9 +1597,9 @@ $ cargo deny --locked --workspace check
           └── fluent-bundle v0.16.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:156:1
+    [0m[36m┌─[0m ./Cargo.lock:157:1
     [0m[36m│[0m
-[0m[36m156[0m [0m[36m│[0m unic-langid-impl 0.9.6 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m157[0m [0m[36m│[0m unic-langid-impl 0.9.6 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1613,9 +1630,9 @@ $ cargo deny --locked --workspace check
           └── unic-langid-macros v0.9.6 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:157:1
+    [0m[36m┌─[0m ./Cargo.lock:158:1
     [0m[36m│[0m
-[0m[36m157[0m [0m[36m│[0m unic-langid-macros 0.9.6 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m158[0m [0m[36m│[0m unic-langid-macros 0.9.6 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1642,9 +1659,9 @@ $ cargo deny --locked --workspace check
               └── fluent-bundle v0.16.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:158:1
+    [0m[36m┌─[0m ./Cargo.lock:159:1
     [0m[36m│[0m
-[0m[36m158[0m [0m[36m│[0m unic-langid-macros-impl 0.9.6 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m159[0m [0m[36m│[0m unic-langid-macros-impl 0.9.6 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1672,9 +1689,9 @@ $ cargo deny --locked --workspace check
                   └── fluent-bundle v0.16.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:159:1
+    [0m[36m┌─[0m ./Cargo.lock:160:1
     [0m[36m│[0m
-[0m[36m159[0m [0m[36m│[0m unicase 2.10.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m160[0m [0m[36m│[0m unicase 2.10.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1689,9 +1706,9 @@ $ cargo deny --locked --workspace check
               └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:161:1
+    [0m[36m┌─[0m ./Cargo.lock:162:1
     [0m[36m│[0m
-[0m[36m161[0m [0m[36m│[0m unicode-segmentation 1.13.3 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m162[0m [0m[36m│[0m unicode-segmentation 1.13.3 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1723,9 +1740,9 @@ $ cargo deny --locked --workspace check
           └── ratatui-core v0.1.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:162:1
+    [0m[36m┌─[0m ./Cargo.lock:163:1
     [0m[36m│[0m
-[0m[36m162[0m [0m[36m│[0m unicode-truncate 2.0.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m163[0m [0m[36m│[0m unicode-truncate 2.0.1 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1746,9 +1763,40 @@ $ cargo deny --locked --workspace check
               └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
+    [0m[36m┌─[0m ./Cargo.lock:171:1
+    [0m[36m│[0m
+[0m[36m171[0m [0m[36m│[0m vt100 0.18.1 registry+https://github.com/rust-lang/crates.io-index
+    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
+    [0m[36m│[0m
+    [0m[36m┌─[0m ./deny.toml:9:11
+    [0m[36m│[0m
+[0m[36m  9[0m [0m[36m│[0m yanked = "[0m[33mdeny[0m"
+    [0m[36m│[0m           [0m[33m━━━━[0m [0m[33mlint level defined here[0m
+    [0m[36m│[0m
+    [0m[36m├[0m unable to locate index entry for crate
+    [0m[36m├[0m vt100 v0.18.1
+      └── rse v0.1.1
+
+[0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
     [0m[36m┌─[0m ./Cargo.lock:172:1
     [0m[36m│[0m
-[0m[36m172[0m [0m[36m│[0m wasm-bindgen 0.2.129 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m172[0m [0m[36m│[0m vte 0.15.0 registry+https://github.com/rust-lang/crates.io-index
+    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
+    [0m[36m│[0m
+    [0m[36m┌─[0m ./deny.toml:9:11
+    [0m[36m│[0m
+[0m[36m  9[0m [0m[36m│[0m yanked = "[0m[33mdeny[0m"
+    [0m[36m│[0m           [0m[33m━━━━[0m [0m[33mlint level defined here[0m
+    [0m[36m│[0m
+    [0m[36m├[0m unable to locate index entry for crate
+    [0m[36m├[0m vte v0.15.0
+      └── vt100 v0.18.1
+          └── rse v0.1.1
+
+[0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
+    [0m[36m┌─[0m ./Cargo.lock:175:1
+    [0m[36m│[0m
+[0m[36m175[0m [0m[36m│[0m wasm-bindgen 0.2.129 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1765,9 +1813,9 @@ $ cargo deny --locked --workspace check
           └── iana-time-zone v0.1.65 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:173:1
+    [0m[36m┌─[0m ./Cargo.lock:176:1
     [0m[36m│[0m
-[0m[36m173[0m [0m[36m│[0m wasm-bindgen-macro 0.2.129 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m176[0m [0m[36m│[0m wasm-bindgen-macro 0.2.129 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1785,9 +1833,9 @@ $ cargo deny --locked --workspace check
               └── iana-time-zone v0.1.65 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:174:1
+    [0m[36m┌─[0m ./Cargo.lock:177:1
     [0m[36m│[0m
-[0m[36m174[0m [0m[36m│[0m wasm-bindgen-macro-support 0.2.129 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m177[0m [0m[36m│[0m wasm-bindgen-macro-support 0.2.129 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1806,9 +1854,9 @@ $ cargo deny --locked --workspace check
                   └── iana-time-zone v0.1.65 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:175:1
+    [0m[36m┌─[0m ./Cargo.lock:178:1
     [0m[36m│[0m
-[0m[36m175[0m [0m[36m│[0m wasm-bindgen-shared 0.2.129 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m178[0m [0m[36m│[0m wasm-bindgen-shared 0.2.129 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1829,9 +1877,9 @@ $ cargo deny --locked --workspace check
               └── wasm-bindgen v0.2.129 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:177:1
+    [0m[36m┌─[0m ./Cargo.lock:180:1
     [0m[36m│[0m
-[0m[36m177[0m [0m[36m│[0m winapi 0.3.9 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m180[0m [0m[36m│[0m winapi 0.3.9 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1852,9 +1900,9 @@ $ cargo deny --locked --workspace check
           └── crossterm v0.29.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:178:1
+    [0m[36m┌─[0m ./Cargo.lock:181:1
     [0m[36m│[0m
-[0m[36m178[0m [0m[36m│[0m winapi-i686-pc-windows-gnu 0.4.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m181[0m [0m[36m│[0m winapi-i686-pc-windows-gnu 0.4.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1876,9 +1924,9 @@ $ cargo deny --locked --workspace check
               └── crossterm v0.29.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:180:1
+    [0m[36m┌─[0m ./Cargo.lock:183:1
     [0m[36m│[0m
-[0m[36m180[0m [0m[36m│[0m winapi-x86_64-pc-windows-gnu 0.4.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m183[0m [0m[36m│[0m winapi-x86_64-pc-windows-gnu 0.4.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1900,9 +1948,9 @@ $ cargo deny --locked --workspace check
               └── crossterm v0.29.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:181:1
+    [0m[36m┌─[0m ./Cargo.lock:184:1
     [0m[36m│[0m
-[0m[36m181[0m [0m[36m│[0m windows-core 0.62.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m184[0m [0m[36m│[0m windows-core 0.62.2 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1917,9 +1965,9 @@ $ cargo deny --locked --workspace check
               └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:182:1
+    [0m[36m┌─[0m ./Cargo.lock:185:1
     [0m[36m│[0m
-[0m[36m182[0m [0m[36m│[0m windows-implement 0.60.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m185[0m [0m[36m│[0m windows-implement 0.60.2 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1935,9 +1983,9 @@ $ cargo deny --locked --workspace check
                   └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:183:1
+    [0m[36m┌─[0m ./Cargo.lock:186:1
     [0m[36m│[0m
-[0m[36m183[0m [0m[36m│[0m windows-interface 0.59.3 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m186[0m [0m[36m│[0m windows-interface 0.59.3 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1953,9 +2001,9 @@ $ cargo deny --locked --workspace check
                   └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:185:1
+    [0m[36m┌─[0m ./Cargo.lock:188:1
     [0m[36m│[0m
-[0m[36m185[0m [0m[36m│[0m windows-result 0.4.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m188[0m [0m[36m│[0m windows-result 0.4.1 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1971,9 +2019,9 @@ $ cargo deny --locked --workspace check
                   └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:186:1
+    [0m[36m┌─[0m ./Cargo.lock:189:1
     [0m[36m│[0m
-[0m[36m186[0m [0m[36m│[0m windows-strings 0.5.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m189[0m [0m[36m│[0m windows-strings 0.5.1 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -1989,9 +2037,9 @@ $ cargo deny --locked --workspace check
                   └── rse v0.1.1
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./Cargo.lock:198:1
+    [0m[36m┌─[0m ./Cargo.lock:201:1
     [0m[36m│[0m
-[0m[36m198[0m [0m[36m│[0m winnow 1.0.4 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m201[0m [0m[36m│[0m winnow 1.0.4 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m ./deny.toml:9:11
@@ -2062,7 +2110,25 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
    [0m[36m┌─[0m ./fuzz/Cargo.lock:11:1
    [0m[36m│[0m
-[0m[36m11[0m [0m[36m│[0m autocfg 1.5.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m11[0m [0m[36m│[0m arrayvec 0.7.8 registry+https://github.com/rust-lang/crates.io-index
+   [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
+   [0m[36m│[0m
+   [0m[36m┌─[0m deny.toml:9:11
+   [0m[36m│[0m
+[0m[36m 9[0m [0m[36m│[0m yanked = "[0m[33mdeny[0m"
+   [0m[36m│[0m           [0m[33m━━━━[0m [0m[33mlint level defined here[0m
+   [0m[36m│[0m
+   [0m[36m├[0m unable to locate index entry for crate
+   [0m[36m├[0m arrayvec v0.7.8
+     └── vte v0.15.0
+         └── vt100 v0.18.1
+             └── rse v0.1.1
+                 └── rse-fuzz v0.0.0
+
+[0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:12:1
+   [0m[36m│[0m
+[0m[36m12[0m [0m[36m│[0m autocfg 1.5.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2078,9 +2144,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                  └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:13:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:14:1
    [0m[36m│[0m
-[0m[36m13[0m [0m[36m│[0m bumpalo 3.20.3 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m14[0m [0m[36m│[0m bumpalo 3.20.3 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2101,9 +2167,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                      └── iana-time-zone v0.1.65 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:14:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:15:1
    [0m[36m│[0m
-[0m[36m14[0m [0m[36m│[0m castaway 0.2.4 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m15[0m [0m[36m│[0m castaway 0.2.4 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2126,9 +2192,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                  └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:17:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:18:1
    [0m[36m│[0m
-[0m[36m17[0m [0m[36m│[0m chrono 0.4.45 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m18[0m [0m[36m│[0m chrono 0.4.45 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2142,9 +2208,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
          └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:18:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:19:1
    [0m[36m│[0m
-[0m[36m18[0m [0m[36m│[0m cipher 0.4.4 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m19[0m [0m[36m│[0m cipher 0.4.4 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2159,9 +2225,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
              └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:21:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:22:1
    [0m[36m│[0m
-[0m[36m21[0m [0m[36m│[0m clap_derive 4.6.7 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m22[0m [0m[36m│[0m clap_derive 4.6.7 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2176,9 +2242,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
              └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:24:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:25:1
    [0m[36m│[0m
-[0m[36m24[0m [0m[36m│[0m compact_str 0.9.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m25[0m [0m[36m│[0m compact_str 0.9.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2200,9 +2266,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
              └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:25:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:26:1
    [0m[36m│[0m
-[0m[36m25[0m [0m[36m│[0m convert_case 0.10.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m26[0m [0m[36m│[0m convert_case 0.10.0 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2224,9 +2290,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                  └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:26:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:27:1
    [0m[36m│[0m
-[0m[36m26[0m [0m[36m│[0m core-foundation-sys 0.8.7 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m27[0m [0m[36m│[0m core-foundation-sys 0.8.7 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2242,9 +2308,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                  └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:30:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:31:1
    [0m[36m│[0m
-[0m[36m30[0m [0m[36m│[0m crossterm 0.29.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m31[0m [0m[36m│[0m crossterm 0.29.0 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2263,9 +2329,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
      └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:31:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:32:1
    [0m[36m│[0m
-[0m[36m31[0m [0m[36m│[0m crossterm_winapi 0.9.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m32[0m [0m[36m│[0m crossterm_winapi 0.9.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2285,9 +2351,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
          └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:33:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:34:1
    [0m[36m│[0m
-[0m[36m33[0m [0m[36m│[0m darling 0.24.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m34[0m [0m[36m│[0m darling 0.24.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2309,9 +2375,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
              └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:34:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:35:1
    [0m[36m│[0m
-[0m[36m34[0m [0m[36m│[0m darling_core 0.24.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m35[0m [0m[36m│[0m darling_core 0.24.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2336,9 +2402,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
          └── darling v0.24.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:35:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:36:1
    [0m[36m│[0m
-[0m[36m35[0m [0m[36m│[0m darling_macro 0.24.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m36[0m [0m[36m│[0m darling_macro 0.24.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2361,9 +2427,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                  └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:36:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:37:1
    [0m[36m│[0m
-[0m[36m36[0m [0m[36m│[0m derive_arbitrary 1.5.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m37[0m [0m[36m│[0m derive_arbitrary 1.5.0 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2378,9 +2444,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
              └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:37:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:38:1
    [0m[36m│[0m
-[0m[36m37[0m [0m[36m│[0m derive_more 2.1.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m38[0m [0m[36m│[0m derive_more 2.1.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2400,9 +2466,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
          └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:38:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:39:1
    [0m[36m│[0m
-[0m[36m38[0m [0m[36m│[0m derive_more-impl 2.1.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m39[0m [0m[36m│[0m derive_more-impl 2.1.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2423,9 +2489,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
              └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:40:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:41:1
    [0m[36m│[0m
-[0m[36m40[0m [0m[36m│[0m document-features 0.2.12 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m41[0m [0m[36m│[0m document-features 0.2.12 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2445,9 +2511,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
          └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:45:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:46:1
    [0m[36m│[0m
-[0m[36m45[0m [0m[36m│[0m fluent-bundle 0.16.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m46[0m [0m[36m│[0m fluent-bundle 0.16.0 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2462,9 +2528,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
              └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:46:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:47:1
    [0m[36m│[0m
-[0m[36m46[0m [0m[36m│[0m fluent-langneg 0.13.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m47[0m [0m[36m│[0m fluent-langneg 0.13.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2481,9 +2547,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
      └── fluent-templates v0.15.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:47:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:48:1
    [0m[36m│[0m
-[0m[36m47[0m [0m[36m│[0m fluent-syntax 0.12.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m48[0m [0m[36m│[0m fluent-syntax 0.12.0 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2500,9 +2566,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
      └── fluent-templates v0.15.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:48:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:49:1
    [0m[36m│[0m
-[0m[36m48[0m [0m[36m│[0m fluent-template-macros 0.15.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m49[0m [0m[36m│[0m fluent-template-macros 0.15.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2517,9 +2583,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
              └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:49:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:50:1
    [0m[36m│[0m
-[0m[36m49[0m [0m[36m│[0m fluent-templates 0.15.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m50[0m [0m[36m│[0m fluent-templates 0.15.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2533,9 +2599,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
          └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:51:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:52:1
    [0m[36m│[0m
-[0m[36m51[0m [0m[36m│[0m futures-core 0.3.34 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m52[0m [0m[36m│[0m futures-core 0.3.34 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2553,9 +2619,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                          └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:52:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:53:1
    [0m[36m│[0m
-[0m[36m52[0m [0m[36m│[0m futures-task 0.3.34 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m53[0m [0m[36m│[0m futures-task 0.3.34 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2573,9 +2639,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                          └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:53:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:54:1
    [0m[36m│[0m
-[0m[36m53[0m [0m[36m│[0m futures-util 0.3.34 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m54[0m [0m[36m│[0m futures-util 0.3.34 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2592,9 +2658,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                      └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:58:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:59:1
    [0m[36m│[0m
-[0m[36m58[0m [0m[36m│[0m iana-time-zone 0.1.65 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m59[0m [0m[36m│[0m iana-time-zone 0.1.65 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2609,9 +2675,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
              └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:59:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:60:1
    [0m[36m│[0m
-[0m[36m59[0m [0m[36m│[0m iana-time-zone-haiku 0.1.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m60[0m [0m[36m│[0m iana-time-zone-haiku 0.1.2 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2627,9 +2693,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                  └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:60:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:61:1
    [0m[36m│[0m
-[0m[36m60[0m [0m[36m│[0m ident_case 1.0.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m61[0m [0m[36m│[0m ident_case 1.0.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2655,9 +2721,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
              └── darling v0.24.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:61:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:62:1
    [0m[36m│[0m
-[0m[36m61[0m [0m[36m│[0m indoc 2.0.8 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m62[0m [0m[36m│[0m indoc 2.0.8 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2680,9 +2746,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
      └── ratatui-widgets v0.3.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:62:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:63:1
    [0m[36m│[0m
-[0m[36m62[0m [0m[36m│[0m inout 0.1.4 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m63[0m [0m[36m│[0m inout 0.1.4 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2698,9 +2764,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                  └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:63:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:64:1
    [0m[36m│[0m
-[0m[36m63[0m [0m[36m│[0m instability 0.3.14 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m64[0m [0m[36m│[0m instability 0.3.14 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2721,9 +2787,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
          └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:64:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:65:1
    [0m[36m│[0m
-[0m[36m64[0m [0m[36m│[0m intl-memoizer 0.5.3 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m65[0m [0m[36m│[0m intl-memoizer 0.5.3 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2740,9 +2806,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
      └── fluent-templates v0.15.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:65:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:66:1
    [0m[36m│[0m
-[0m[36m65[0m [0m[36m│[0m intl_pluralrules 7.0.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m66[0m [0m[36m│[0m intl_pluralrules 7.0.2 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2758,9 +2824,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                  └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:67:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:68:1
    [0m[36m│[0m
-[0m[36m67[0m [0m[36m│[0m itertools 0.14.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m68[0m [0m[36m│[0m itertools 0.14.0 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2785,9 +2851,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
          └── ratatui-core v0.1.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:70:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:71:1
    [0m[36m│[0m
-[0m[36m70[0m [0m[36m│[0m js-sys 0.3.106 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m71[0m [0m[36m│[0m js-sys 0.3.106 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2803,9 +2869,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                  └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:71:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:72:1
    [0m[36m│[0m
-[0m[36m71[0m [0m[36m│[0m kasuari 0.4.13 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m72[0m [0m[36m│[0m kasuari 0.4.13 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2827,9 +2893,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
              └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:72:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:73:1
    [0m[36m│[0m
-[0m[36m72[0m [0m[36m│[0m lazyui-ratatui 0.1.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m73[0m [0m[36m│[0m lazyui-ratatui 0.1.0 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2843,9 +2909,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
          └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:74:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:75:1
    [0m[36m│[0m
-[0m[36m74[0m [0m[36m│[0m libfuzzer-sys 0.4.13 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m75[0m [0m[36m│[0m libfuzzer-sys 0.4.13 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2858,9 +2924,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
      └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:75:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:76:1
    [0m[36m│[0m
-[0m[36m75[0m [0m[36m│[0m line-clipping 0.3.8 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m76[0m [0m[36m│[0m line-clipping 0.3.8 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2878,9 +2944,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
              └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:77:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:78:1
    [0m[36m│[0m
-[0m[36m77[0m [0m[36m│[0m litrs 1.0.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m78[0m [0m[36m│[0m litrs 1.0.1 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2901,9 +2967,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
              └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:80:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:81:1
    [0m[36m│[0m
-[0m[36m80[0m [0m[36m│[0m lru 0.18.5 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m81[0m [0m[36m│[0m lru 0.18.5 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2925,9 +2991,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
              └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:82:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:83:1
    [0m[36m│[0m
-[0m[36m82[0m [0m[36m│[0m mio 1.2.4 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m83[0m [0m[36m│[0m mio 1.2.4 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2949,9 +3015,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
          └── crossterm v0.29.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:83:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:84:1
    [0m[36m│[0m
-[0m[36m83[0m [0m[36m│[0m num-traits 0.2.19 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m84[0m [0m[36m│[0m num-traits 0.2.19 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2966,9 +3032,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
              └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:88:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:89:1
    [0m[36m│[0m
-[0m[36m88[0m [0m[36m│[0m pin-project-lite 0.2.17 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m89[0m [0m[36m│[0m pin-project-lite 0.2.17 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -2986,9 +3052,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                          └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:89:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:90:1
    [0m[36m│[0m
-[0m[36m89[0m [0m[36m│[0m proc-macro-hack 0.5.20+deprecated registry+https://github.com/rust-lang/crates.io-index
+[0m[36m90[0m [0m[36m│[0m proc-macro-hack 0.5.20+deprecated registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -3019,9 +3085,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
          └── unic-langid-macros v0.9.6 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:93:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:94:1
    [0m[36m│[0m
-[0m[36m93[0m [0m[36m│[0m ratatui 0.30.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m94[0m [0m[36m│[0m ratatui 0.30.2 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -3037,9 +3103,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
      └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:94:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:95:1
    [0m[36m│[0m
-[0m[36m94[0m [0m[36m│[0m ratatui-core 0.1.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m95[0m [0m[36m│[0m ratatui-core 0.1.2 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -3060,9 +3126,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
          └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:95:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:96:1
    [0m[36m│[0m
-[0m[36m95[0m [0m[36m│[0m ratatui-crossterm 0.1.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m96[0m [0m[36m│[0m ratatui-crossterm 0.1.2 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -3079,9 +3145,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
          └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:96:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:97:1
    [0m[36m│[0m
-[0m[36m96[0m [0m[36m│[0m ratatui-widgets 0.3.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m97[0m [0m[36m│[0m ratatui-widgets 0.3.2 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -3098,9 +3164,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
          └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-   [0m[36m┌─[0m ./fuzz/Cargo.lock:98:1
+   [0m[36m┌─[0m ./fuzz/Cargo.lock:99:1
    [0m[36m│[0m
-[0m[36m98[0m [0m[36m│[0m rpassword 7.5.4 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m99[0m [0m[36m│[0m rpassword 7.5.4 registry+https://github.com/rust-lang/crates.io-index
    [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
    [0m[36m│[0m
    [0m[36m┌─[0m deny.toml:9:11
@@ -3114,9 +3180,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
          └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:101:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:102:1
     [0m[36m│[0m
-[0m[36m101[0m [0m[36m│[0m rtoolbox 0.0.6 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m102[0m [0m[36m│[0m rtoolbox 0.0.6 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3131,9 +3197,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
               └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:102:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:103:1
     [0m[36m│[0m
-[0m[36m102[0m [0m[36m│[0m rustc-hash 2.1.3 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m103[0m [0m[36m│[0m rustc-hash 2.1.3 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3153,9 +3219,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
               └── fluent-templates v0.15.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:103:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:104:1
     [0m[36m│[0m
-[0m[36m103[0m [0m[36m│[0m rustc_version 0.4.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m104[0m [0m[36m│[0m rustc_version 0.4.1 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3177,9 +3243,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                   └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:105:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:106:1
     [0m[36m│[0m
-[0m[36m105[0m [0m[36m│[0m rustversion 1.0.23 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m106[0m [0m[36m│[0m rustversion 1.0.23 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3216,9 +3282,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
               └── iana-time-zone v0.1.65 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:106:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:107:1
     [0m[36m│[0m
-[0m[36m106[0m [0m[36m│[0m ryu 1.0.23 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m107[0m [0m[36m│[0m ryu 1.0.23 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3241,9 +3307,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                   └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:109:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:110:1
     [0m[36m│[0m
-[0m[36m109[0m [0m[36m│[0m self_cell 1.3.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m110[0m [0m[36m│[0m self_cell 1.3.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3259,9 +3325,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                   └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:115:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:116:1
     [0m[36m│[0m
-[0m[36m115[0m [0m[36m│[0m serde_spanned 1.1.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m116[0m [0m[36m│[0m serde_spanned 1.1.2 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3277,9 +3343,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
           └── rse-fuzz v0.0.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:117:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:118:1
     [0m[36m│[0m
-[0m[36m117[0m [0m[36m│[0m signal-hook 0.3.18 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m118[0m [0m[36m│[0m signal-hook 0.3.18 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3301,9 +3367,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
           └── crossterm v0.29.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:118:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:119:1
     [0m[36m│[0m
-[0m[36m118[0m [0m[36m│[0m signal-hook-mio 0.2.5 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m119[0m [0m[36m│[0m signal-hook-mio 0.2.5 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3323,9 +3389,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
           └── rse v0.1.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:119:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:120:1
     [0m[36m│[0m
-[0m[36m119[0m [0m[36m│[0m signal-hook-registry 1.4.8 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m120[0m [0m[36m│[0m signal-hook-registry 1.4.8 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3348,9 +3414,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
               └── crossterm v0.29.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:120:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:121:1
     [0m[36m│[0m
-[0m[36m120[0m [0m[36m│[0m slab 0.4.12 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m121[0m [0m[36m│[0m slab 0.4.12 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3368,9 +3434,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                           └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:122:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:123:1
     [0m[36m│[0m
-[0m[36m122[0m [0m[36m│[0m static_assertions 1.1.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m123[0m [0m[36m│[0m static_assertions 1.1.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3393,9 +3459,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                   └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:128:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:129:1
     [0m[36m│[0m
-[0m[36m128[0m [0m[36m│[0m sys-locale 0.3.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m129[0m [0m[36m│[0m sys-locale 0.3.2 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3409,9 +3475,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
           └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:132:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:133:1
     [0m[36m│[0m
-[0m[36m132[0m [0m[36m│[0m toml 1.1.8+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m133[0m [0m[36m│[0m toml 1.1.8+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3426,9 +3492,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
       └── rse-fuzz v0.0.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:133:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:134:1
     [0m[36m│[0m
-[0m[36m133[0m [0m[36m│[0m toml_datetime 1.1.2+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m134[0m [0m[36m│[0m toml_datetime 1.1.2+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3444,9 +3510,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
           └── rse-fuzz v0.0.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:134:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:135:1
     [0m[36m│[0m
-[0m[36m134[0m [0m[36m│[0m toml_parser 1.1.5+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m135[0m [0m[36m│[0m toml_parser 1.1.5+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3462,9 +3528,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
           └── rse-fuzz v0.0.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:135:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:136:1
     [0m[36m│[0m
-[0m[36m135[0m [0m[36m│[0m toml_writer 1.1.3+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m136[0m [0m[36m│[0m toml_writer 1.1.3+spec-1.1.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3480,9 +3546,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
           └── rse-fuzz v0.0.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:136:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:137:1
     [0m[36m│[0m
-[0m[36m136[0m [0m[36m│[0m type-map 0.5.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m137[0m [0m[36m│[0m type-map 0.5.1 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3500,9 +3566,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
           └── fluent-templates v0.15.1 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:138:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:139:1
     [0m[36m│[0m
-[0m[36m138[0m [0m[36m│[0m unic-langid 0.9.6 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m139[0m [0m[36m│[0m unic-langid 0.9.6 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3529,9 +3595,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
           └── fluent-bundle v0.16.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:139:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:140:1
     [0m[36m│[0m
-[0m[36m139[0m [0m[36m│[0m unic-langid-impl 0.9.6 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m140[0m [0m[36m│[0m unic-langid-impl 0.9.6 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3563,9 +3629,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
           └── unic-langid-macros v0.9.6 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:140:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:141:1
     [0m[36m│[0m
-[0m[36m140[0m [0m[36m│[0m unic-langid-macros 0.9.6 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m141[0m [0m[36m│[0m unic-langid-macros 0.9.6 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3593,9 +3659,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
               └── fluent-bundle v0.16.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:141:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:142:1
     [0m[36m│[0m
-[0m[36m141[0m [0m[36m│[0m unic-langid-macros-impl 0.9.6 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m142[0m [0m[36m│[0m unic-langid-macros-impl 0.9.6 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3624,9 +3690,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                   └── fluent-bundle v0.16.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:142:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:143:1
     [0m[36m│[0m
-[0m[36m142[0m [0m[36m│[0m unicase 2.10.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m143[0m [0m[36m│[0m unicase 2.10.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3642,9 +3708,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                   └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:144:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:145:1
     [0m[36m│[0m
-[0m[36m144[0m [0m[36m│[0m unicode-segmentation 1.13.3 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m145[0m [0m[36m│[0m unicode-segmentation 1.13.3 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3678,9 +3744,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
           └── ratatui-core v0.1.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:145:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:146:1
     [0m[36m│[0m
-[0m[36m145[0m [0m[36m│[0m unicode-truncate 2.0.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m146[0m [0m[36m│[0m unicode-truncate 2.0.1 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3702,9 +3768,42 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
               └── ratatui v0.30.2 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:150:1
+    [0m[36m│[0m
+[0m[36m150[0m [0m[36m│[0m vt100 0.18.1 registry+https://github.com/rust-lang/crates.io-index
+    [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
+    [0m[36m│[0m
+    [0m[36m┌─[0m deny.toml:9:11
+    [0m[36m│[0m
+[0m[36m  9[0m [0m[36m│[0m yanked = "[0m[33mdeny[0m"
+    [0m[36m│[0m           [0m[33m━━━━[0m [0m[33mlint level defined here[0m
+    [0m[36m│[0m
+    [0m[36m├[0m unable to locate index entry for crate
+    [0m[36m├[0m vt100 v0.18.1
+      └── rse v0.1.1
+          └── rse-fuzz v0.0.0
+
+[0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
     [0m[36m┌─[0m ./fuzz/Cargo.lock:151:1
     [0m[36m│[0m
-[0m[36m151[0m [0m[36m│[0m wasm-bindgen 0.2.129 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m151[0m [0m[36m│[0m vte 0.15.0 registry+https://github.com/rust-lang/crates.io-index
+    [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
+    [0m[36m│[0m
+    [0m[36m┌─[0m deny.toml:9:11
+    [0m[36m│[0m
+[0m[36m  9[0m [0m[36m│[0m yanked = "[0m[33mdeny[0m"
+    [0m[36m│[0m           [0m[33m━━━━[0m [0m[33mlint level defined here[0m
+    [0m[36m│[0m
+    [0m[36m├[0m unable to locate index entry for crate
+    [0m[36m├[0m vte v0.15.0
+      └── vt100 v0.18.1
+          └── rse v0.1.1
+              └── rse-fuzz v0.0.0
+
+[0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:154:1
+    [0m[36m│[0m
+[0m[36m154[0m [0m[36m│[0m wasm-bindgen 0.2.129 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3722,9 +3821,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
           └── iana-time-zone v0.1.65 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:152:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:155:1
     [0m[36m│[0m
-[0m[36m152[0m [0m[36m│[0m wasm-bindgen-macro 0.2.129 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m155[0m [0m[36m│[0m wasm-bindgen-macro 0.2.129 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3743,9 +3842,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
               └── iana-time-zone v0.1.65 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:153:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:156:1
     [0m[36m│[0m
-[0m[36m153[0m [0m[36m│[0m wasm-bindgen-macro-support 0.2.129 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m156[0m [0m[36m│[0m wasm-bindgen-macro-support 0.2.129 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3765,9 +3864,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                   └── iana-time-zone v0.1.65 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:154:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:157:1
     [0m[36m│[0m
-[0m[36m154[0m [0m[36m│[0m wasm-bindgen-shared 0.2.129 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m157[0m [0m[36m│[0m wasm-bindgen-shared 0.2.129 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3789,9 +3888,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
               └── wasm-bindgen v0.2.129 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:155:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:158:1
     [0m[36m│[0m
-[0m[36m155[0m [0m[36m│[0m winapi 0.3.9 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m158[0m [0m[36m│[0m winapi 0.3.9 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3813,9 +3912,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
           └── crossterm v0.29.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:156:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:159:1
     [0m[36m│[0m
-[0m[36m156[0m [0m[36m│[0m winapi-i686-pc-windows-gnu 0.4.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m159[0m [0m[36m│[0m winapi-i686-pc-windows-gnu 0.4.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3838,9 +3937,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
               └── crossterm v0.29.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:158:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:161:1
     [0m[36m│[0m
-[0m[36m158[0m [0m[36m│[0m winapi-x86_64-pc-windows-gnu 0.4.0 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m161[0m [0m[36m│[0m winapi-x86_64-pc-windows-gnu 0.4.0 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m────────────────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3863,9 +3962,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
               └── crossterm v0.29.0 (*)
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:159:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:162:1
     [0m[36m│[0m
-[0m[36m159[0m [0m[36m│[0m windows-core 0.62.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m162[0m [0m[36m│[0m windows-core 0.62.2 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m─────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3881,9 +3980,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                   └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:160:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:163:1
     [0m[36m│[0m
-[0m[36m160[0m [0m[36m│[0m windows-implement 0.60.2 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m163[0m [0m[36m│[0m windows-implement 0.60.2 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3900,9 +3999,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                       └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:161:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:164:1
     [0m[36m│[0m
-[0m[36m161[0m [0m[36m│[0m windows-interface 0.59.3 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m164[0m [0m[36m│[0m windows-interface 0.59.3 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3919,9 +4018,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                       └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:163:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:166:1
     [0m[36m│[0m
-[0m[36m163[0m [0m[36m│[0m windows-result 0.4.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m166[0m [0m[36m│[0m windows-result 0.4.1 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3938,9 +4037,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                       └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:164:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:167:1
     [0m[36m│[0m
-[0m[36m164[0m [0m[36m│[0m windows-strings 0.5.1 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m167[0m [0m[36m│[0m windows-strings 0.5.1 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m───────────────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11
@@ -3957,9 +4056,9 @@ $ cargo deny --locked --manifest-path fuzz/Cargo.toml check advisories sources
                       └── rse-fuzz v0.0.0
 
 [0m[1m[38;5;11mwarning[index-failure][0m[1m: unable to check for yanked crates[0m
-    [0m[36m┌─[0m ./fuzz/Cargo.lock:166:1
+    [0m[36m┌─[0m ./fuzz/Cargo.lock:169:1
     [0m[36m│[0m
-[0m[36m166[0m [0m[36m│[0m winnow 1.0.4 registry+https://github.com/rust-lang/crates.io-index
+[0m[36m169[0m [0m[36m│[0m winnow 1.0.4 registry+https://github.com/rust-lang/crates.io-index
     [0m[36m│[0m [0m[36m──────────────────────────────────────────────────────────────────[0m [0m[36mcrate whose registry we failed to query[0m
     [0m[36m│[0m
     [0m[36m┌─[0m deny.toml:9:11

@@ -1,9 +1,9 @@
-# Rust as tokens, TOML as values, the rest as git blobs, own versions left out (1)
+# Rust as tokens, TOML as values, the rest as git blobs, own versions and unread metadata left out (2)
 ea30e7752b0a869d9d0d8530380575fcd0ae9e6a	.cargo/config.toml
-ef856cdad694ceca72ae8b85de3a6d1ee32fccbd	Cargo.lock
-ce10733873a8a20febe495e53d4078e406ccb9d5	Cargo.toml
+d2e290f09abc96c9c25b2323407c5b3bb5ec9597	Cargo.lock
+55c78a4368b171383a5f7b6bb58dd2ac9b196547	Cargo.toml
 7ecf6283a5e9d7eae3b2390f059e66e56e728d6f	deny.toml
-f9e1cdcf67684b3c0da40c2003ef39a8bc617aa6	fuzz/Cargo.lock
+74bd30dfd9d9b36402ae2c70b515f85c373bed37	fuzz/Cargo.lock
 733eb23993cc32919ed57fd317f650f06c1831ca	fuzz/Cargo.toml
 9ec55b3b621dbc75fc68817cd51b96e407d3c94c	rust-toolchain.toml
 4c2e4f5ee4049364970ae460748291e36140fbbb	xtask/Cargo.toml
