@@ -1922,6 +1922,12 @@ fn term_text(h: &Harness) -> String {
     }
 }
 
+/// Whether a line of the screen ends with `text`: a command's output, which can share its line
+/// with a prompt the shell printed only after the command was typed.
+fn ends_a_line(screen: &str, text: &str) -> bool {
+    screen.lines().any(|line| line.trim_end().ends_with(text))
+}
+
 /// Handles events and ticks until `done` holds of the app (or panics after 10 s).
 fn tick_until(h: &mut Harness, what: &str, done: impl Fn(&App) -> bool) {
     let deadline = Instant::now() + Duration::from_secs(10);
@@ -1973,7 +1979,7 @@ fn the_terminal_opens_in_the_pane_directory_and_follows_it() {
     tick_until(&mut h, "shell shown", |a| running(a).is_some_and(crate::terminal::Session::shown));
     type_in(&mut h, "pwd\r");
     tick_until(&mut h, "in the pane's directory", |a| {
-        running(a).is_some_and(|s| s.screen().contents().contains(&format!("\n{root}\n")))
+        running(a).is_some_and(|s| ends_a_line(&s.screen().contents(), &root))
     });
     assert!(h.screen.contains("Terminal"), "{}", h.screen);
 
@@ -1988,7 +1994,7 @@ fn the_terminal_opens_in_the_pane_directory_and_follows_it() {
     h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
     type_in(&mut h, "pwd\r");
     tick_until(&mut h, "in sub dir", |a| {
-        running(a).is_some_and(|s| s.screen().contents().contains(&format!("\n{sub}\n")))
+        running(a).is_some_and(|s| ends_a_line(&s.screen().contents(), &sub))
     });
 
     // While a command runs, the cd waits for it.
@@ -2023,7 +2029,7 @@ fn the_terminal_opens_on_the_local_disk() {
     tick_until(&mut h, "shell shown", |a| running(a).is_some_and(crate::terminal::Session::shown));
     type_in(&mut h, "pwd\r");
     tick_until(&mut h, "in the pane's directory", |a| {
-        running(a).is_some_and(|s| s.screen().contents().contains(&format!("\n{path}\n")))
+        running(a).is_some_and(|s| ends_a_line(&s.screen().contents(), &path))
     });
     // Ctrl+C reaches the command running in it, not rse.
     type_in(&mut h, "sleep 30\r");
