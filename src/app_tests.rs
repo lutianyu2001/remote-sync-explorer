@@ -1409,6 +1409,25 @@ fn ctrl_click_and_right_click_toggle_marks() {
     h.mouse_at(MouseEventKind::Down(MouseButton::Right), x, y, KeyModifiers::NONE, Instant::now());
     h.settle();
     assert_eq!(h.app.panes[0].marks.iter().map(|m| &m.name).collect::<Vec<_>>(), ["b.txt"]);
+    assert_eq!(cursor_name(&h, 0), "a.pdf");
+}
+
+#[test]
+fn right_click_takes_the_cursor_and_the_focus_to_the_row() {
+    let mut h = standard();
+    h.app.focus = Focus::Queue;
+    let (x, y) = h.find("b.txt");
+    h.mouse_at(MouseEventKind::Down(MouseButton::Right), x, y, KeyModifiers::NONE, Instant::now());
+    h.settle();
+    assert_eq!((h.app.focus, h.app.active), (Focus::Panes, 0));
+    assert_eq!(cursor_name(&h, 0), "b.txt");
+    // In the other pane too, which becomes the active one.
+    let (x, y) = h.find("photos/");
+    h.mouse_at(MouseEventKind::Down(MouseButton::Right), x, y, KeyModifiers::NONE, Instant::now());
+    h.settle();
+    assert_eq!(h.app.active, 1);
+    assert_eq!(cursor_name(&h, 1), "photos");
+    assert_eq!(h.app.panes[1].marks.iter().map(|m| &m.name).collect::<Vec<_>>(), ["photos"]);
 }
 
 #[test]

@@ -1885,10 +1885,13 @@ impl App {
         let at = (m.column, m.row);
         match m.kind {
             MouseEventKind::Down(MouseButton::Left) => self.left_down(at, m.modifiers, now),
+            // As a multi-select click: the cursor goes to the row, which is marked or unmarked.
             MouseEventKind::Down(MouseButton::Right) => {
                 if self.dialog.is_none()
                     && let Target::Item { pane, row } = self.hitmap.hit(m.column, m.row)
                 {
+                    self.focus = Focus::Panes;
+                    self.panes[pane].set_cursor(row);
                     self.toggle_mark(pane, row);
                 }
             }
