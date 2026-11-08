@@ -1,36 +1,9 @@
 
 # cargo-vet imports lock
 
-[[publisher.arbitrary]]
-version = "1.5.0"
-when = "2026-10-06"
-user-id = 696
-user-login = "fitzgen"
-user-name = "Nick Fitzgerald"
-
 [[publisher.bumpalo]]
 version = "3.20.3"
 when = "2026-05-22"
-user-id = 696
-user-login = "fitzgen"
-user-name = "Nick Fitzgerald"
-
-[[publisher.derive_arbitrary]]
-version = "1.5.0"
-when = "2026-10-06"
-user-id = 696
-user-login = "fitzgen"
-user-name = "Nick Fitzgerald"
-
-[[publisher.jobserver]]
-version = "0.1.35"
-when = "2026-07-06"
-user-id = 55123
-user-login = "rust-lang-owner"
-
-[[publisher.libfuzzer-sys]]
-version = "0.4.13"
-when = "2026-06-04"
 user-id = 696
 user-login = "fitzgen"
 user-name = "Nick Fitzgerald"
@@ -557,6 +530,19 @@ who = "Manish Goregaokar <manishearth@google.com>"
 criteria = "safe-to-deploy"
 version = "0.1.5"
 notes = "Android system API FFI"
+aggregated-from = "https://chromium.googlesource.com/chromium/src/+/main/third_party/rust/chromium_crates_io/supply-chain/audits.toml?format=TEXT"
+
+[[audits.google.audits.arrayvec]]
+who = "Lukasz Anforowicz <lukasza@chromium.org>"
+criteria = "safe-to-deploy"
+version = "0.7.6"
+notes = '''
+Grepped for `-i cipher`, `-i crypto`, `'\bfs\b'`, `'\bnet\b'` and there were
+no hits, except for some `net` usage in tests.
+
+The crate has quite a few bits of `unsafe` Rust.  The audit comments can be
+found in https://chromium-review.googlesource.com/c/chromium/src/+/6187726/2
+'''
 aggregated-from = "https://chromium.googlesource.com/chromium/src/+/main/third_party/rust/chromium_crates_io/supply-chain/audits.toml?format=TEXT"
 
 [[audits.google.audits.autocfg]]

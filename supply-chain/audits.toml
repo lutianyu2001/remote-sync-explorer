@@ -46,6 +46,12 @@ who = "Tianyu (Sky) Lu <tianyu@lu.fm>"
 criteria = "safe-to-deploy"
 version = "0.5.1"
 
+[[audits.arrayvec]]
+who = "Tianyu (Sky) Lu <tianyu@lu.fm>"
+criteria = "safe-to-deploy"
+delta = "0.7.6 -> 0.7.8"
+notes = "Reviewed the diff: a double drop fixed for zero-sized types in extend, a safe spare_capacity_mut, 16-bit targets. No build script, no I/O."
+
 [[audits.autocfg]]
 who = "Tianyu (Sky) Lu <tianyu@lu.fm>"
 criteria = "safe-to-deploy"
@@ -775,6 +781,18 @@ version = "0.8.1"
 who = "Tianyu (Sky) Lu <tianyu@lu.fm>"
 criteria = "safe-to-deploy"
 delta = "0.9.4 -> 0.9.5"
+
+[[audits.vt100]]
+who = "Tianyu (Sky) Lu <tianyu@lu.fm>"
+criteria = "safe-to-deploy"
+version = "0.18.1"
+notes = "A terminal emulator over vte. No unsafe, build script, proc macros, file, network or process access."
+
+[[audits.vte]]
+who = "Tianyu (Sky) Lu <tianyu@lu.fm>"
+criteria = "safe-to-deploy"
+version = "0.15.0"
+notes = "A VT escape-sequence parser. No build script, proc macros, file, network or process access. Five unsafe blocks in lib.rs, reviewed: an array of MaybeUninit, OSC parameter slices bounded by MAX_OSC_PARAMS, and UTF-8 that from_utf8 has validated."
 
 [[audits.walkdir]]
 who = "Tianyu (Sky) Lu <tianyu@lu.fm>"
