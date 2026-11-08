@@ -1,42 +1,54 @@
+# The release of prebuilt archives: pushing a version tag runs ci.yml, then builds the archives on
+# each system, and creates the GitHub release with them. This file holds all of the project's
+# releasing; what is marked Per project is this project's own. By hand: the same build commands,
+# then gh release create with the archives.
 name: Release
 
 on:
   push:
-    tags: ["v*"]
+    tags:
+      - "v*"
 
-env:
-  CARGO_TERM_COLOR: always
-
-# Read-only unless a job says otherwise; only crates-io and publish can publish, and they run
-# none of the project's code.
 permissions:
   contents: read
 
-# The release jobs download vendor/ per Cargo.lock and fuzz/Cargo.lock every time and restore
-# no cache, so that nothing they build or publish comes from a cache another run wrote.
+env:
+  CARGO_TERM_COLOR: always
+  # Per project: the crate published to crates.io.
+  CRATE: rse
+  # Per project: true where .cargo/config.toml replaces crates.io with vendor/. cargo publish then
+  # needs --registry crates-io, and the network that net.offline turns off (cargo 1.99.1).
+  VENDOR: true
 
 jobs:
-  # The tests and the offline build of ci.yml: a release goes out only when they pass.
+  # The project's ci.yml, its checks and tests: a release goes out only when they pass. Per project:
+  # without a ci.yml (a fork whose tests run in build), delete this job and build's needs.
   # ./ rather than $/, which actionlint 1.7.12 does not know yet.
   ci: # zizmor: ignore[self-repository]
     uses: ./.github/workflows/ci.yml
 
-  # Builds the release archives, read-only.
-  release:
+  # Builds the archives from the tag, with neither a secret nor a token that can write: building runs
+  # the project's code and its dependencies'.
+  build:
     needs: ci
-    timeout-minutes: 60
     strategy:
       matrix:
+        # Per project: the systems the release ships for, each with the name its archive carries.
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             name: linux-x86_64
-          - os: macos-latest
+          - os: macos-15
             name: macos-arm64
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      # Per project: the steps that build the program from the tag and put it, with its license
+      # texts, into dist/ as one archive per system, named <project>-<tag>-<name>.
+      # vendor/ is downloaded per Cargo.lock and fuzz/Cargo.lock, never restored from a cache.
       - name: Download dependencies per Cargo.lock and fuzz/Cargo.lock
         run: >
           cargo --config net.offline=false vendor --locked --versioned-dirs
@@ -63,33 +75,33 @@ jobs:
           cargo auditable build --release --locked
       - name: Check that rse prints its license texts
         run: scripts/check-embedded-licenses.sh target/release/rse "$RUNNER_TEMP/third-party/licenses.txt"
-      # The package as crates.io will build it. cargo refuses to publish a crates-io that
-      # .cargo/config.toml replaces with vendor/ without --registry crates-io, and needs the network
-      # that net.offline turns off.
+      # The package as crates.io will build it, before dist/ is written into the checkout. cargo
+      # refuses to publish a crates-io that .cargo/config.toml replaces with vendor/ without
+      # --registry crates-io, and needs the network that net.offline turns off.
       - name: Check the crate
         if: matrix.name == 'linux-x86_64'
-        run: cargo --config net.offline=false publish --dry-run --locked --registry crates-io
-      - name: Package
+        run: cargo --config net.offline=false publish --dry-run --locked --registry crates-io -p "$CRATE"
+      - name: Build and pack
+        env:
+          NAME: ${{ matrix.name }}
+          TAG: ${{ github.ref_name }}
         run: |
-          dir="rse-${GITHUB_REF_NAME}-${{ matrix.name }}"
-          mkdir -p "$dir"
+          dir="rse-$TAG-$NAME"
+          mkdir -p "$dir" dist
           cp target/release/rse README.md LICENSE "$dir/"
           cp -R "$RUNNER_TEMP/third-party" "$dir/third-party"
           ./target/release/rse --version > "$dir/VERSIONS"
-          tar czf "$dir.tar.gz" "$dir"
+          tar czf "dist/$dir.tar.gz" "$dir"
+
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-${{ matrix.name }}
-          path: rse-*.tar.gz
+          path: dist/
           if-no-files-found: error
 
-  # Publishes the crate by trusted publishing (the environment crates-io). The release job's dry
-  # run built this package from the same tag and Cargo.lock, so this one only packages and
-  # uploads, and runs no build script with the token at hand. Packaging reads vendor/ even
-  # without verifying; downloading it runs no code.
   crates-io:
-    needs: release
-    runs-on: ubuntu-latest
+    needs: build
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: crates-io
     permissions:
@@ -98,38 +110,52 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Download dependencies per Cargo.lock and fuzz/Cargo.lock
+
+      # Per project: as in the build job. Packaging reads vendor/ even without verifying (cargo
+      # 1.99.1, on rse); downloading runs no code.
+      - name: Download the dependencies into vendor/
+        if: env.VENDOR == 'true'
         run: >
           cargo --config net.offline=false vendor --locked --versioned-dirs
           --sync fuzz/Cargo.toml vendor
+
       - uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
         id: auth
+
+      # The build job's dry run built this package from the same tag and Cargo.lock, so this one
+      # only packages and uploads, and runs no build script with the token at hand.
       - name: Publish the crate
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
-        run: cargo --config net.offline=false publish --locked --no-verify --registry crates-io
+        run: |
+          if [ "$VENDOR" = true ]; then
+            cargo --config net.offline=false publish --locked --no-verify --registry crates-io -p "$CRATE"
+          else
+            cargo publish --locked --no-verify -p "$CRATE"
+          fi
 
-  # Publishes the release from the archives built above, and starts the security audit for
-  # it. A release published with this job's token starts no workflow by itself, so the
-  # audit's release trigger in verify.yml would never fire; a workflow_dispatch does, and
-  # runs the tasks verify.yml runs at a release by default.
-  publish:
-    needs: [release, crates-io]
-    runs-on: ubuntu-latest
+  # Creates the release from the archives build made, and runs none of the project's code.
+  github-release:
+    needs: [build, crates-io]
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: write
+      # Per project: only to start verify.yml below.
       actions: write
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: release-*
-          path: dist
           merge-multiple: true
-      - env:
+          path: dist/
+
+      - name: Create the release
+        env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" \
-            --notes "" dist/rse-*.tar.gz
-          gh workflow run verify.yml --repo "$GITHUB_REPOSITORY" --ref "$TAG"
+          gh release create "$TAG" dist/* -R "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" --generate-notes
+          # Per project: with the security audit's verify.yml, which a release made with this
+          # token would not start on its own.
+          gh workflow run verify.yml -R "$GITHUB_REPOSITORY" --ref "$TAG"
