@@ -493,8 +493,9 @@ move = ["F6", "m"]
 # Any action from the help screen (?) by its name: switch_pane, up, down,
 # page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort,
 # sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename,
-# mkdir, delete, overwrite_mode, queue, terminal, error_log, help, quit,
-# queue_cancel, queue_retry, queue_clear.
+# mkdir, delete, overwrite_mode, queue, terminal, focus_left_address,
+# focus_left, focus_right_address, focus_right, focus_queue, error_log, help,
+# quit, queue_cancel, queue_retry, queue_clear.
 # Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn, Delete.
 ```
 
