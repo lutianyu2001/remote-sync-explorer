@@ -30,6 +30,7 @@ enum BrowseReq {
     Remotes,
     Obscure { req: ReqId, clear: String },
     Engine { a: Location, b: Location },
+    Shell { req: ReqId, loc: Location },
 }
 
 enum JobCmd {
@@ -42,6 +43,7 @@ pub struct Exec {
     jobs: Option<Sender<JobCmd>>,
     wanted: Arc<Mutex<[u64; 2]>>,
     handles: Vec<JoinHandle<()>>,
+    events: Sender<Event>,
 }
 
 impl Exec {
@@ -63,6 +65,7 @@ impl Exec {
         engines: Engines,
     ) -> Self {
         let engines = Arc::new(engines);
+        let events_out = events.clone();
         let (browse_tx, browse_rx) = unbounded();
         let (jobs_tx, jobs_rx) = unbounded();
         let wanted = Arc::new(Mutex::new([0; 2]));
@@ -82,7 +85,7 @@ impl Exec {
         handles.push(thread::spawn(move || {
             job_worker(&*backend, &engines, &jobs_rx, &events, poll);
         }));
-        Self { browse: Some(browse_tx), jobs: Some(jobs_tx), wanted, handles }
+        Self { browse: Some(browse_tx), jobs: Some(jobs_tx), wanted, handles, events: events_out }
     }
 
     /// Records which listing generations the panes still wait for; others are skipped.
@@ -124,6 +127,17 @@ impl Exec {
     /// Finds out which engine copies between `a` and `b`, answered by [`Event::Engine`].
     pub fn engine(&self, a: Location, b: Location) {
         self.send_browse(BrowseReq::Engine { a, b });
+    }
+
+    /// Finds out how a terminal reaches `loc`'s server, answered by [`Event::Shell`]. May
+    /// open the master connection, asking the user to log in.
+    pub fn shell(&self, req: ReqId, loc: Location) {
+        self.send_browse(BrowseReq::Shell { req, loc });
+    }
+
+    /// Where events for the UI thread go, for threads of its own (the terminal's).
+    pub fn events(&self) -> Sender<Event> {
+        self.events.clone()
     }
 
     pub fn stop(&self, id: JobId) {
@@ -192,6 +206,7 @@ fn browse_worker(
                 endpoints: (endpoint_key(&a), endpoint_key(&b)),
                 engine: engines.between(&a, &b),
             },
+            BrowseReq::Shell { req, loc } => Event::Shell { req, result: engines.shell(&loc) },
         };
         if events.send(event).is_err() {
             break;

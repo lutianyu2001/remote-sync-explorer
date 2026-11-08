@@ -1909,3 +1909,142 @@ fn wheel_in_remote_picker_stops_at_the_last_choice() {
     h.press(KeyCode::Enter);
     assert_eq!(h.app.panes[0].loc, Location::new("s3:", ""));
 }
+
+// ----- terminal ------------------------------------------------------------------
+
+/// The terminal's screen as text.
+fn term_text(h: &Harness) -> String {
+    match &h.app.terminal {
+        Some(crate::app::Terminal { state: crate::app::TermState::Running(s), .. }) => {
+            s.screen().contents()
+        }
+        _ => String::new(),
+    }
+}
+
+/// Handles events and ticks until `done` holds of the app (or panics after 10 s).
+fn tick_until(h: &mut Harness, what: &str, done: impl Fn(&App) -> bool) {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !done(&h.app) {
+        assert!(Instant::now() < deadline, "{what}:\n{}", term_text(h));
+        h.app.handle(Event::Tick, Instant::now());
+        h.settle();
+    }
+}
+
+fn running(app: &App) -> Option<&crate::terminal::Session> {
+    match &app.terminal {
+        Some(crate::app::Terminal { state: crate::app::TermState::Running(s), .. }) => Some(s),
+        _ => None,
+    }
+}
+
+fn type_in(h: &mut Harness, text: &str) {
+    for c in text.chars() {
+        let code = if c == '\r' { KeyCode::Enter } else { KeyCode::Char(c) };
+        h.app.handle(Event::Key(KeyEvent::new(code, KeyModifiers::NONE)), Instant::now());
+    }
+    h.settle();
+}
+
+/// A shell where the pane is, which follows the pane once nothing runs in it. sh with a
+/// known setup stands in for ssh to a server.
+#[test]
+fn the_terminal_opens_in_the_pane_directory_and_follows_it() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().to_string_lossy().into_owned();
+    std::fs::create_dir(tmp.path().join("sub dir")).unwrap();
+    let (backend, _) = fake_fs(
+        &[("srv:", vec![dir("sub dir")]), ("srv:sub dir", vec![]), ("/home/sky", vec![])],
+        &[],
+    );
+    let shell = crate::terminal::ShellTarget {
+        open: ["/bin/sh", "-c"].map(str::to_owned).to_vec(),
+        run: ["/bin/sh", "-c"].map(str::to_owned).to_vec(),
+        root: root.clone(),
+        env: [("SHELL", "/bin/sh"), ("HOME", root.as_str()), ("PS1", "$ ")]
+            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+            .to_vec(),
+    };
+    let mut h = Harness::with_shell(backend, Location::new("srv:", ""), home(), shell);
+
+    h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    assert_eq!(h.app.focus, Focus::Terminal);
+    tick_until(&mut h, "shell shown", |a| running(a).is_some_and(crate::terminal::Session::shown));
+    type_in(&mut h, "pwd\r");
+    tick_until(&mut h, "in the pane's directory", |a| {
+        running(a).is_some_and(|s| s.screen().contents().contains(&format!("\n{root}\n")))
+    });
+    assert!(h.screen.contains("Terminal"), "{}", h.screen);
+
+    // Back to the panes, into `sub dir`: the shell follows.
+    h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    assert_eq!(h.app.focus, Focus::Panes);
+    h.press(KeyCode::Enter);
+    let sub = format!("{root}/sub dir");
+    tick_until(&mut h, "cd typed", |a| {
+        running(a).is_some_and(|s| s.screen().contents().contains("cd '"))
+    });
+    h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    type_in(&mut h, "pwd\r");
+    tick_until(&mut h, "in sub dir", |a| {
+        running(a).is_some_and(|s| s.screen().contents().contains(&format!("\n{sub}\n")))
+    });
+
+    // While a command runs, the cd waits for it.
+    type_in(&mut h, "sleep 2\r");
+    h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    h.press(KeyCode::Backspace);
+    for _ in 0..3 {
+        h.app.handle(Event::Tick, Instant::now());
+        h.settle();
+    }
+    assert!(!term_text(&h).contains(&format!("cd '{root}'")), "{}", term_text(&h));
+    tick_until(&mut h, "cd after the command", |a| {
+        running(a).is_some_and(|s| s.screen().contents().contains(&format!("cd '{root}'")))
+    });
+
+    // exit closes it.
+    h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    type_in(&mut h, "exit\r");
+    tick_until(&mut h, "closed", |a| a.terminal.is_none());
+    assert_eq!(h.app.focus, Focus::Panes);
+}
+
+/// On the local disk the terminal is the user's own shell, in the pane's directory.
+#[test]
+fn the_terminal_opens_on_the_local_disk() {
+    let tmp = tempfile::tempdir().unwrap();
+    let path = tmp.path().to_string_lossy().into_owned();
+    let local = Location::new("/", path.trim_start_matches('/'));
+    let (backend, _) = fake_fs(&[(path.as_str(), vec![]), ("nas:backup", vec![])], &[]);
+    let mut h = Harness::new(backend, local, nas());
+    h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    tick_until(&mut h, "shell shown", |a| running(a).is_some_and(crate::terminal::Session::shown));
+    type_in(&mut h, "pwd\r");
+    tick_until(&mut h, "in the pane's directory", |a| {
+        running(a).is_some_and(|s| s.screen().contents().contains(&format!("\n{path}\n")))
+    });
+    // Ctrl+C reaches the command running in it, not rse.
+    type_in(&mut h, "sleep 30\r");
+    h.press_mod(KeyCode::Char('c'), KeyModifiers::CONTROL);
+    assert_eq!(h.app.quit, QuitState::Running);
+    type_in(&mut h, "echo stopped\r");
+    tick_until(&mut h, "sleep interrupted", |a| {
+        running(a).is_some_and(|s| s.screen().contents().contains("\nstopped\n"))
+    });
+    type_in(&mut h, "exit\r");
+    tick_until(&mut h, "closed", |a| a.terminal.is_none());
+}
+
+/// `--no-terminal`: no terminal opens, and the server is not even asked how to reach it.
+#[test]
+fn a_terminal_turned_off_never_opens() {
+    let mut h = standard();
+    h.app.terminal_allowed = false;
+    h.press(KeyCode::Tab);
+    h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    assert!(h.app.terminal.is_none());
+    assert_eq!(h.app.focus, Focus::Panes);
+    assert!(h.screen.contains("turned off"), "{}", h.screen);
+}

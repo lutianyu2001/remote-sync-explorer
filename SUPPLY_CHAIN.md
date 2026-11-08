@@ -98,14 +98,16 @@ expressions, impls, traits and methods, as used by the build / found in the crat
 of this `Cargo.lock` (cargo-geiger 0.14.0, run with `cargo xtask geiger`, which writes the
 full table to `audit/geiger/geiger.txt`):
 
-- 123 crates: 56 use `unsafe`, 53 use none, and 14 also declare `forbid(unsafe_code)`.
-- In all: 196 unsafe functions, 14,119 expressions, 217 impls, 28 traits and 486
+- 126 crates: 58 use `unsafe`, 54 use none, and 14 also declare `forbid(unsafe_code)`.
+- In all: 198 unsafe functions, 14,508 expressions, 220 impls, 28 traits and 494
   methods used by the build.
-- rse itself has 8 `unsafe` blocks (17 expressions to geiger), each in a function that
+- rse itself has 9 `unsafe` blocks (18 expressions to geiger), each in a function that
   allows it by name: the calls into librclone (`src/rclone/ffi.rs`), `setlocale` and its
-  text domain (`src/i18n.rs`), and `pre_exec` to start ssh in a session of its own
-  (`src/rclone/system_ssh.rs`). File descriptors, `getuid` and `setsid` go through
-  rustix's safe functions.
+  text domain (`src/i18n.rs`), `pre_exec` to start ssh in a session of its own
+  (`src/rclone/system_ssh.rs`), and `pre_exec` to start the terminal's shell in a
+  session whose controlling terminal is its pseudo-terminal (`src/terminal.rs`). File
+  descriptors, pseudo-terminals, `getuid` and `setsid` go through rustix's safe
+  functions.
 
 The crates with the most unsafe expressions used by the build:
 

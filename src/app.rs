@@ -19,6 +19,9 @@ use crate::rclone::RpcError;
 use crate::rclone::system_ssh::{SshAnswer, SshQuestion};
 use crate::ui::text::shown;
 
+mod term;
+pub use term::{TermState, Terminal};
+
 const DOUBLE_CLICK: Duration = Duration::from_millis(400);
 const QUIT_GRACE: Duration = Duration::from_secs(5);
 /// How often the unfinished jobs are saved at most while they change.
@@ -458,6 +461,8 @@ pub enum Focus {
     /// The active pane's address bar: Enter edits it.
     Address,
     Queue,
+    /// The terminal under the panes: every key but the one leaving it goes to its shell.
+    Terminal,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -554,6 +559,8 @@ pub struct AppInit {
     pub saved: Vec<Transfer>,
     /// Where the unfinished jobs are saved; `None` saves nothing.
     pub queue_file: Option<PathBuf>,
+    /// Whether the terminal may be opened (`--no-terminal` turns it off).
+    pub terminal: bool,
 }
 
 pub struct App {
@@ -604,6 +611,10 @@ pub struct App {
     /// The engine of copies between two endpoints, by [`pair`].
     engines: HashMap<(String, String), Engine>,
     engines_asked: HashSet<(String, String)>,
+    /// The terminal under the panes, while open.
+    pub terminal: Option<Terminal>,
+    /// Whether the terminal may be opened at all.
+    terminal_allowed: bool,
 }
 
 impl App {
@@ -650,6 +661,8 @@ impl App {
             leave_pending: None,
             engines: HashMap::new(),
             engines_asked: HashSet::new(),
+            terminal: None,
+            terminal_allowed: init.terminal,
         };
         app.navigate(0, init.left);
         app.navigate(1, init.right);
@@ -726,6 +739,10 @@ impl App {
             Event::Engine { endpoints, engine } => {
                 self.engines.insert(pair(endpoints.0, endpoints.1), engine);
             }
+            Event::Shell { req, result } => self.on_shell(req, result, now),
+            Event::TermOutput { id, bytes } => self.on_term_output(id, &bytes, now),
+            Event::TermClosed { id } => self.on_term_closed(id),
+            Event::TermIdle { id, idle } => self.on_term_idle(id, idle, now),
         }
     }
 
@@ -749,6 +766,7 @@ impl App {
             pane.offset = area.offset;
         }
         self.hitmap = hitmap;
+        self.terminal_resize();
     }
 
     fn page(&self, pane: PaneId) -> usize {
@@ -795,6 +813,8 @@ impl App {
         p.cursor = 0;
         p.offset = 0;
         p.detached = false;
+        let loc = p.loc.clone();
+        self.terminal_follow(pane, &loc, Instant::now());
         self.request_listing(pane);
         let effects = self.queue.set_shown(self.shown());
         self.run_effects(effects);
@@ -933,6 +953,14 @@ impl App {
             }
             return;
         }
+        if self.focus == Focus::Terminal {
+            if self.keymap.pane_action(&key) == Some(Action::Terminal) {
+                self.toggle_terminal();
+            } else {
+                self.terminal_key(&key);
+            }
+            return;
+        }
         if ctrl_c {
             self.action(Action::Quit, now);
             return;
@@ -1052,7 +1080,9 @@ impl App {
                 self.exec.remotes();
                 self.dialog = Some(Dialog::Remotes { filter: String::new(), cursor: 0 });
             }
+            Action::Terminal => self.toggle_terminal(),
             Action::Swap => {
+                self.terminal_swapped();
                 self.panes.swap(0, 1);
                 self.exec.set_wanted([self.panes[0].generation, self.panes[1].generation]);
             }
@@ -1832,6 +1862,7 @@ impl App {
     fn on_tick(&mut self, now: Instant) {
         self.spinner = self.spinner.wrapping_add(1);
         self.check_quit(now);
+        self.terminal_tick(now);
         // Keep scrolling while a drag rests on the top or bottom row of a pane.
         if let Drag::Dragging { at, .. } = self.drag {
             self.autoscroll(at);
@@ -1963,6 +1994,7 @@ impl App {
                 self.action(action, now);
             }
             Target::Queue => self.focus = Focus::Queue,
+            Target::Terminal => self.focus = Focus::Terminal,
             Target::Hint(action) => self.action(action, now),
             Target::Button(_) | Target::DialogRow(_) | Target::Dialog | Target::Nothing => {}
         }
@@ -2115,6 +2147,10 @@ impl App {
                 }
                 _ => {}
             }
+            return;
+        }
+        if self.hitmap.terminal.contains(ratatui::layout::Position::new(at.0, at.1)) {
+            self.terminal_wheel(down);
             return;
         }
         if self.hitmap.queue.contains(ratatui::layout::Position::new(at.0, at.1)) {

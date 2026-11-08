@@ -14,6 +14,7 @@ window-address = 地址
 window-local = 本地
 window-remote = 远程
 window-transfers = 传输
+window-terminal = 终端
 tag-local = 本地
 marked = [已选 { $count } 项]
 
@@ -59,6 +60,16 @@ sorted-by = 按{ $key }排序
 column-name = 名称
 column-size = 大小
 column-time = 修改日期
+
+## 终端（窗格下方，窗格所在服务器上的 shell）
+
+terminal-connecting = { $spinner } 正在连接…
+terminal-starting = { $spinner } 正在启动 shell…
+terminal-not-ssh = 只有本地磁盘和通过 ssh 连接的服务器才能打开终端
+terminal-disabled = 终端功能已关闭（-T）
+terminal-failed = 终端：{ $error }
+terminal-cd-control = 终端：目录名里有控制字符，不输入到 shell 里
+terminal-cd-unknown = 终端：无法判断 shell 里是否有命令在运行，留在原目录
 
 ## 操作
 
@@ -229,6 +240,7 @@ cli-rc-user = --rcd 的用户名
 cli-user-value = 用户名
 cli-rc-pass = --rcd 的密码（更好的做法：用环境变量 RCLONE_RC_PASS）
 cli-pass-value = 密码
+cli-no-terminal = 关闭终端功能：本地和服务器上都无法打开 shell
 cli-version = 显示 remote-sync-explorer 和 rclone 的版本
 cli-licenses = 显示 remote-sync-explorer 及其中第三方代码的许可协议
 cli-help = 显示帮助
@@ -335,6 +347,7 @@ key-mkdir = 新建目录
 key-delete = 删除
 key-overwrite_mode = 开关覆写模式：不询问，直接覆盖已有文件
 key-queue = 进入或离开传输队列
+key-terminal = 在窗格所在目录打开终端（本地或通过 ssh 连接的服务器）；在终端里则回到窗格
 key-focus_left_address = 聚焦左侧地址栏
 key-focus_left = 聚焦左侧窗格
 key-focus_right_address = 聚焦右侧地址栏

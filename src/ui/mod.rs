@@ -4,6 +4,7 @@
 mod dialogs;
 pub(crate) mod panes;
 mod queue;
+mod term;
 pub mod text;
 
 use lazyui_ratatui::Window;
@@ -61,13 +62,23 @@ pub fn draw_buffer(buf: &mut Buffer, area: Rect, app: &App) -> (HitMap, Option<(
         queue_h = 0;
     }
     let queue_y = hints_y - queue_h;
-    let panes_h = queue_y - area.y;
+    let mut panes_h = queue_y - area.y;
+    // The terminal takes the bottom of the panes' room.
+    let term_h = if app.terminal.is_some() { term::height(panes_h) } else { 0 };
+    panes_h -= term_h;
 
     let left_w = area.width / 2;
     let left = Rect::new(area.x, area.y, left_w, panes_h);
     let right = Rect::new(area.x + left_w, area.y, area.width - left_w, panes_h);
     map.panes[0] = panes::draw(buf, left, app, 0);
     map.panes[1] = panes::draw(buf, right, app, 1);
+    let mut cursor = None;
+    if term_h > 0 {
+        map.terminal = Rect::new(area.x, area.y + panes_h, area.width, term_h);
+        let (screen, at) = term::draw(buf, map.terminal, app);
+        map.terminal_screen = screen;
+        cursor = at;
+    }
 
     map.queue = Rect::new(area.x, queue_y, area.width, queue_h);
     if queue_h > 0 {
@@ -75,7 +86,7 @@ pub fn draw_buffer(buf: &mut Buffer, area: Rect, app: &App) -> (HitMap, Option<(
     }
     map.hints = draw_hints(buf, Rect::new(area.x, hints_y, area.width, 1), app);
 
-    let mut cursor = None;
+    // A dialog puts the cursor where it is typed in, or hides it.
     if let Some(dialog) = &app.dialog {
         if *dialog == Dialog::Filter {
             cursor = draw_filter(buf, &map, app);

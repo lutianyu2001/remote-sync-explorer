@@ -19,6 +19,7 @@ pub mod location;
 pub mod rclone;
 pub mod rsync;
 pub mod state;
+pub mod terminal;
 #[cfg(test)]
 mod testutil;
 pub mod ui;

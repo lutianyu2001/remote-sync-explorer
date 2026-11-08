@@ -521,3 +521,90 @@ fn ssh_says_why_it_asks_again() {
     }
     assert!(!passwords.exists(), "nothing remembered");
 }
+
+/// The terminal: the user's own login shell on the server, through the master connection
+/// (no second login), on a clean screen in the pane's directory, following it.
+#[test]
+fn a_terminal_runs_the_login_shell_through_the_master() {
+    use rse::terminal::{Session, ShellDir};
+    let _turn = RCLONE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    if !have("ssh") || !have("ssh-keygen") || !have("ps") {
+        eprintln!("skipped: ssh, ssh-keygen or ps not installed");
+        return;
+    }
+    let work = socket_work_dir();
+    let served = work.path().join("served");
+    fs::create_dir_all(served.join("it's here")).unwrap();
+    let key = keygen(work.path());
+    let Some((_sshd, port)) = start_sshd(work.path(), &key) else {
+        eprintln!("skipped: no sshd or sftp-server");
+        return;
+    };
+    let user = std::env::var("USER").unwrap_or_else(|_| "root".to_owned());
+    let known = work.path().join("known_hosts");
+    let conf = work.path().join("rclone.conf");
+    fs::write(
+        &conf,
+        format!(
+            "[box]\ntype = sftp\nhost = 127.0.0.1\nport = {port}\nuser = {user}\n\
+             key_file = {}\nknown_hosts_file = {}\n",
+            key.display(),
+            known.display()
+        ),
+    )
+    .unwrap();
+    let embedded: Arc<dyn Backend> = Arc::new(Embedded::new());
+    api::set_config_path(embedded.as_ref(), conf.to_str().unwrap()).unwrap();
+    let ssh = Arc::new(SystemSsh::new(embedded, &work.path().join("sockets"), Some(askpass())));
+    let _close = CloseMasters(ssh.clone());
+    ssh.set_prompter(Box::new(|_| Some(SshAnswer { text: "yes".to_owned(), remember: false })));
+
+    let root = served.to_str().unwrap().to_owned();
+    let target = ssh.shell(&format!("box:{root}")).unwrap().expect("reached through ssh");
+    assert_eq!(ssh.shell("/").unwrap(), None);
+    let (tx, rx) = unbounded();
+    let mut s =
+        Session::open(1, target, ShellDir::Absolute(root.clone()), (10, 60), tx, Instant::now())
+            .unwrap();
+    let pump = |s: &mut Session, what: &str, done: &dyn Fn(&Session) -> bool| {
+        let deadline = Instant::now() + Duration::from_secs(15);
+        while !done(s) {
+            assert!(Instant::now() < deadline, "{what}:\n{}", s.screen().contents());
+            match rx.recv_timeout(Duration::from_millis(100)) {
+                Ok(Event::TermOutput { bytes, .. }) => s.output(&bytes, Instant::now()),
+                Ok(Event::TermIdle { idle, .. }) => {
+                    assert_eq!(s.idle(idle, Instant::now()), None);
+                }
+                Ok(Event::TermClosed { .. }) => panic!("closed: {:?}", s.closed()),
+                _ => s.tick(Instant::now()),
+            }
+        }
+    };
+    pump(&mut s, "shell shown", &|s| s.shown());
+    // Settle: the prompt may come in pieces.
+    let until = Instant::now() + Duration::from_millis(500);
+    pump(&mut s, "", &|_| Instant::now() > until);
+    let lines: Vec<String> =
+        s.screen().contents().lines().filter(|l| !l.trim().is_empty()).map(str::to_owned).collect();
+    assert!(lines.len() <= 1, "only the prompt on a clean screen: {lines:?}");
+
+    s.input(b"pwd\r");
+    pump(&mut s, "starts in the directory", &|s| {
+        s.screen().contents().contains(&format!("\n{root}\n"))
+    });
+    let sub = served.join("it's here").to_str().unwrap().to_owned();
+    s.want(ShellDir::Absolute(sub.clone()), Instant::now());
+    pump(&mut s, "cd typed", &|s| s.dir() == &ShellDir::Absolute(sub.clone()));
+    s.input(b"pwd\r");
+    pump(&mut s, "follows the pane", &|s| s.screen().contents().contains(&format!("\n{sub}\n")));
+    assert_eq!(logins(work.path()), 1, "through the master connection");
+    s.input(b"exit\r");
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        assert!(Instant::now() < deadline, "not closed");
+        if let Ok(Event::TermClosed { .. }) = rx.recv_timeout(Duration::from_millis(100)) {
+            assert_eq!(s.closed(), None);
+            break;
+        }
+    }
+}

@@ -117,6 +117,26 @@ pub enum Event {
         endpoints: (String, String),
         engine: crate::jobs::Engine,
     },
+    /// How a terminal reaches the server a pane shows; `None` when no ssh does.
+    Shell {
+        req: ReqId,
+        result: Result<Option<crate::terminal::ShellTarget>, RpcError>,
+    },
+    /// Output of the terminal's shell.
+    TermOutput {
+        id: crate::terminal::TermId,
+        bytes: Vec<u8>,
+    },
+    /// The terminal's shell has ended.
+    TermClosed {
+        id: crate::terminal::TermId,
+    },
+    /// Whether the terminal's shell was in the foreground (nothing running in it), when
+    /// that could be told.
+    TermIdle {
+        id: crate::terminal::TermId,
+        idle: Option<bool>,
+    },
 }
 
 /// Short operations run on the browse workers.

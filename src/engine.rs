@@ -9,8 +9,10 @@ use std::sync::Arc;
 use crate::config::EngineChoice;
 use crate::jobs::{Engine, OpKind, Transfer};
 use crate::location::Location;
+use crate::rclone::RpcError;
 use crate::rclone::system_ssh::SystemSsh;
 use crate::rsync::{self, Op, Side};
+use crate::terminal::ShellTarget;
 
 /// What the choice of engine depends on.
 pub struct Engines {
@@ -19,18 +21,60 @@ pub struct Engines {
     choice: EngineChoice,
     /// Tell files apart by checksum, with either engine.
     pub checksum: bool,
+    /// Whether terminals may run on servers; off, [`Self::shell`] reaches none.
+    pub terminal: bool,
+    /// Tests: terminals run sh here instead of ssh.
+    #[cfg(test)]
+    pub local_shell: Option<ShellTarget>,
 }
 
 impl Default for Engines {
     /// rclone alone.
     fn default() -> Self {
-        Self { ssh: None, choice: EngineChoice::Rclone, checksum: false }
+        Self {
+            ssh: None,
+            choice: EngineChoice::Rclone,
+            checksum: false,
+            terminal: true,
+            #[cfg(test)]
+            local_shell: None,
+        }
     }
 }
 
 impl Engines {
     pub fn new(ssh: Option<Arc<SystemSsh>>, choice: EngineChoice, checksum: bool) -> Self {
-        Self { ssh, choice, checksum }
+        Self {
+            ssh,
+            choice,
+            checksum,
+            terminal: true,
+            #[cfg(test)]
+            local_shell: None,
+        }
+    }
+
+    /// How a terminal reaches `loc`: sh on the local disk, ssh on a server reached through
+    /// the system ssh; `None` elsewhere, and with terminals turned off. May
+    /// open the master connection, asking the user to log in.
+    ///
+    /// # Errors
+    /// Fails as an rc call on `loc` would when the connection cannot be opened.
+    pub fn shell(&self, loc: &Location) -> Result<Option<ShellTarget>, RpcError> {
+        if !self.terminal {
+            return Ok(None);
+        }
+        #[cfg(test)]
+        if let Some(t) = &self.local_shell {
+            return Ok(Some(t.clone()));
+        }
+        if loc.is_local() {
+            return Ok(Some(ShellTarget::local(&loc.fs)));
+        }
+        match &self.ssh {
+            Some(ssh) => ssh.shell(&loc.fs),
+            None => Ok(None),
+        }
     }
 
     /// The engine of copies and moves between `a` and `b`, either way. May open the
@@ -75,6 +119,15 @@ impl Engines {
 mod tests {
     use super::*;
 
+    /// The local disk has a terminal without the system ssh; remotes have none.
+    #[test]
+    fn terminals_on_the_local_disk_need_no_ssh() {
+        let e = Engines::new(None, EngineChoice::Auto, false);
+        let target = e.shell(&Location::new("/", "home")).unwrap().unwrap();
+        assert_eq!(target.dir("home"), crate::terminal::ShellDir::Absolute("/home".into()));
+        assert_eq!(e.shell(&Location::new("nas:", "x")).unwrap(), None);
+    }
+
     #[test]
     fn without_the_system_ssh_rclone_does_everything() {
         let e = Engines::new(None, EngineChoice::Auto, false);
@@ -90,5 +143,23 @@ mod tests {
             overwrite: false,
         };
         assert_eq!(e.rsync_args(&t), None);
+    }
+
+    /// Turned off, terminals reach no server, whatever else could reach it.
+    #[test]
+    fn terminals_turned_off_reach_no_server() {
+        let shell = ShellTarget {
+            open: vec!["sh".into()],
+            run: vec!["sh".into()],
+            root: String::new(),
+            env: vec![],
+        };
+        let mut e = Engines { local_shell: Some(shell), ..Engines::default() };
+        let nas = Location::new("nas:", "x");
+        let local = Location::new("/", "home");
+        assert!(e.shell(&nas).unwrap().is_some());
+        e.terminal = false;
+        assert_eq!(e.shell(&nas).unwrap(), None);
+        assert_eq!(e.shell(&local).unwrap(), None);
     }
 }

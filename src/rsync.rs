@@ -236,7 +236,7 @@ pub fn args(op: Op, src_dir: &Side, dst_dir: &Side, name: &str, checksum: bool) 
 }
 
 /// `dir/name` as [`Location::fs_string`] joins a root and a path.
-fn join(dir: &str, name: &str) -> String {
+pub(crate) fn join(dir: &str, name: &str) -> String {
     if dir.is_empty() || dir.ends_with('/') {
         format!("{dir}{name}")
     } else if name.is_empty() {

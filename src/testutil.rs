@@ -17,6 +17,7 @@ use serde_json::{Value, json};
 
 use crate::app::{App, AppInit};
 use crate::config::UiConfig;
+use crate::engine::Engines;
 use crate::event::Event;
 use crate::exec::Exec;
 use crate::hitmap::HitMap;
@@ -120,8 +121,31 @@ impl Harness {
         w: u16,
         h: u16,
     ) -> Self {
+        Self::with_engines(backend, left, right, ui, (w, h), Engines::default())
+    }
+
+    /// With terminals that run `shell` wherever the pane is.
+    pub fn with_shell(
+        backend: Arc<FakeBackend>,
+        left: Location,
+        right: Location,
+        shell: crate::terminal::ShellTarget,
+    ) -> Self {
+        let mut engines = Engines::default();
+        engines.local_shell = Some(shell);
+        Self::with_engines(backend, left, right, UiConfig::default(), (100, 30), engines)
+    }
+
+    fn with_engines(
+        backend: Arc<FakeBackend>,
+        left: Location,
+        right: Location,
+        ui: UiConfig,
+        (w, h): (u16, u16),
+        engines: Engines,
+    ) -> Self {
         let (tx, rx) = unbounded();
-        let exec = Exec::spawn(backend.clone(), tx, 2, Duration::from_millis(10));
+        let exec = Exec::spawn_with(backend.clone(), tx, 2, Duration::from_millis(10), engines);
         let init = AppInit {
             ui,
             keymap: Keymap::default(),
@@ -133,6 +157,7 @@ impl Harness {
             cwd: PathBuf::from("/home/sky"),
             saved: Vec::new(),
             queue_file: None,
+            terminal: true,
         };
         let mut app = App::new(init, exec);
         app.display_tz = chrono::FixedOffset::east_opt(0);

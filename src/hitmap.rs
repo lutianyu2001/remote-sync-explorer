@@ -48,6 +48,9 @@ impl PaneArea {
 pub struct HitMap {
     pub panes: [PaneArea; 2],
     pub queue: Rect,
+    /// The terminal's window, border included, and its screen inside; empty when closed.
+    pub terminal: Rect,
+    pub terminal_screen: Rect,
     /// Screen row, job index in the queue, and the column of its cancel mark.
     pub queue_rows: Vec<(u16, usize, u16)>,
     pub hints: Vec<(Rect, Action)>,
@@ -74,6 +77,8 @@ pub enum Target {
     Title {
         pane: PaneId,
     },
+    /// The terminal under the panes.
+    Terminal,
     /// A column header, which sorts the pane by its column.
     Sort {
         pane: PaneId,
@@ -110,6 +115,9 @@ impl HitMap {
                 return Target::DialogRow(offset + usize::from(row - area.y));
             }
             return if dialog.contains(p) { Target::Dialog } else { Target::Nothing };
+        }
+        if self.terminal.contains(p) {
+            return Target::Terminal;
         }
         for (pane, area) in self.panes.iter().enumerate() {
             if area.list.contains(p) {

@@ -64,6 +64,7 @@ remote-sync-explorer（命令为 `rse`）是一个双栏终端文件管理器，
 - **传输队列**：多个任务并发执行，显示已传字节、速度和剩余时间，可以逐个取消或重试。两个窗格显示着任务的两头时（删除只需要它删除的那一头），任务才运行；在窗格里打开别的地方会暂停它，回来后接着跑。没完成的任务会保留到下次启动。如果有不能续传的传输正在跑，离开或退出前会先列出哪些文件要从头重传。
 - **鼠标**：单击、双击、滚轮，Ctrl+单击或右键标记，拖动来复制或移动。
 - **通过 OpenSSH 使用 SFTP**：`~/.ssh/config`（ProxyJump、证书、硬件密钥）照常生效，每台服务器只登录一次。
+- **终端**：Ctrl+O 在窗格下方打开你的 shell，从窗格所在目录开始：本地磁盘上直接打开，服务器上走同一个 ssh 登录；浏览时它跟着窗格换目录。
 - **语言**：英文和简体中文，跟随系统语言。
 
 ## 安全审计
@@ -172,7 +173,7 @@ RCLONE_RC_PASS=<password> rse --rcd http://localhost:5572 --rc-user <user>
 ```text
 rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
      [--forget-password <LOGIN>] [--rcd <URL> --rc-user <USER> --rc-pass <PASS>]
-     [--version] [--licenses] [-h] [LEFT] [RIGHT]
+     [-T] [--version] [--licenses] [-h] [LEFT] [RIGHT]
 ```
 
 - `LEFT`
@@ -191,6 +192,8 @@ rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
     - 使用外部的 `rclone rcd`，而不是内置的 rclone（需要 `rcd` 特性）
 - `--rc-user <USER>`、`--rc-pass <PASS>`
     - `--rcd` 的用户名和密码；未给出时读取 `RCLONE_RC_USER` 和 `RCLONE_RC_PASS`，这样密码不会出现在 `ps` 里
+- `-T, --no-terminal`
+    - 关闭[终端](#终端)功能：本地和服务器上都无法打开 shell
 - `--version`
     - 显示 remote-sync-explorer 和 rclone 的版本
 - `--licenses`
@@ -260,6 +263,7 @@ rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
 | F8 / Delete | 删除 |
 | O | 开关覆写模式：复制、移动和重命名直接覆盖已有文件，不再询问（每次启动时都是关闭的；开启时屏幕顶部有一行红色提示） |
 | Ctrl+T | 进入或离开传输队列；在队列里 x 取消，r 重试，c 清除已完成的任务 |
+| Ctrl+O | 在窗格下方打开终端，从窗格所在目录开始（本地或通过 ssh 连接的服务器）；在终端里则回到窗格（见[终端](#终端)） |
 | E | 错误日志（最近 100 条） |
 | ? | 帮助 |
 | q | 退出 |
@@ -283,10 +287,17 @@ rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
 | 拖动 | 复制或移动（见下文） |
 | 单击队列中的一行 / 它的 ✕ | 选中该任务 / 取消它 |
 | 单击底部的按键提示 | 执行它 |
+| 单击终端 / 在终端上滚动滚轮 | 把按键交给终端 / 往回翻看它的输出 |
 
 拖动：在条目上按下并移动。如果该条目已被标记，就拖动所有已标记的条目，否则只拖动它。放到目录上会把条目放进该目录，放到窗格的其他地方则放进该窗格的目录。拖到顶部或底部边缘附近会滚动。Esc 取消。松开时会弹出菜单，提供 *Copy here*、*Move here* 和 *Cancel*；之后的冲突检查和确认与 F5/F6 相同。设置 `drop_action = "copy"` 可以不弹菜单直接复制。
 
 注：开启鼠标支持时，在大多数终端里按住 Shift 才能选中文字。在 tmux 里请使用 `set -g mouse on`。在 macOS 上，有些终端会把 Ctrl+单击变成右键（同样会标记），或者弹出自己的菜单；设置 `multi_select_modifier = "alt"` 可以改用 Alt+单击。
+
+### 终端
+
+Ctrl+O 会在窗格下方横跨整个宽度打开一个终端：本地磁盘上是本机你的登录 shell；在通过系统 ssh 连接的服务器上（见[通过 OpenSSH 使用 SFTP](#通过-openssh-使用-sftp)）是那台服务器上你的登录 shell，走 rse 已经建立的主连接，不会再登录一次。其他远程没有终端。它从窗格所在的目录开始，屏幕是干净的：服务器在 shell 之前打印的内容（欢迎横幅、message of the day）会被清掉；bash、zsh 和 fish 会先收到一个 Ctrl+L，清掉它们的启动文件打印的内容。
+
+终端拿着按键时（边框是绿色的），所有按键都交给 shell，Ctrl+C 和 Esc 也一样。Ctrl+O 把按键交还给窗格，在窗格里再按一次则回到终端；这期间终端一直开着。打开终端的那个窗格在同一个磁盘或服务器上换到别的目录时，终端会跟着：rse 先清掉 shell 里输入了一半的命令行，再输入一条 `cd`，开头的空格让大多数 shell 不把它记进历史。shell 里有命令在运行时（rse 用 `ps` 询问），`cd` 会等命令结束再输入，所以绝不会打进 `vim` 这样的程序里。名字里有控制字符的目录不会跟过去。`exit` 或 Ctrl+D 关闭终端；在终端上滚动滚轮可以往回翻看输出。如果你运行的程序要用 Ctrl+O，可以把终端换到别的键（`[keys]` 下的 `terminal = [...]`）。`-T`（`--no-terminal`）在本次运行中关闭终端功能（本地和服务器都关），用于不应从 rse 打开 shell 的场合。
 
 ### 冲突、移动与取消
 
@@ -332,8 +343,8 @@ move = ["F6", "m"]
 # Any action from the help screen (?) by its name: switch_pane, up, down,
 # page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort,
 # sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename,
-# mkdir, delete, overwrite_mode, queue, error_log, help, quit, queue_cancel,
-# queue_retry, queue_clear.
+# mkdir, delete, overwrite_mode, queue, terminal, error_log, help, quit,
+# queue_cancel, queue_retry, queue_clear.
 # Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn, Delete.
 ```
 
@@ -349,7 +360,7 @@ rse 支持英文和简体中文：`[ui]` 里的 `language` 选择其一，`auto`
 
 ## 通过 OpenSSH 使用 SFTP
 
-rse 默认通过系统的 `ssh` 连接 sftp 服务器，所以 `~/.ssh/config` 里的一切都会生效（主机别名、ProxyJump、密钥……）。第一次使用某台服务器前，它会登录一次并保持这个 OpenSSH 主连接，rclone 建立的所有连接都经由它。因此服务器在一次会话里只看到一次登录，而不是 rclone 的每个并行连接各登录一次，这样 fail2ban 之类的工具就不会封禁你。同一服务器上同一账户的所有远程和地址共用这个连接，rse 退出时关闭，否则在最后一次使用 15 分钟后结束。同一账户但设置不同的远程（例如各自有 `known_hosts_file`）各用各的连接。不管 `~/.ssh/config` 怎么设置，这些连接都不转发 agent、X11 和端口，也不执行本地或远程命令，和 OpenSSH 自己的 sftp 一样。
+rse 默认通过系统的 `ssh` 连接 sftp 服务器，所以 `~/.ssh/config` 里的一切都会生效（主机别名、ProxyJump、密钥……）。第一次使用某台服务器前，它会登录一次并保持这个 OpenSSH 主连接，rclone 建立的所有连接都经由它。因此服务器在一次会话里只看到一次登录，而不是 rclone 的每个并行连接各登录一次，这样 fail2ban 之类的工具就不会封禁你。同一服务器上同一账户的所有远程和地址共用这个连接，rse 退出时关闭，否则在最后一次使用 15 分钟后结束。同一账户但设置不同的远程（例如各自有 `known_hosts_file`）各用各的连接。不管 `~/.ssh/config` 怎么设置，这些连接都不转发 agent、X11 和端口，也不执行本地或远程命令，和 OpenSSH 自己的 sftp 一样；只有[终端](#终端)会在服务器上执行命令，即你的登录 shell，它同样什么都不转发。
 
 这适用于 `sftp://` 和 `me@box:` 地址、`:sftp,…` 连接字符串，以及 `rclone.conf` 里的 sftp 远程。经由其他远程访问的 sftp 远程（例如套在它上面的 `crypt`、`alias` 或 `union`）照 rclone 一贯的做法由它自己用内置的 ssh 打开；想让这一层也用 OpenSSH，就给那个 sftp 远程配上它自己的 `ssh = …`。远程的 `host`、`user`、`port`、`key_file`、`pubkey_file` 和 `known_hosts_file` 会转成 ssh 选项。自带 `ssh = …` 设置的远程保持原样。以 `-` 开头的 `host` 或 `user` 改用 rclone 内置的 ssh，因为系统 `ssh` 会把它当成选项。设置了只有内置 ssh 才支持的选项（例如 `key_pem`、`ciphers` 或代理）的远程也改用内置 ssh，仍像 ssh 一样按 `known_hosts` 校验主机密钥；固定了主机密钥（`host_keys`、`pin_host_key`）的远程同样改用内置 ssh，由 rclone 校验。远程自己的 `known_hosts_file` 就是 ssh 校验用的文件；服务器不在其中时会像下文那样询问你，而 rclone 自己会直接拒绝。
 

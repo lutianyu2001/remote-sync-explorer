@@ -36,6 +36,8 @@ pub enum Action {
     /// Turn overwrite mode on or off.
     OverwriteMode,
     Queue,
+    /// Open the terminal under the panes, or focus it; in it, back to the panes.
+    Terminal,
     ErrorLog,
     Help,
     Quit,
@@ -122,6 +124,7 @@ const BINDINGS: &[Binding] = &[
         scope: Scope::Both,
     },
     Binding { action: Action::Queue, name: "queue", keys: &["Ctrl+T"], scope: Scope::Both },
+    Binding { action: Action::Terminal, name: "terminal", keys: &["Ctrl+O"], scope: Scope::Both },
     Binding {
         action: Action::FocusLeftAddress,
         name: "focus_left_address",

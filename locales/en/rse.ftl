@@ -17,6 +17,7 @@ window-address = Address
 window-local = Local
 window-remote = Remote
 window-transfers = Transfers
+window-terminal = Terminal
 tag-local = Local
 marked = [{ $count } marked]
 
@@ -62,6 +63,16 @@ sorted-by = sorted by { $key }
 column-name = Name
 column-size = Size
 column-time = Modified
+
+## Terminal (under the panes, a shell on the server a pane shows)
+
+terminal-connecting = { $spinner } connecting…
+terminal-starting = { $spinner } starting the shell…
+terminal-not-ssh = A terminal opens only on the local disk or on a server reached through ssh
+terminal-disabled = The terminal is turned off (-T)
+terminal-failed = terminal: { $error }
+terminal-cd-control = terminal: the directory's name holds a control character, so it is not typed into the shell
+terminal-cd-unknown = terminal: cannot tell whether a command runs in the shell, so it stays where it is
 
 ## Operations
 
@@ -244,6 +255,7 @@ cli-rc-user = User for --rcd
 cli-user-value = USER
 cli-rc-pass = Password for --rcd (better: the RCLONE_RC_PASS environment variable)
 cli-pass-value = PASS
+cli-no-terminal = Turn the terminal off: no shell can be opened, locally or on a server
 cli-version = Print the remote-sync-explorer and rclone versions
 cli-licenses = Print the licenses of remote-sync-explorer and of the third-party code built into it
 cli-help = Print help
@@ -353,6 +365,7 @@ key-mkdir = New directory
 key-delete = Delete
 key-overwrite_mode = Overwrite mode on or off: overwrite existing files without asking
 key-queue = Enter or leave the transfer queue
+key-terminal = Terminal in the pane's directory, locally or on a server reached through ssh; in the terminal, back to the panes
 key-focus_left_address = Focus the left address bar
 key-focus_left = Focus the left pane
 key-focus_right_address = Focus the right address bar

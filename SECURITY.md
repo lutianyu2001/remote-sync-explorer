@@ -197,6 +197,19 @@ names.
   minutes without progress, not counting the user's answers, so a server that stalls
   cannot hold a remote and a worker. Ending a login ends what ssh started with it, such
   as a `ProxyCommand`.
+- **The terminal.** Only when the user opens it does rse run a shell, on the local disk
+  or on a server, and `-T` (`--no-terminal`) turns it off, so that none can be opened at
+  all. It runs rse's start script (`src/terminal.rs`, quoted so every common login shell
+  passes it to sh unchanged, the directory spelt in octal escapes), which starts the
+  user's login shell; on a server through the master connection, forwarding nothing.
+  What rse types into that shell on its own is a `cd` to the pane's directory: never for
+  a name holding a control character, which could end the command early and run the
+  rest, and only while the shell is in the foreground of its terminal, so never into a
+  program it runs. The shell's output goes through vt100 (audited, see SUPPLY_CHAIN.md);
+  rse answers only the device-attribute, status and cursor-position questions, never
+  reports the window title or the clipboard, which a server could otherwise read back,
+  and takes the start script's report only once, before anything the shell runs could
+  forge it.
 - **New host keys.** rse never tells ssh to accept a new host key by itself: ssh's own
   question, with the key's fingerprint, is shown in a dialog whose default is No.
 - **ssh arguments.** A `host` or `user` starting with `-`, or any ssh setting holding a

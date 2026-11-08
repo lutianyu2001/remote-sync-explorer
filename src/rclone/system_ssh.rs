@@ -48,6 +48,7 @@ use super::obscure::reveal;
 use super::ssh_passwords::PasswordFile;
 use crate::location::remote_colon;
 use crate::rsync::RsyncRemote;
+use crate::terminal::ShellTarget;
 
 /// rc parameters that hold fs strings.
 const FS_KEYS: [&str; 3] = ["fs", "srcFs", "dstFs"];
@@ -443,6 +444,26 @@ impl SystemSsh {
             *known = has_rsync(&ssh);
         }
         Ok(if *known == Some(true) { RsyncRemote::new(&ssh, &fs[colon + 1..]) } else { None })
+    }
+
+    /// How a terminal reaches the server of `fs` (`box:`, `box:/srv`): `ssh -tt` through
+    /// the master connection, never asking, with the path after the colon as the root.
+    /// `None` when `fs` is not an sftp fs reached through the system ssh. Opens or checks
+    /// the master connection like [`Self::rsync_remote`].
+    ///
+    /// # Errors
+    /// Fails as an rc call on `fs` would when the connection cannot be opened.
+    pub fn shell(&self, fs: &str) -> Result<Option<ShellTarget>, RpcError> {
+        let Some(colon) = remote_colon(fs) else { return Ok(None) };
+        self.with_route(&fs[..colon], |route| match route {
+            Route::Ssh(login) => Some(ShellTarget {
+                open: terminal_ssh(&login.control, &login.dest),
+                run: transfer_ssh(&login.control, &login.dest),
+                root: fs[colon + 1..].to_owned(),
+                env: Vec::new(),
+            }),
+            _ => None,
+        })
     }
 
     /// How to reach a fs name seen for the first time.
@@ -1253,6 +1274,29 @@ fn ssh_target(params: &BTreeMap<String, String>) -> Result<Vec<String>, String> 
 fn transfer_ssh(control: &[String], dest: &[String]) -> Vec<String> {
     let mut cmd = vec!["ssh".to_owned(), "-o".to_owned(), "BatchMode=yes".to_owned()];
     cmd.extend(TRANSFER_ONLY.map(str::to_owned));
+    if !control.is_empty() {
+        cmd.extend(["-o".to_owned(), "ControlMaster=no".to_owned()]);
+        cmd.extend(control.iter().cloned());
+    }
+    cmd.extend(dest.iter().cloned());
+    cmd
+}
+
+/// The ssh command of a terminal, through the master and never asking: a terminal on
+/// the server, no forwarding, and no message when the connection closes.
+fn terminal_ssh(control: &[String], dest: &[String]) -> Vec<String> {
+    let mut cmd =
+        vec!["ssh".to_owned(), "-q".to_owned(), "-o".to_owned(), "BatchMode=yes".to_owned()];
+    for opt in [
+        "ForwardAgent=no",
+        "ForwardX11=no",
+        "ClearAllForwardings=yes",
+        "PermitLocalCommand=no",
+        "RemoteCommand=none",
+        "RequestTTY=force",
+    ] {
+        cmd.extend(["-o".to_owned(), opt.to_owned()]);
+    }
     if !control.is_empty() {
         cmd.extend(["-o".to_owned(), "ControlMaster=no".to_owned()]);
         cmd.extend(control.iter().cloned());

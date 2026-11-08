@@ -87,6 +87,9 @@ system's own, never shipped with rse.
   or move.
 - **SFTP through OpenSSH**: `~/.ssh/config` (ProxyJump, certificates, hardware keys)
   applies, with one shared login per server.
+- **Terminal**: Ctrl+O opens your shell under the panes, in the pane's directory: on the
+  local disk, or on a server through the same ssh login; it follows the pane as you
+  browse.
 - **Languages**: English and Simplified Chinese, following the system locale.
 
 ## Security Audit
@@ -230,7 +233,7 @@ rcd elsewhere needs `https://` (`rclone rcd --rc-cert … --rc-key …`).
 ```text
 rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
      [--forget-password <LOGIN>] [--rcd <URL> --rc-user <USER> --rc-pass <PASS>]
-     [--version] [--licenses] [-h] [LEFT] [RIGHT]
+     [-T] [--version] [--licenses] [-h] [LEFT] [RIGHT]
 ```
 
 - `LEFT`
@@ -252,6 +255,8 @@ rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
 - `--rc-user <USER>`, `--rc-pass <PASS>`
     - User and password for `--rcd`; `RCLONE_RC_USER` and `RCLONE_RC_PASS` are read when
       they are not given, and keep the password out of `ps`
+- `-T, --no-terminal`
+    - Turn the [terminal](#terminal) off: no shell can be opened, locally or on a server
 - `--version`
     - Print the remote-sync-explorer and rclone versions
 - `--licenses`
@@ -351,6 +356,7 @@ without them.
 | F8 / Delete | Delete |
 | O | Overwrite mode on or off: copies, moves and renames replace existing files without asking (off at every start; a red row across the top shows it is on) |
 | Ctrl+T | Enter or leave the transfer queue; there x cancels, r retries, c clears finished jobs |
+| Ctrl+O | Terminal under the panes, in the pane's directory, locally or on a server reached through ssh; in the terminal, back to the panes (see [Terminal](#terminal)) |
 | E | Error log (last 100) |
 | ? | Help |
 | q | Quit |
@@ -375,6 +381,7 @@ Mouse support is on by default (`[ui] mouse = true`). Every mouse action also ha
 | Drag | Copy or move (see below) |
 | Click a queue row / its ✕ | Select the job / cancel it |
 | Click a key hint at the bottom | Run it |
+| Click the terminal / wheel over it | Give it the keys / scroll back through its output |
 
 Dragging: press on an entry and move. If that entry is marked, all marked entries are
 dragged, otherwise only it. Drop on a directory to put the entries inside it, anywhere
@@ -387,6 +394,29 @@ Note: while mouse support is on, hold Shift to select text in most terminals. In
 use `set -g mouse on`. On macOS some terminals turn Ctrl+click into a right click (which
 also marks) or open their own menu; `multi_select_modifier = "alt"` switches to
 Alt+click.
+
+### Terminal
+
+Ctrl+O opens a terminal across the bottom of the panes: your login shell on the local
+disk, or on a server reached through the system ssh (see
+[SFTP Through OpenSSH](#sftp-through-openssh)) through the master connection rse already
+holds, so there is no second login. Other remotes have no terminal. It starts in the
+directory the pane shows, on a clean screen: what a server prints before the shell (a
+banner, the message of the day) is wiped, and bash, zsh and fish get Ctrl+L as their
+first input, which clears what their startup files print.
+
+While the terminal has the keys (its border is green), every key goes to the shell,
+Ctrl+C and Esc included. Ctrl+O gives the keys back to the panes, and from there to the
+terminal again; the terminal stays open meanwhile. When the pane it was opened from goes
+to another directory there (on the same disk or server), the terminal follows: rse types
+a `cd` into the shell, after clearing a half-typed line, with a leading space that keeps
+it out of the history of most shells. While a command runs in the shell (rse asks with
+`ps`), the `cd` waits and is typed once the command ends, so it never lands in a program
+such as `vim`. A directory whose name holds a control character is not followed. `exit`
+or Ctrl+D closes the terminal; the wheel scrolls back through its output. If a program
+you run needs Ctrl+O, bind the terminal to another key (`terminal = [...]` under
+`[keys]`). `-T` (`--no-terminal`) turns the terminal off for the session, locally and on
+servers, for when no shell should be opened from rse.
 
 ### Conflicts, Moves and Cancel
 
@@ -463,8 +493,8 @@ move = ["F6", "m"]
 # Any action from the help screen (?) by its name: switch_pane, up, down,
 # page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort,
 # sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename,
-# mkdir, delete, overwrite_mode, queue, error_log, help, quit, queue_cancel,
-# queue_retry, queue_clear.
+# mkdir, delete, overwrite_mode, queue, terminal, error_log, help, quit,
+# queue_cancel, queue_retry, queue_clear.
 # Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn, Delete.
 ```
 
@@ -504,7 +534,8 @@ account on the same server, closes when rse quits, and otherwise ends 15 minutes
 its last use. Remotes reaching one account with different settings, such as their own
 `known_hosts_file`, get connections of their own. Whatever `~/.ssh/config` says, these
 connections forward no agent, X11 or ports and run no local or remote command, as
-OpenSSH's own sftp does.
+OpenSSH's own sftp does; the [terminal](#terminal) alone runs a command on the server,
+your login shell, and forwards nothing either.
 
 This covers `sftp://` and `me@box:` addresses, `:sftp,…` connection strings, and sftp
 remotes in `rclone.conf`. An sftp remote reached through another remote (a `crypt`,

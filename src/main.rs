@@ -44,6 +44,7 @@ const TICK: Duration = Duration::from_millis(250);
 /// `locales/`, filled in by `command`.
 #[derive(Parser, Debug)]
 #[command(name = "rse", disable_version_flag = true, disable_help_flag = true)]
+#[allow(clippy::struct_excessive_bools, reason = "the command line's own flags")]
 struct Cli {
     left: Option<String>,
     right: Option<String>,
@@ -61,6 +62,8 @@ struct Cli {
     rc_user: Option<String>,
     #[arg(long)]
     rc_pass: Option<String>,
+    #[arg(short = 'T', long)]
+    no_terminal: bool,
     #[arg(long)]
     version: bool,
     #[arg(long)]
@@ -95,6 +98,7 @@ fn command() -> clap::Command {
         .mut_arg("rcd", |a| a.help(tr!("cli-rcd")).value_name(tr!("cli-url-value")))
         .mut_arg("rc_user", |a| a.help(tr!("cli-rc-user")).value_name(tr!("cli-user-value")))
         .mut_arg("rc_pass", |a| a.help(tr!("cli-rc-pass")).value_name(tr!("cli-pass-value")))
+        .mut_arg("no_terminal", |a| a.help(tr!("cli-no-terminal")))
         .mut_arg("version", |a| a.help(tr!("cli-version")))
         .mut_arg("licenses", |a| a.help(tr!("cli-licenses")))
         .arg(Arg::new("help").short('h').long("help").action(ArgAction::Help).help(tr!("cli-help")))
@@ -303,15 +307,10 @@ fn run(cli: &Cli) -> Result<()> {
 
     let (tx, rx) = unbounded();
     if let Some(ssh) = &ssh {
-        // Questions from ssh (passwords, codes) are asked in the interface.
-        let tx = tx.clone();
-        ssh.set_prompter(Box::new(move |question| {
-            let (reply, answer) = crossbeam_channel::bounded(1);
-            tx.send(Event::SshPrompt { question: question.clone(), reply }).ok()?;
-            answer.recv().ok().flatten()
-        }));
+        ask_in_interface(ssh, tx.clone());
     }
-    let engines = Engines::new(ssh.clone(), config.jobs.engine, config.jobs.checksum);
+    let mut engines = Engines::new(ssh.clone(), config.jobs.engine, config.jobs.checksum);
+    engines.terminal = !cli.no_terminal;
     let exec = Exec::spawn_with(
         backend.clone(),
         tx.clone(),
@@ -332,6 +331,7 @@ fn run(cli: &Cli) -> Result<()> {
         cwd,
         saved,
         queue_file: queue_file.clone(),
+        terminal: !cli.no_terminal,
     };
     let mut app = App::new(init, exec);
     if let Some(e) = unsaved.or(held) {
@@ -360,6 +360,15 @@ fn run(cli: &Cli) -> Result<()> {
         eprintln!("rse: {}", tr!("startup-still-listing"));
     }
     result
+}
+
+/// Questions from ssh (passwords, codes) are asked in the interface, through `tx`.
+fn ask_in_interface(ssh: &SystemSsh, tx: Sender<Event>) {
+    ssh.set_prompter(Box::new(move |question| {
+        let (reply, answer) = crossbeam_channel::bounded(1);
+        tx.send(Event::SshPrompt { question: question.clone(), reply }).ok()?;
+        answer.recv().ok().flatten()
+    }));
 }
 
 /// sftp through the system ssh around `backend`, remembering passwords in the usual file.
