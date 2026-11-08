@@ -24,9 +24,9 @@ use std::thread;
 /// first line, none of them compare.
 pub fn format(task: &str) -> &'static str {
     if OWN_VERSION_READ.contains(&task) {
-        "# Rust as tokens, TOML as values, the rest as git blobs (1)"
+        "# Rust as tokens, TOML as values, the rest as git blobs, unread metadata left out (2)"
     } else {
-        "# Rust as tokens, TOML as values, the rest as git blobs, own versions left out (1)"
+        "# Rust as tokens, TOML as values, the rest as git blobs, own versions and unread metadata left out (2)"
     }
 }
 
@@ -41,14 +41,17 @@ const OWN_VERSION_READ: &[&str] = &["coverage"];
 /// `kept`; none when they are hashed as they are.
 fn normal(path: &str, bytes: &[u8], kept: bool) -> Option<String> {
     let text = std::str::from_utf8(bytes).ok()?;
+    let manifest = Path::new(path).file_name().is_some_and(|n| n == "Cargo.toml");
     let own = !kept && is_cargo_file(path);
-    let text = if own { Cow::Owned(without_own_versions(path, text)) } else { Cow::Borrowed(text) };
+    let text =
+        if manifest { Cow::Owned(without_unread_metadata(text)) } else { Cow::Borrowed(text) };
+    let text = if own { Cow::Owned(without_own_versions(path, &text)) } else { text };
     match Path::new(path).extension().and_then(|e| e.to_str()).unwrap_or_default() {
         // Outside a procedural macro, proc-macro2 reads the text itself, leaving out the
         // comments and the space between tokens.
         "rs" => text.parse::<proc_macro2::TokenStream>().ok().map(|t| t.to_string()),
         "toml" => toml::to_string(&sorted(toml::from_str(&text).ok()?)).ok(),
-        _ if own => Some(text.into_owned()),
+        _ if own || manifest => Some(text.into_owned()),
         _ => None,
     }
 }
@@ -92,6 +95,40 @@ fn without_own_versions(path: &str, text: &str) -> String {
 }
 
 /// Adds a table's lines to `out`, its version blanked if it is one of the workspace's own.
+/// A Cargo.toml without the keys of `[package]` and `[workspace.package]` that Cargo gives no
+/// code, as it gives `CARGO_PKG_DESCRIPTION` and the like: `documentation`, `keywords` and
+/// `categories` only show on crates.io, so no task can find anything different for them. Read
+/// line by line, as for the versions; an array that goes on over lines is left out up to its
+/// `]`.
+fn without_unread_metadata(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut package = false;
+    let mut skipping = false;
+    for line in text.split_inclusive('\n') {
+        let trimmed = line.trim_start();
+        if skipping {
+            skipping = !trimmed.split('#').next().unwrap_or_default().contains(']');
+            continue;
+        }
+        if trimmed.starts_with('[') {
+            let header = trimmed.split('#').next().unwrap_or_default().trim();
+            package = header == "[package]" || header == "[workspace.package]";
+        } else if package {
+            let unread = ["documentation", "keywords", "categories"].iter().any(|name| {
+                trimmed.strip_prefix(name).is_some_and(|rest| rest.trim_start().starts_with('='))
+            });
+            if unread {
+                let value = trimmed.split_once('=').map_or("", |(_, v)| v).split('#').next();
+                let value = value.unwrap_or_default().trim();
+                skipping = value.starts_with('[') && !value.contains(']');
+                continue;
+            }
+        }
+        out.push_str(line);
+    }
+    out
+}
+
 fn push_table(out: &mut String, lines: &[&str], lock: bool) {
     let key = |line: &str, name: &str| {
         line.trim_start().strip_prefix(name).is_some_and(|rest| rest.trim_start().starts_with('='))
@@ -217,7 +254,7 @@ fn piped(root: &Path, args: &[&str], input: Vec<u8>) -> Result<Vec<u8>, String> 
 
 #[cfg(test)]
 mod tests {
-    use super::{normal, without_own_versions};
+    use super::{normal, without_own_versions, without_unread_metadata};
 
     fn same(path: &str, a: &str, b: &str) -> bool {
         let (a, b) = (normal(path, a.as_bytes(), false), normal(path, b.as_bytes(), false));
@@ -259,6 +296,29 @@ mod tests {
         assert!(!same("a.toml", "a = [1, 2]", "a = [2, 1]"));
         assert_eq!(normal("a.toml", b"a = ", false), None);
         assert_eq!(normal("a.md", b"a", false), None);
+    }
+
+    #[test]
+    fn crates_io_only_metadata_changes_no_hash() {
+        let one = "[package]\nname = \"a\"\ndescription = \"A.\"\ndocumentation = \"https://docs.rs/a\"\nkeywords = [\n    \"x\",\n    \"y\",\n]\ncategories = [\"z\"] # a comment\n\n[dependencies]\nkeywords = \"1\"\n";
+        let two =
+            "[package]\nname = \"a\"\ndescription = \"A.\"\n\n[dependencies]\nkeywords = \"1\"\n";
+        assert_eq!(without_unread_metadata(one), two);
+        for kept in [false, true] {
+            assert_eq!(
+                normal("Cargo.toml", one.as_bytes(), kept),
+                normal("Cargo.toml", two.as_bytes(), kept)
+            );
+        }
+        let other = two.replace("A.", "B.");
+        assert_ne!(
+            normal("Cargo.toml", two.as_bytes(), false),
+            normal("Cargo.toml", other.as_bytes(), false)
+        );
+        assert_eq!(
+            without_unread_metadata("[workspace.package]\nkeywords = [\"x\"]\nlicense = \"MIT\"\n"),
+            "[workspace.package]\nlicense = \"MIT\"\n"
+        );
     }
 
     #[test]
