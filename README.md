@@ -279,8 +279,8 @@ name that could lead out of the directory (`..`, or one with `/` in it) is left 
 and the status bar says how many were.
 
 With a single location, a remote or server address opens in the right pane and the left
-pane shows `left` from the config (`~` by default): `rse sftp://me@box` puts the local
-disk on the left and `box` on the right. A single local path opens on the left.
+pane shows the directory rse was started in: `rse sftp://me@box` puts the working
+directory on the left and `box` on the right. A single local path opens on the left.
 
 A server can also be opened by its address, without a remote in `rclone.conf`:
 

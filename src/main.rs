@@ -303,7 +303,7 @@ fn run(cli: &Cli) -> Result<()> {
         Destination::Ready(loc) => Ok(loc),
         Destination::Login(address) => log_in(backend.as_ref(), address),
     };
-    let (left, right) = initial_locations(cli, &config.ui, &remotes, &home, parse)?;
+    let (left, right) = initial_locations(cli, &config.ui, &remotes, (&home, &cwd), parse)?;
 
     let (tx, rx) = unbounded();
     if let Some(ssh) = &ssh {
@@ -461,12 +461,12 @@ fn forget_password(login: &str) -> Result<()> {
 
 /// The panes' locations at start: the command line's, else the config's, else the home
 /// directory on the left and the first remote on the right. A single remote given on the
-/// command line opens on the right, beside the local disk on the left.
+/// command line opens on the right, beside the working directory on the left.
 fn initial_locations(
     cli: &Cli,
     ui: &UiConfig,
     remotes: &[(String, String)],
-    home: &Path,
+    (home, cwd): (&Path, &Path),
     parse: impl Fn(&str) -> Result<Location>,
 ) -> Result<(Location, Location)> {
     let default_left = if ui.left.is_empty() { "~" } else { &ui.left };
@@ -475,7 +475,7 @@ fn initial_locations(
         && cli.right.is_none()
         && !loc.is_local()
     {
-        return Ok((parse(default_left)?, loc.clone()));
+        return Ok((Location::local(cwd), loc.clone()));
     }
     let left = match first {
         Some(loc) => loc,
@@ -669,16 +669,16 @@ mod tests {
     fn start(args: &[&str], remotes: &[&str]) -> (String, String) {
         let cli = Cli::try_parse_from(std::iter::once("rse").chain(args.iter().copied())).unwrap();
         let remotes: Vec<_> = remotes.iter().map(|r| ((*r).to_owned(), String::new())).collect();
-        let home = Path::new("/home/me");
-        let parse = |s: &str| Location::parse(s, home, home).map_err(anyhow::Error::msg);
+        let (home, cwd) = (Path::new("/home/me"), Path::new("/srv/work"));
+        let parse = |s: &str| Location::parse(s, home, cwd).map_err(anyhow::Error::msg);
         let (left, right) =
-            initial_locations(&cli, &UiConfig::default(), &remotes, home, parse).unwrap();
+            initial_locations(&cli, &UiConfig::default(), &remotes, (home, cwd), parse).unwrap();
         (left.to_string(), right.to_string())
     }
 
     #[test]
     fn a_single_remote_opens_on_the_right() {
-        assert_eq!(start(&["nas:backup"], &["other"]), ("/home/me".into(), "nas:backup".into()));
+        assert_eq!(start(&["nas:backup"], &["other"]), ("/srv/work".into(), "nas:backup".into()));
     }
 
     #[test]
