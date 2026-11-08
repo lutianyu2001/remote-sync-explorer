@@ -56,6 +56,9 @@ sort-name = 名称
 sort-size = 大小
 sort-time = 时间
 sorted-by = 按{ $key }排序
+column-name = 名称
+column-size = 大小
+column-time = 修改日期
 
 ## 操作
 
@@ -319,6 +322,7 @@ key-mark = 选中并下移
 key-mark_all = 全选 / 全不选
 key-filter = 按名称过滤
 key-sort = 按名称、大小、时间排序
+key-sort_reverse = 反转排序顺序
 key-toggle_hidden = 显示或隐藏点文件
 key-goto = 前往路径、remote:path 或网址
 key-remote = 选择远程

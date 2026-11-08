@@ -30,6 +30,10 @@ const BUTTON_W: u16 = 5;
 /// The address window keeps at least this width before the boxes beside it are dropped.
 const BAR_MIN: u16 = 20;
 
+/// The arrow after the header of the column the pane is sorted by.
+const ASCENDING: &str = "▲";
+const DESCENDING: &str = "▼";
+
 /// The protocol box's text.
 const TAG: Style = Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD);
 
@@ -37,7 +41,8 @@ pub const SPINNER: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦"
 
 /// Draws a pane: a row of the protocol box, the address bar (`[1] Address`) and its
 /// button box, the window Go to edits the address in (while it does), then the entries
-/// (`[2] Local`, with `[2 marked]` in the bottom right corner). Windows are labelled in
+/// (`[2] Local`, with `[2 marked]` in the bottom right corner) under a row of column
+/// headers, which sort the entries. Windows are labelled in
 /// their top right corner; the boxes beside the address bar have no key, as they can't
 /// be focused.
 pub fn draw(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) -> PaneArea {
@@ -117,10 +122,92 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) -> PaneArea {
         super::named(app, action, &name).note(&marked).border_style(border),
     );
 
+    let columns = Columns::new(list.width);
+    // The headers take the first row when one is left for the entries.
+    let (columns_at, list) = if list.height >= 2 {
+        let header = Rect { height: 1, ..list };
+        let rects = draw_header(buf, header, pane, columns);
+        (rects, Rect { y: list.y + 1, height: list.height - 1, ..list })
+    } else {
+        (<[Rect; 3]>::default(), list)
+    };
     let offset = pane.first_shown(usize::from(list.height));
-    draw_list(buf, list, app, id, offset);
+    draw_list(buf, list, app, id, offset, columns);
 
-    PaneArea { frame, bar, title, button, edit, list, offset, rows: pane.view.len() }
+    PaneArea {
+        frame,
+        bar,
+        title,
+        button,
+        edit,
+        list,
+        columns: columns_at,
+        offset,
+        rows: pane.view.len(),
+    }
+}
+
+/// The widths of the list's columns: a mark, the name, and the size and time when the
+/// pane is wide enough for them.
+#[derive(Clone, Copy)]
+struct Columns {
+    name: usize,
+    size: bool,
+    time: bool,
+}
+
+impl Columns {
+    fn new(width: u16) -> Self {
+        let w = usize::from(width);
+        let time = width >= TIME_MIN_PANE;
+        let size = w >= 1 + NAME_MIN + 1 + SIZE_W;
+        let fixed = 1 + if size { 1 + SIZE_W } else { 0 } + if time { 1 + TIME_W } else { 0 };
+        Self { name: w.saturating_sub(fixed).max(1), size, time }
+    }
+}
+
+/// The column headers, the one the pane is sorted by in bold with an arrow for the
+/// order. Returns where the name, size and time headers are, to click on.
+fn draw_header(buf: &mut Buffer, area: Rect, pane: &Pane, columns: Columns) -> [Rect; 3] {
+    let mut rects = <[Rect; 3]>::default();
+    let mut x = area.x;
+    let end = area.x + area.width;
+    for (i, key) in [SortKey::Name, SortKey::Size, SortKey::Time].into_iter().enumerate() {
+        let (w, shown) = match key {
+            // The mark column goes with the name.
+            SortKey::Name => (1 + columns.name, true),
+            SortKey::Size => (1 + SIZE_W, columns.size),
+            SortKey::Time => (1 + TIME_W, columns.time),
+        };
+        if !shown {
+            continue;
+        }
+        let sorted = pane.sort == key;
+        let mut label = match key {
+            SortKey::Name => tr!("column-name"),
+            SortKey::Size => tr!("column-size"),
+            SortKey::Time => tr!("column-time"),
+        };
+        if sorted {
+            label.push(' ');
+            label.push_str(if pane.ascending { ASCENDING } else { DESCENDING });
+        }
+        let inner = w - 1;
+        let text = match key {
+            SortKey::Size => fit_right(&label, inner),
+            _ => fit(&label, inner),
+        };
+        let style = if sorted {
+            Style::new().add_modifier(Modifier::BOLD)
+        } else {
+            Style::new().add_modifier(Modifier::DIM)
+        };
+        let w16 = u16::try_from(w).unwrap_or(u16::MAX).min(end.saturating_sub(x));
+        buf.set_stringn(x + 1, area.y, text, inner, style);
+        rects[i] = Rect { x, width: w16, ..area };
+        x = x.saturating_add(w16);
+    }
+    rects
 }
 
 /// Splits the address row into the protocol box, the address window and the button box.
@@ -168,9 +255,6 @@ fn draw_title(buf: &mut Buffer, area: Rect, app: &App, pane: &Pane) {
     let mut extra = String::new();
     if !pane.filter.is_empty() {
         let _ = write!(extra, " [/{}]", pane.filter);
-    }
-    if pane.sort != SortKey::Name {
-        let _ = write!(extra, " [{}]", pane.sort.label());
     }
     if pane.status == PaneStatus::Loading {
         extra.push(' ');
@@ -238,7 +322,7 @@ pub fn breadcrumb(loc: &Location, room: usize) -> String {
     }
 }
 
-fn draw_list(buf: &mut Buffer, area: Rect, app: &App, id: PaneId, offset: usize) {
+fn draw_list(buf: &mut Buffer, area: Rect, app: &App, id: PaneId, offset: usize, cols: Columns) {
     let pane = &app.panes[id];
     let w = usize::from(area.width);
     if area.height == 0 || w == 0 {
@@ -272,10 +356,7 @@ fn draw_list(buf: &mut Buffer, area: Rect, app: &App, id: PaneId, offset: usize)
         _ => {}
     }
 
-    let show_time = area.width >= TIME_MIN_PANE;
-    let show_size = w >= 1 + NAME_MIN + 1 + SIZE_W;
-    let fixed = 1 + if show_size { 1 + SIZE_W } else { 0 } + if show_time { 1 + TIME_W } else { 0 };
-    let name_w = w.saturating_sub(fixed).max(1);
+    let Columns { name: name_w, size: show_size, time: show_time } = cols;
 
     let focused = id == app.active && app.focus == Focus::Panes && app.dialog.is_none();
     let hover_row = match &app.drag {

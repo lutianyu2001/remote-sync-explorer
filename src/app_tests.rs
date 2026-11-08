@@ -1530,6 +1530,25 @@ fn wheel_leaves_the_cursor_on_its_entry() {
 }
 
 #[test]
+fn clicking_a_column_header_sorts_by_it_and_again_the_other_way() {
+    let mut h = standard();
+    let (x, y) = h.find("Size");
+    h.click(x, y);
+    assert_eq!((h.app.panes[0].sort, h.app.panes[0].ascending), (SortKey::Size, false));
+    assert_eq!(names(&h, 0)[3..], ["a.pdf", "b.txt"]);
+    h.click(x, y);
+    assert_eq!((h.app.panes[0].sort, h.app.panes[0].ascending), (SortKey::Size, true));
+    assert_eq!(names(&h, 0)[3..], ["b.txt", "a.pdf"]);
+    assert!(h.screen.contains("Size ▲"), "{}", h.screen);
+    let (x, y) = h.find("Name");
+    h.click(x, y);
+    assert_eq!((h.app.panes[0].sort, h.app.panes[0].ascending), (SortKey::Name, true));
+    h.click(x, y);
+    assert!(!h.app.panes[0].ascending);
+    assert_eq!(names(&h, 0), ["..", "projects", "Docs", "b.txt", "a.pdf"], "directories first");
+}
+
+#[test]
 fn clicking_the_path_edits_it() {
     let mut h = standard();
     let start = h.app.panes[0].loc.clone();
@@ -1731,7 +1750,7 @@ fn help_scroll_stops_at_the_end() {
 fn help_and_error_log_open_and_close() {
     let mut h = standard();
     h.press(KeyCode::Char('?'));
-    assert!(h.screen.contains("Copy to the other pane"), "{}", h.screen);
+    assert!(h.screen.contains("Switch between the panes"), "{}", h.screen);
     h.press(KeyCode::Esc);
     assert_eq!(h.app.dialog, None);
     h.press(KeyCode::Char('E'));

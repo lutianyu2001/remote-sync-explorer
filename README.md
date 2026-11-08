@@ -338,6 +338,7 @@ without them.
 | a | Mark all / unmark all |
 | / | Filter by name (Enter keeps it, Esc clears it) |
 | s | Sort by name, size, time |
+| S | Reverse the sort order |
 | . | Show or hide dot files |
 | : | Go to a path, remote or address, e.g. `nas:backup`, `ftp://me@box/pub` |
 | F10 / g | Choose a remote |
@@ -367,6 +368,7 @@ Mouse support is on by default (`[ui] mouse = true`). Every mouse action also ha
 | Ctrl+click or right click | Mark or unmark, keep the other marks |
 | Double click | Open a directory; on `..` go up |
 | Wheel | Scroll the pane under the pointer (focus and cursor do not move) |
+| Click a column header (Name, Size, Modified) | Sort by it; again, the other way round |
 | Click blank space in a pane | Clear marks, focus that pane |
 | Click the address bar | Edit the address |
 | Click the ↻ / > button right of the address | Reload that pane / go to the edited address |
@@ -460,8 +462,9 @@ copy = ["F5", "c"]
 move = ["F6", "m"]
 # Any action from the help screen (?) by its name: switch_pane, up, down,
 # page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort,
-# toggle_hidden, goto, remote, swap, refresh, copy, move, rename, mkdir, delete,
-# overwrite_mode, queue, error_log, help, quit, queue_cancel, queue_retry, queue_clear.
+# sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename,
+# mkdir, delete, overwrite_mode, queue, error_log, help, quit, queue_cancel,
+# queue_retry, queue_clear.
 # Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn, Delete.
 ```
 

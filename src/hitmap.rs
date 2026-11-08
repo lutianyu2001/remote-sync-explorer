@@ -3,6 +3,7 @@
 
 use ratatui::layout::{Position, Rect};
 
+use crate::app::SortKey;
 use crate::event::PaneId;
 use crate::keymap::Action;
 
@@ -17,11 +18,30 @@ pub struct PaneArea {
     pub button: Rect,
     /// Where Go to edits the address: the edit window's inside, or the title.
     pub edit: Rect,
+    /// The rows of entries, below the column headers.
     pub list: Rect,
+    /// The column headers that sort by name, size and time; empty when not shown.
+    pub columns: [Rect; 3],
     /// First visible row of the pane's view.
     pub offset: usize,
     /// Number of rows in the pane's view.
     pub rows: usize,
+}
+
+impl PaneArea {
+    /// The column header at `p`. No loop, which keeps the Kani proof's unwinding bound.
+    fn column_at(&self, p: Position) -> Option<SortKey> {
+        let [name, size, time] = &self.columns;
+        if name.contains(p) {
+            Some(SortKey::Name)
+        } else if size.contains(p) {
+            Some(SortKey::Size)
+        } else if time.contains(p) {
+            Some(SortKey::Time)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -53,6 +73,11 @@ pub enum Target {
     /// The address bar.
     Title {
         pane: PaneId,
+    },
+    /// A column header, which sorts the pane by its column.
+    Sort {
+        pane: PaneId,
+        key: SortKey,
     },
     /// A button in a pane's title; the action applies to that pane.
     PaneButton {
@@ -94,6 +119,9 @@ impl HitMap {
                 } else {
                     Target::Blank { pane }
                 };
+            }
+            if let Some(key) = area.column_at(p) {
+                return Target::Sort { pane, key };
             }
             if area.button.contains(p) {
                 return Target::PaneButton { pane, action: Action::Refresh };
@@ -140,6 +168,7 @@ mod tests {
             frame: Rect::default(),
             bar: Rect::new(0, 0, 10, 1),
             list: Rect::new(0, 1, 10, 5),
+            columns: [Rect::new(0, 6, 4, 1), Rect::new(4, 6, 3, 1), Rect::default()],
             offset: 10,
             rows: 12,
         };
@@ -157,6 +186,14 @@ mod tests {
         assert_eq!(m.hit(2, 2), Target::Item { pane: 0, row: 11 });
         assert_eq!(m.hit(2, 3), Target::Blank { pane: 0 });
         assert_eq!(m.hit(12, 1), Target::Blank { pane: 1 });
+    }
+
+    #[test]
+    fn column_headers_sort() {
+        let m = map();
+        assert_eq!(m.hit(3, 6), Target::Sort { pane: 0, key: SortKey::Name });
+        assert_eq!(m.hit(4, 6), Target::Sort { pane: 0, key: SortKey::Size });
+        assert_eq!(m.hit(7, 6), Target::Nothing);
     }
 
     #[test]

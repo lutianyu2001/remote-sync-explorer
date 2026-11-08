@@ -21,6 +21,8 @@ pub enum Action {
     MarkAll,
     Filter,
     Sort,
+    /// Sort the other way round: Z to A, smallest or oldest first.
+    SortReverse,
     ToggleHidden,
     Goto,
     Remote,
@@ -87,6 +89,12 @@ const BINDINGS: &[Binding] = &[
     Binding { action: Action::MarkAll, name: "mark_all", keys: &["a"], scope: Scope::Panes },
     Binding { action: Action::Filter, name: "filter", keys: &["/"], scope: Scope::Panes },
     Binding { action: Action::Sort, name: "sort", keys: &["s"], scope: Scope::Panes },
+    Binding {
+        action: Action::SortReverse,
+        name: "sort_reverse",
+        keys: &["S"],
+        scope: Scope::Panes,
+    },
     Binding {
         action: Action::ToggleHidden,
         name: "toggle_hidden",

@@ -247,6 +247,7 @@ rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
 | a | 全部标记 / 全部取消 |
 | / | 按名称过滤（Enter 保留，Esc 清除） |
 | s | 按名称、大小、时间排序 |
+| S | 反转排序顺序 |
 | . | 显示或隐藏点文件 |
 | : | 跳转到路径、远程或地址，例如 `nas:backup`、`ftp://me@box/pub` |
 | F10 / g | 选择远程 |
@@ -275,6 +276,7 @@ rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
 | Ctrl+单击或右键 | 标记或取消标记，保留其他标记 |
 | 双击 | 打开目录；在 `..` 上则返回上级 |
 | 滚轮 | 滚动指针下的窗格（焦点和光标不变） |
+| 单击列标题（名称、大小、修改日期） | 按该列排序；再点一次则反过来 |
 | 单击窗格空白处 | 清除标记，聚焦该窗格 |
 | 单击地址栏 | 编辑地址 |
 | 单击地址右侧的 ↻ / > 按钮 | 重新加载该窗格 / 跳转到编辑后的地址 |
@@ -329,8 +331,9 @@ copy = ["F5", "c"]
 move = ["F6", "m"]
 # Any action from the help screen (?) by its name: switch_pane, up, down,
 # page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort,
-# toggle_hidden, goto, remote, swap, refresh, copy, move, rename, mkdir, delete,
-# overwrite_mode, queue, error_log, help, quit, queue_cancel, queue_retry, queue_clear.
+# sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename,
+# mkdir, delete, overwrite_mode, queue, error_log, help, quit, queue_cancel,
+# queue_retry, queue_clear.
 # Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn, Delete.
 ```
 

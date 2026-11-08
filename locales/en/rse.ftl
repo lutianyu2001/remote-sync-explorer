@@ -59,6 +59,9 @@ sort-name = name
 sort-size = size
 sort-time = time
 sorted-by = sorted by { $key }
+column-name = Name
+column-size = Size
+column-time = Modified
 
 ## Operations
 
@@ -337,6 +340,7 @@ key-mark = Mark entry and move down
 key-mark_all = Mark all / unmark all
 key-filter = Filter by name
 key-sort = Sort by name, size, time
+key-sort_reverse = Reverse the sort order
 key-toggle_hidden = Show or hide dot files
 key-goto = Go to a path, remote:path or URL
 key-remote = Choose a remote

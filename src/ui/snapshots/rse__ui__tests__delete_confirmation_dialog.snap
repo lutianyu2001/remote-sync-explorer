@@ -6,11 +6,11 @@ expression: h.render()
 │ Local ││ /home/sky/projects     ││ ↻ ││ smb:// ││ nas:backup/2026       ││ ↻ │
 ╰───────╯╰────────────────────────╯╰───╯╰────────╯╰───────────────────────╯╰───╯
 ╭────────────────────────────[2] Local─╮╭───────────────────────────[4] Remote─╮
+│ Name ▲                           Size││ Name ▲                           Size│
 │ ..                                   ││ ..                                   │
-│*rse/                            <DIR>││ photos/                         <DIR>│
-│*╭ Delete? ─────────────────────────────────────────────────────────────────╮B│
-│ │ Delete 2 items (1.5 GB in 1 file, 1 directory)                           │B│
-│ │ in    /home/sky/projects                                                 │ │
+│*╭ Delete? ─────────────────────────────────────────────────────────────────╮>│
+│*│ Delete 2 items (1.5 GB in 1 file, 1 directory)                           │B│
+│ │ in    /home/sky/projects                                                 │B│
 │ │                                                                          │ │
 │ │   rse/                                                                   │ │
 │ │   huge.bin                                                               │ │

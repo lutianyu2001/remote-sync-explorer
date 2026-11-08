@@ -47,6 +47,11 @@ impl SortKey {
         }
     }
 
+    /// Names A to Z; sizes and times largest and newest first.
+    fn ascending_by_default(self) -> bool {
+        self == Self::Name
+    }
+
     pub fn label(self) -> String {
         match self {
             Self::Name => tr!("sort-name"),
@@ -82,6 +87,7 @@ pub struct Pane {
     pub status: PaneStatus,
     pub filter: String,
     pub sort: SortKey,
+    pub ascending: bool,
     /// The wheel or a drag scrolled the view away from the cursor: the view stays where it
     /// was scrolled to, the cursor on its entry, until the cursor moves.
     pub detached: bool,
@@ -105,6 +111,7 @@ impl Pane {
             status: PaneStatus::Loading,
             filter: String::new(),
             sort: SortKey::Name,
+            ascending: true,
             detached: false,
             select: None,
             in_flight: None,
@@ -157,11 +164,14 @@ impl Pane {
         let entries = &self.entries;
         idx.sort_by(|&a, &b| {
             let (a, b) = (&entries[a], &entries[b]);
-            b.is_dir.cmp(&a.is_dir).then_with(|| match self.sort {
+            let by_key = match self.sort {
                 SortKey::Name => name_order(&a.name, &b.name),
-                SortKey::Size => b.size.cmp(&a.size).then_with(|| name_order(&a.name, &b.name)),
-                SortKey::Time => b.mtime.cmp(&a.mtime).then_with(|| name_order(&a.name, &b.name)),
-            })
+                SortKey::Size => a.size.cmp(&b.size),
+                SortKey::Time => a.mtime.cmp(&b.mtime),
+            };
+            let by_key = if self.ascending { by_key } else { by_key.reverse() };
+            // Directories stay first either way; ties go by name, A to Z.
+            b.is_dir.cmp(&a.is_dir).then(by_key).then_with(|| name_order(&a.name, &b.name))
         });
         self.view.clear();
         if self.loc.parent().is_some() {
@@ -186,6 +196,15 @@ impl Pane {
     fn set_cursor(&mut self, row: usize) {
         self.cursor = row.min(self.view.len().saturating_sub(1));
         self.detached = false;
+    }
+
+    /// Sorts by `key`; by the key sorted by already, the other way round.
+    fn sort_by(&mut self, key: SortKey, show_hidden: bool) {
+        self.ascending =
+            if self.sort == key { !self.ascending } else { key.ascending_by_default() };
+        self.sort = key;
+        self.detached = false;
+        self.rebuild(show_hidden);
     }
 
     /// The first row to show in `height` rows: where the view was scrolled to, or else
@@ -1015,11 +1034,10 @@ impl App {
                 p.marks = if p.marks == all { BTreeSet::new() } else { all };
             }
             Action::Filter => self.dialog = Some(Dialog::Filter),
-            Action::Sort => {
+            Action::Sort | Action::SortReverse => {
                 let p = &mut self.panes[pane];
-                p.sort = p.sort.next();
-                let show_hidden = self.show_hidden;
-                p.rebuild(show_hidden);
+                let key = if action == Action::Sort { p.sort.next() } else { p.sort };
+                p.sort_by(key, self.show_hidden);
                 self.status = Some(tr!("sorted-by", key = p.sort.label()));
             }
             Action::ToggleHidden => {
@@ -1926,6 +1944,11 @@ impl App {
                 self.focus = Focus::Address;
                 self.action(Action::Goto, now);
             }
+            Target::Sort { pane, key } => {
+                self.active = pane;
+                self.focus = Focus::Panes;
+                self.panes[pane].sort_by(key, self.show_hidden);
+            }
             Target::QueueRow { index, cancel } => {
                 self.focus = Focus::Queue;
                 self.queue_cursor = index;
@@ -2004,9 +2027,10 @@ impl App {
                     None => Some((pane, None, p.loc.clone())),
                 }
             }
-            Target::Blank { pane } | Target::Title { pane } | Target::PaneButton { pane, .. } => {
-                Some((pane, None, self.panes[pane].loc.clone()))
-            }
+            Target::Blank { pane }
+            | Target::Title { pane }
+            | Target::Sort { pane, .. }
+            | Target::PaneButton { pane, .. } => Some((pane, None, self.panes[pane].loc.clone())),
             _ => None,
         };
         let target = drop.map(|(pane, row, dst)| {
