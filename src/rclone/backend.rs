@@ -135,10 +135,15 @@ impl Http {
         // Go's, which rclone uses: plain http on to a proxy elsewhere would carry the
         // passwords in clear. An rc server never redirects, so none is followed.
         let proxy = if loopback(url) { None } else { ureq::Proxy::try_from_env() };
+        // A connect timeout has std connect without blocking and wait in poll, which goes
+        // on after a signal: a blocking connect that a signal (a window change, SIGWINCH)
+        // interrupts on macOS returns EINTR, std's retry finds the socket connecting, and
+        // the first write then fails with "Socket is not connected".
         let agent = ureq::Agent::config_builder()
             .http_status_as_error(false)
             .proxy(proxy)
             .max_redirects(0)
+            .timeout_connect(Some(std::time::Duration::from_secs(30)))
             .build()
             .into();
         Ok(Self { base: url.trim_end_matches('/').to_owned(), auth, agent })
