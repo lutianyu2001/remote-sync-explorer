@@ -50,7 +50,13 @@ const EXPECTED_LIBINTL: &str =
 /// change alone. They are compared as tokens with the attributes before them, comments and
 /// doc comments aside, and each file must have exactly these `extern` blocks, of any ABI,
 /// and these structs of the names given: a copy in disabled code, or a block of its own,
-/// fails the build too; one in a comment or a string is no declaration.
+/// fails the build too; one in a comment or a string is no declaration. Tokens are not
+/// what names resolve to, nor what macros expand to: each file also has the compiler check
+/// its declarations against types written by absolute paths (`::core::ffi::c_char`), in
+/// a `const _` item listed here too, so that it cannot go either; a second declaration of
+/// one of these functions that a macro writes, anywhere in the crate, the lint
+/// `clashing_extern_declarations` forbids, and one in another crate of the package
+/// [`check_sources`] finds.
 const RUST_DECLS: [(&str, &[&str]); 2] = [
     (
         "src/rclone/ffi.rs",
@@ -63,22 +69,49 @@ const RUST_DECLS: [(&str, &[&str]); 2] = [
                 fn RcloneRPC(method: *mut c_char, input: *mut c_char) -> RpcReturn;
                 fn RcloneFreeString(s: *mut c_char);
             }"#,
+            r#"const _: () = {
+                let _: unsafe extern "C" fn() = RcloneInitialize;
+                let _: unsafe extern "C" fn() = RcloneFinalize;
+                let _: unsafe extern "C" fn(*mut ::core::ffi::c_char, *mut ::core::ffi::c_char)
+                    -> RpcReturn = RcloneRPC;
+                let _: unsafe extern "C" fn(*mut ::core::ffi::c_char) = RcloneFreeString;
+                let _: fn(&RpcReturn) -> (&*mut ::core::ffi::c_char, &::core::ffi::c_int) =
+                    |r| (&r.output, &r.status);
+                let pointer = ::core::mem::size_of::<*mut ::core::ffi::c_char>();
+                ::core::assert!(::core::mem::offset_of!(RpcReturn, output) == 0);
+                ::core::assert!(::core::mem::offset_of!(RpcReturn, status) == pointer);
+                ::core::assert!(::core::mem::size_of::<RpcReturn>() == 2 * pointer);
+                ::core::assert!(
+                    ::core::mem::align_of::<RpcReturn>()
+                        == ::core::mem::align_of::<*mut ::core::ffi::c_char>()
+                );
+            };"#,
         ],
     ),
     (
         "src/i18n.rs",
-        &[r#"unsafe extern "C" {
-            fn bind_textdomain_codeset(
-                domain: *const libc::c_char,
-                codeset: *const libc::c_char,
-            ) -> *mut libc::c_char;
-        }"#],
+        &[
+            r#"unsafe extern "C" {
+                fn bind_textdomain_codeset(
+                    domain: *const libc::c_char,
+                    codeset: *const libc::c_char,
+                ) -> *mut libc::c_char;
+            }"#,
+            r#"const _: () = {
+                let _: unsafe extern "C" fn(
+                    *const ::core::ffi::c_char,
+                    *const ::core::ffi::c_char,
+                ) -> *mut ::core::ffi::c_char = bind_textdomain_codeset;
+            };"#,
+        ],
     ),
 ];
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     check_rust_decls();
+    check_crate_roots();
+    check_sources();
     third_party_licenses();
     // A directory: cargo looks at every file in it.
     println!("cargo:rerun-if-changed={LIBRSE}");
@@ -420,7 +453,7 @@ fn check_rust_decls() {
             decls.iter().map(|d| render(&tokens(d, "build.rs"))).collect();
         let structs: Vec<String> = expected.iter().filter_map(|d| struct_name(d)).collect();
         let mut found = Vec::new();
-        declarations(tokens(&text, file), &structs, &mut found);
+        declarations(tokens(&text, file), &structs, true, &mut found);
         expected.sort();
         found.sort();
         assert!(
@@ -480,10 +513,10 @@ fn struct_name(decl: &str) -> Option<String> {
 /// Adds to `found`, rendered, every `extern` block in `tokens`, whatever its ABI (with
 /// `unsafe` and the attributes before it), and every struct named in `structs` (with its
 /// visibility and the attributes before it), at any depth: in a function's body, a module,
-/// or code a `cfg` leaves out, so that a copy there counts as one more. What the check
-/// cannot see: what a name resolves to (a `use … as` renaming a type), and what a macro
-/// expands to.
-fn declarations(tokens: TokenStream, structs: &[String], found: &mut Vec<String>) {
+/// or code a `cfg` leaves out, so that a copy there counts as one more; and every
+/// `const _` item, with the attributes before it, when `consts`. What a name resolves to (a `use … as`
+/// renaming a type) and what a macro expands to the compiler checks, in those items.
+fn declarations(tokens: TokenStream, structs: &[String], consts: bool, found: &mut Vec<String>) {
     let trees: Vec<TokenTree> = tokens.into_iter().collect();
     let ident =
         |i: usize, name: &str| matches!(trees.get(i), Some(TokenTree::Ident(id)) if id == name);
@@ -542,9 +575,107 @@ fn declarations(tokens: TokenStream, structs: &[String], found: &mut Vec<String>
                     found.push(render(&trees[from..=end].iter().cloned().collect()));
                 }
             }
-            TokenTree::Group(g) => declarations(g.stream(), structs, found),
+            // `const _: … ;`, the compiler's check of the declarations.
+            TokenTree::Ident(id) if consts && id == "const" && ident(i + 1, "_") => {
+                let end = trees[i..]
+                    .iter()
+                    .position(|t| matches!(t, TokenTree::Punct(p) if p.as_char() == ';'))
+                    .map_or(trees.len() - 1, |n| i + n);
+                let from = start(i, &|i| i);
+                found.push(render(&trees[from..=end].iter().cloned().collect()));
+            }
+            TokenTree::Group(g) => declarations(g.stream(), structs, consts, found),
             _ => {}
         }
+    }
+}
+
+/// The directories of the package's Rust code: the library, its binary and anything else
+/// in `src/`, and the integration tests, each a crate of its own.
+const SOURCES: [&str; 4] = ["src", "tests", "benches", "examples"];
+
+/// Checks that no other file declares a C function: each crate in the package could declare
+/// one of librclone's anew, which neither the files [`RUST_DECLS`] checks nor the lint
+/// against clashing declarations, which sees one crate, would catch; and that no `#[path]`
+/// makes a module of another file than its name says, so that the files checked are those
+/// built, but for a test module (`#[cfg(test)]` before it).
+fn check_sources() {
+    fn rust_files(dir: &Path, files: &mut Vec<PathBuf>) {
+        let Ok(entries) = fs::read_dir(dir) else { return };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                rust_files(&path, files);
+            } else if path.extension().is_some_and(|e| e == "rs") {
+                files.push(path);
+            }
+        }
+    }
+    // The inside of the attribute that starts at `i` (`path = "x.rs"` for `#[path = "x.rs"]`).
+    fn attribute(trees: &[TokenTree], i: usize) -> Option<String> {
+        match (trees.get(i), trees.get(i + 1)) {
+            (Some(TokenTree::Punct(p)), Some(TokenTree::Group(g)))
+                if p.as_char() == '#' && g.delimiter() == Delimiter::Bracket =>
+            {
+                Some(g.stream().to_string())
+            }
+            _ => None,
+        }
+    }
+    fn path_attribute(tokens: TokenStream) -> bool {
+        let trees: Vec<TokenTree> = tokens.into_iter().collect();
+        let path = |i| attribute(&trees, i).is_some_and(|a| a.starts_with("path "));
+        let test = |i: usize| i >= 2 && attribute(&trees, i - 2).as_deref() == Some("cfg (test)");
+        (0..trees.len()).any(|i| path(i) && !test(i))
+            || trees.iter().any(|t| matches!(t, TokenTree::Group(g) if path_attribute(g.stream())))
+    }
+    let mut files = Vec::new();
+    for dir in SOURCES {
+        println!("cargo:rerun-if-changed={dir}");
+        rust_files(Path::new(dir), &mut files);
+    }
+    files.sort();
+    for file in files {
+        let name = file.to_string_lossy().into_owned();
+        let text = fs::read_to_string(&file).unwrap_or_else(|e| panic!("cannot read {name}: {e}"));
+        let tokens =
+            text.parse::<TokenStream>().unwrap_or_else(|e| panic!("{name}: cannot read: {e}"));
+        assert!(!path_attribute(tokens.clone()), "{name} has a #[path] outside a test module");
+        if RUST_DECLS.iter().any(|(checked, _)| name == *checked) {
+            continue;
+        }
+        let mut found = Vec::new();
+        declarations(tokens, &[], false, &mut found);
+        assert!(
+            found.is_empty(),
+            "{name} declares C functions, which build.rs checks only in the files of \
+             RUST_DECLS:\n  {}",
+            found.join("\n  ")
+        );
+    }
+}
+
+/// The crate roots, where an `extern crate … as core` would make `::core` in the checks of
+/// [`RUST_DECLS`] another crate: they must have no `extern crate` at all.
+const CRATE_ROOTS: [&str; 2] = ["src/lib.rs", "src/main.rs"];
+
+fn check_crate_roots() {
+    fn has_extern_crate(tokens: TokenStream) -> bool {
+        let trees: Vec<TokenTree> = tokens.into_iter().collect();
+        trees.windows(2).any(|w| {
+            matches!(w, [TokenTree::Ident(a), TokenTree::Ident(b)] if a == "extern" && b == "crate")
+        }) || trees.iter().any(|t| matches!(t, TokenTree::Group(g) if has_extern_crate(g.stream())))
+    }
+    for file in CRATE_ROOTS {
+        println!("cargo:rerun-if-changed={file}");
+        let text = fs::read_to_string(file).unwrap_or_else(|e| panic!("cannot read {file}: {e}"));
+        let tokens =
+            text.parse::<TokenStream>().unwrap_or_else(|e| panic!("{file}: cannot read: {e}"));
+        assert!(
+            !has_extern_crate(tokens),
+            "{file} has an `extern crate`, which could rename `core` for the checks of the \
+             declarations in build.rs's RUST_DECLS"
+        );
     }
 }
 

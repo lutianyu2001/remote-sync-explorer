@@ -92,6 +92,9 @@ unsafe_code = "deny"
 # A type C cannot take across an extern declaration fails the build, not only warns.
 improper_ctypes = "deny"
 improper_ctypes_definitions = "deny"
+# Two declarations of one C function with different signatures, a macro's included;
+# forbidden, so that no `allow` can let one through.
+clashing_extern_declarations = "forbid"
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(fuzzing)", "cfg(kani)"] }
 
 [lints.clippy]

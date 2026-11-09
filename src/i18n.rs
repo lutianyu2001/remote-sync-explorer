@@ -86,6 +86,14 @@ pub unsafe fn set_system_messages() {
             codeset: *const libc::c_char,
         ) -> *mut libc::c_char;
     }
+    // The declaration as the compiler resolves it, by absolute paths (see the same check in
+    // `rclone/ffi.rs`).
+    const _: () = {
+        let _: unsafe extern "C" fn(
+            *const ::core::ffi::c_char,
+            *const ::core::ffi::c_char,
+        ) -> *mut ::core::ffi::c_char = bind_textdomain_codeset;
+    };
     let chinese = CHINESE.load(Ordering::Relaxed);
     let locales: &[&std::ffi::CStr] =
         if chinese { &[c"zh_CN.UTF-8", c"zh_CN.utf8"] } else { &[c"C"] };

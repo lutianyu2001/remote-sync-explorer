@@ -26,6 +26,27 @@ unsafe extern "C" {
     fn RcloneFreeString(s: *mut c_char);
 }
 
+// The declarations above as the compiler resolves them, every type by its absolute path:
+// a name that a `use … as`, a module or a macro made mean another type fails here, which
+// `build.rs`, reading tokens, cannot see; and `build.rs` checks that this is still here as
+// written. The struct's layout is C's for `{ char *output; int status; }`.
+const _: () = {
+    let _: unsafe extern "C" fn() = RcloneInitialize;
+    let _: unsafe extern "C" fn() = RcloneFinalize;
+    let _: unsafe extern "C" fn(*mut ::core::ffi::c_char, *mut ::core::ffi::c_char) -> RpcReturn =
+        RcloneRPC;
+    let _: unsafe extern "C" fn(*mut ::core::ffi::c_char) = RcloneFreeString;
+    let _: fn(&RpcReturn) -> (&*mut ::core::ffi::c_char, &::core::ffi::c_int) =
+        |r| (&r.output, &r.status);
+    let pointer = ::core::mem::size_of::<*mut ::core::ffi::c_char>();
+    ::core::assert!(::core::mem::offset_of!(RpcReturn, output) == 0);
+    ::core::assert!(::core::mem::offset_of!(RpcReturn, status) == pointer);
+    ::core::assert!(::core::mem::size_of::<RpcReturn>() == 2 * pointer);
+    ::core::assert!(
+        ::core::mem::align_of::<RpcReturn>() == ::core::mem::align_of::<*mut ::core::ffi::c_char>()
+    );
+};
+
 static INIT: OnceLock<()> = OnceLock::new();
 
 /// Whether rclone was shut down. Each call holds it for reading, and shutting down for
