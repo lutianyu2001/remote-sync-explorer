@@ -716,6 +716,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "layeredcfg"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b46c7236edcff9b9a819bc300093fae75965f3afd5f798e9a00e07486c0ced4"
+dependencies = [
+ "libc",
+ "toml",
+]
+
+[[package]]
 name = "lazyui-ratatui"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1047,6 +1057,7 @@ dependencies = [
  "crossbeam-channel",
  "crossterm",
  "fluent-templates",
+ "layeredcfg",
  "lazyui-ratatui",
  "libc",
  "ratatui",
