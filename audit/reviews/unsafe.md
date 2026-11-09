@@ -1,23 +1,24 @@
 # Review of rse's unsafe code
 
 - file: src/i18n.rs sha256:347b4284c8b5a3170b3fb3b5645d147926c12ed88db1aee02e68dba5c07b5afe
-- file: src/main.rs sha256:18d5af61ed50ffefb7a6398ff0c45902e37bb273fd12d50617a76ed0ca0e4cff
+- file: src/main.rs sha256:2fda601dff3152539654a32af79b271f3e55da4f79bfea8e09bd69f6ea55ef51
 - file: src/rclone/ffi.rs sha256:58cf82b0a0efdef67f836fd0b4d7a78e16fe7249603b1e0a09544a1bd568275e
 - file: src/rclone/system_ssh.rs sha256:999cf0696f65954c1238cf547e7f6e776494097db634f3c946ccc66313cda10d
-- file: src/signals.rs sha256:7975e2c81eeaeac24aa4651c62eac1fbdff4ec415773c46211cf2a3c28aabc92
+- file: src/signals.rs sha256:9bff584e80f7c7d9b8888f3cf5aec991572f87605380cb465b1f9b04d2fcb301
 - file: src/terminal.rs sha256:c233d331d9dd99d5a0176148e3aef57d6ecb6ed288dded1caf92801bc80b0d0b
-- reviewer: five independent reviewers, each given the code alone, without the findings of the others: three of the code as it was, then one of it changed and one of it as committed
+- reviewer: eight independent reviewers, each given the code alone, without the findings of the others: three of the code as it was, then one of it changed and one of it as committed; later two of the `SIGWINCH` handler installed before Go's runtime, as written and as committed, and one of the check of the Rust declarations in `build.rs`
 - date: 2026-11-09
-- commit: 8a14836
+- commit: 4eac88a
 
 rse's `unsafe` code is calls with no safe form: into librclone (`src/rclone/ffi.rs`), `setlocale` and glibc's
-`bind_textdomain_codeset` (`src/i18n.rs`), `sigaction` (`src/signals.rs`), and two `CommandExt::pre_exec` closures
-(`src/rclone/system_ssh.rs`, `src/terminal.rs`); `src/main.rs` calls the one `unsafe fn`. Each reviewer checked every
-block and `// SAFETY:` comment against the sources: librse/main.go and rclone v1.75.2's librclone, the Go 1.27.3
-runtime (cgo calls, package initialisation, signal handling), glibc 2.39's headers and manual pages, POSIX, std's
-process code and the vendored rustix 1.1.5, crossterm 0.29.0 and signal-hook-registry 1.4.8; and the build's checks
-of the hand-written declarations. They also traced the program under strace and gdb, and the integration tests,
-which all call into librclone, ran under AddressSanitizer without an error.
+`bind_textdomain_codeset` (`src/i18n.rs`), `sigaction` and signal-hook-registry's `register` (`src/signals.rs`), and
+two `CommandExt::pre_exec` closures (`src/rclone/system_ssh.rs`, `src/terminal.rs`); `src/main.rs` calls the one
+`unsafe fn`, and places a constructor with `#[unsafe(link_section)]`. Each reviewer checked every block and
+`// SAFETY:` comment against the sources: librse/main.go and rclone v1.75.2's librclone, the Go 1.27.3 runtime (cgo
+calls, package initialisation, signal handling), glibc 2.39's headers and manual pages, POSIX, std's process code
+and the vendored rustix 1.1.5, crossterm 0.29.0 and signal-hook-registry 1.4.8; and the build's checks of the
+hand-written declarations. They also traced the program under strace and gdb, and the integration tests, which all
+call into librclone, ran under AddressSanitizer without an error.
 
 ## Verdict
 
@@ -46,8 +47,20 @@ below.
   group leader; it is checked now, and the closure is in a function of its own, so the rest of the caller no longer
   allows `unsafe`.
 - **The build checked the C declarations, not the Rust ones** (first and fourth reviews): `build.rs` also checks
-  that `ffi.rs` and `i18n.rs` still declare, outside comments, what it keeps beside the C declarations, `#[repr(C)]`
-  included; `improper_ctypes` is denied, and so is an `unsafe fn` without a `# Safety` section (fifth review).
+  that `ffi.rs` and `i18n.rs` still declare what it keeps beside the C declarations, `#[repr(C)]` included;
+  `improper_ctypes` is denied, and so is an `unsafe fn` without a `# Safety` section (fifth review). It first
+  matched them as text with `//` comments left out, which a copy in a `/* */` comment, a string or disabled code
+  satisfied; it now reads the files as tokens, and each must have exactly the `extern` blocks, of any ABI, and the
+  structs it lists, with the attributes before them. The seventh review tried 29 changes against it: those that
+  alter a declaration fail the build now (another ABI, a block moved out of reach or disabled, a field's type,
+  `repr(packed)`), but for the two kinds in Open.
+- **crossterm's handler lacked `SA_ONSTACK` for a few microseconds at start-up** (an open item of the first
+  reviews): a constructor ordered before Go's (`.init_array.00200` on Linux; `__mod_init_func` in object order on
+  macOS) now has signal-hook-registry install the `SIGWINCH` handler with the flag, before any thread exists;
+  crossterm's later registration reuses it, as the registry installs a signal's handler once. Seen in the binary's
+  `.init_array` and under strace; a test checks the order on both systems in CI, by `SIGFPE` still having no
+  handler when the constructor runs, which Go installs in its own (sixth and eighth reviews; the eighth found the
+  first such test proved nothing, as Rust's std installs one for `SIGSEGV`).
 - **SAFETY comments that gave wrong or no reasons**: the owner of rclone's output (the caller, freed with `C.free`),
   why the `pre_exec` closures are async-signal-safe (raw system calls through rustix on Linux; nothing allocated, the
   errors included), and that rclone's first config access calls C's `setenv`, which is why it comes before rse starts
@@ -56,15 +69,16 @@ below.
 
 ## Open
 
-- Between crossterm installing its SIGWINCH handler and `on_alternate_stack` a few microseconds pass at start-up, in
-  which a window change reaching a Go thread would run the handler on the goroutine stack. Closing it needs
-  signal-hook-registry to set `SA_ONSTACK` itself (a patch of the vendored crate, or upstream).
-- `build.rs` matches the Rust declarations as text with `//` comments left out: a copy in a `/* */` comment, a string
-  or disabled code would also match. Comparing tokens, or the items of the `extern` blocks, would not.
+- `build.rs` reads the Rust declarations as tokens, not as the compiler resolves them: a `use … as` or a module
+  that renames a type (`c_long as c_int`), or a macro that writes or rewrites a declaration, gets past it.
 - On macOS a shell pane's pseudo-terminal is opened without close-on-exec, which is set right after; an ssh or rsync
   started by another thread in between inherits it. Linux sets the flag when it opens.
+- The constructor's order on macOS is untested here; CI's test on macOS checks it.
+- The `SIGWINCH` handler is now there in every mode, not only the interface: a window change can interrupt, with
+  `EINTR`, a call `SA_RESTART` does not restart (poll, sleep, socket timeouts) in askpass mode or a prompt; the
+  askpass path was checked and is unaffected.
 - An embedded build for musl is untested: Go's library start-up reads argc and argv from the constructor's
-  registers, which musl may not pass. Nothing is released for musl.
+  registers, which musl may not pass. rse is not built for musl, by decision.
 - `terminal.rs` gives no source for `ioctl(TIOCSCTTY)` being safe after fork on macOS, where it goes through libc;
   BSD's `login_tty` does the same.
 - `LANGUAGE`, when set, still decides glibc's message language over the one rse sets, as for any program.

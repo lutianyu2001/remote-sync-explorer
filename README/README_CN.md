@@ -84,7 +84,7 @@ rse 经手密码、ssh 登录和远端服务器上的文件，所以它的代码
 | 方面 | 审计了什么 | 范围 |
 |---|---|---|
 | 威胁模型 | 外来输入或机密进入 rse 的每一处都人工审查过，每个决定都写了下来 | SECURITY.md 里的 18 条决定：密码交给谁、主机密钥（包括退回 rclone 内置 ssh 之后）、服务器能让 ssh 做什么、混进 ssh 的选项、`--rcd` 走明文 http、文件权限、服务器给的文件名和文字怎么显示、覆盖文件、rsync 的命令行、续传的文件、保存的队列 |
-| `unsafe` 代码 | rse 禁止 `unsafe`，只有点名允许的函数例外；每个有 `unsafe` 的文件都有评审，文件一改就重新评审 | 15 处，每处都是没有安全写法的调用（librclone、`setlocale`、`sigaction`、signal-hook-registry、`pre_exec`），旁边写着为什么是安全的；四位独立评审看过（[`audit/reviews/`](../audit/reviews/)），没有发现未定义行为 |
+| `unsafe` 代码 | rse 禁止 `unsafe`，只有点名允许的函数例外；每个有 `unsafe` 的文件都有评审，文件一改就重新评审 | 15 处，每处都是没有安全写法的调用（librclone、`setlocale`、`sigaction`、signal-hook-registry、`pre_exec`），旁边写着为什么是安全的；八位独立评审看过（[`audit/reviews/`](../audit/reviews/)），没有发现未定义行为 |
 | AddressSanitizer | 调用 librclone 的集成测试用 AddressSanitizer 构建，运行时检测非法内存访问和泄漏 | 8 个测试程序，没有错误（2026-11-09） |
 | 依赖 | 来源、许可证、已知漏洞、作者放弃的和被撤回的 crate（cargo-deny）；每个 crate 都有审计记录（cargo-vet）；从校验过的源码离线构建 | 220 个 crate 审计过：从 Mozilla、Google 和 Bytecode Alliance 导入的审计，加上我们自己的 189 条；没有豁免。漏洞每天重新查 |
 | 测试 | 单元测试、界面快照测试和集成测试，包括对私有 `sshd` 的 ssh 登录 | 268 个测试，覆盖 93% 的代码行和 80% 的分支 |
