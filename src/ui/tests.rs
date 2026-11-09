@@ -159,9 +159,10 @@ fn empty_queue_shows_idle() {
     let screen = h.render().to_owned();
     let lines: Vec<&str> = screen.lines().collect();
     let n = lines.len();
-    assert!(lines[n - 4].starts_with("╭─") && lines[n - 4].contains("[5] Transfers"));
-    assert!(lines[n - 3].starts_with("│ idle "), "{screen}");
-    assert!(lines[n - 2].starts_with("╰─"), "{screen}");
+    // The key hints and the message line under the window.
+    assert!(lines[n - 5].starts_with("╭─") && lines[n - 5].contains("[5] Transfers"));
+    assert!(lines[n - 4].starts_with("│ idle "), "{screen}");
+    assert!(lines[n - 3].starts_with("╰─"), "{screen}");
     insta::assert_snapshot!(screen);
 }
 
@@ -236,4 +237,27 @@ fn tiny_terminal_does_not_panic() {
         h.app.queue.overwrite = true;
         h.render();
     }
+}
+
+/// Every hint has a place in the order they are left out in, and only one.
+#[test]
+fn every_hint_has_a_priority() {
+    let mut shown: Vec<_> = super::HINTS.iter().map(|(a, _)| format!("{a:?}")).collect();
+    let mut kept: Vec<_> = super::HINT_PRIORITY.iter().map(|a| format!("{a:?}")).collect();
+    shown.sort();
+    kept.sort();
+    assert_eq!(shown, kept);
+}
+
+/// At 80 columns the hints leave room for help, and nothing covers the hints row.
+#[test]
+fn help_is_always_among_the_hints() {
+    let mut h = harness(80, 24, "/home/sky/projects", projects());
+    let screen = h.render().to_owned();
+    let hints = screen.lines().nth(22).unwrap_or_default();
+    assert!(hints.contains("? Help"), "{hints}");
+    h.app.dialog = Some(Dialog::Help { scroll: 0 });
+    let screen = h.render().to_owned();
+    let hints = screen.lines().nth(22).unwrap_or_default();
+    assert!(hints.starts_with(" F2 Rename"), "{hints}");
 }

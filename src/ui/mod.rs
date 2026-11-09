@@ -19,7 +19,10 @@ use crate::hitmap::HitMap;
 use crate::keymap::Action;
 use text::width;
 
-const HINTS: [(Action, fn() -> String); 8] = [
+/// The key hints, in their order on the row. A row too narrow for all of them leaves out
+/// the last of [`HINT_PRIORITY`] first.
+const HINTS: [(Action, fn() -> String); 9] = [
+    (Action::Rename, || tr!("hint-rename")),
     (Action::Copy, || tr!("hint-copy")),
     (Action::Move, || tr!("hint-move")),
     (Action::Mkdir, || tr!("hint-mkdir")),
@@ -30,40 +33,62 @@ const HINTS: [(Action, fn() -> String); 8] = [
     (Action::Quit, || tr!("hint-quit")),
 ];
 
-/// Draws the frame; returns the hit map, and whether the text cursor is shown (in a text
-/// field, or in the terminal).
-pub fn draw(frame: &mut Frame, app: &App) -> (HitMap, bool) {
+/// The hints from the one kept longest to the one left out first: help, where all the
+/// others are, last of all.
+const HINT_PRIORITY: [Action; 9] = [
+    Action::Help,
+    Action::Copy,
+    Action::Move,
+    Action::Rename,
+    Action::Delete,
+    Action::Remote,
+    Action::Filter,
+    Action::Mkdir,
+    Action::Quit,
+];
+
+/// Draws the frame; returns the hit map, and where to put the hidden cursor ([`park_cursor`]),
+/// `None` while the text cursor is shown (in a text field, or in the terminal).
+pub fn draw(frame: &mut Frame, app: &App) -> (HitMap, Option<Position>) {
     let area = frame.area();
     let (map, cursor) = draw_buffer(frame.buffer_mut(), area, app);
     if let Some((x, y)) = cursor {
         frame.set_cursor_position(Position::new(x, y));
+        return (map, None);
     }
-    (map, cursor.is_some())
+    let at = park(&map, area);
+    (map, Some(at))
 }
 
-/// Puts the hidden cursor at the start of the bottom row while no text is typed: an input
-/// method shows what it is composing (a key pressed with a Chinese one on) where the
-/// cursor is, which would otherwise be wherever the last frame's drawing ended. There, it
-/// is where vim's command line is.
+/// Puts the hidden cursor at `at`, the message line's free space, while no text is typed:
+/// an input method shows what it is composing (a key pressed with a Chinese one on) where
+/// the cursor is, which would otherwise be wherever the last frame's drawing ended, over
+/// the key hints or an entry. The message line is there for it, as vim's command line is.
 ///
 /// # Errors
 /// Fails when the terminal cannot be written to.
 pub fn park_cursor<B: ratatui::backend::Backend>(
     terminal: &mut ratatui::Terminal<B>,
-    shown: bool,
+    at: Option<Position>,
 ) -> Result<(), B::Error> {
-    if shown {
-        return Ok(());
+    match at {
+        Some(at) => terminal.set_cursor_position(at),
+        None => Ok(()),
     }
-    let size = terminal.size()?;
-    terminal.set_cursor_position(Position::new(0, size.height.saturating_sub(1)))
+}
+
+/// Where the hidden cursor goes: after the message on the bottom row, or at its start.
+fn park(map: &HitMap, area: Rect) -> Position {
+    let y = area.y + area.height.saturating_sub(1);
+    let end = area.x + area.width.saturating_sub(1);
+    Position::new(map.message_end.min(end).max(area.x), y)
 }
 
 /// Draws into a buffer; returns the hit map and where the text cursor should be.
 pub fn draw_buffer(buf: &mut Buffer, area: Rect, app: &App) -> (HitMap, Option<(u16, u16)>) {
     let mut map = HitMap::default();
     let overwrite = app.queue.overwrite;
-    if area.width < 10 || area.height < 4 + u16::from(overwrite) {
+    if area.width < 10 || area.height < 5 + u16::from(overwrite) {
         buf.set_stringn(area.x, area.y, tr!("too-small"), usize::from(area.width), Style::new());
         return (map, None);
     }
@@ -75,8 +100,10 @@ pub fn draw_buffer(buf: &mut Buffer, area: Rect, app: &App) -> (HitMap, Option<(
         area
     };
 
-    // Two panes side by side (address bar over entries), the transfer window under them, key hints last.
-    let hints_y = area.y + area.height - 1;
+    // Two panes side by side (address bar over entries), the transfer window under them, then
+    // the key hints, and last the message line: messages, and room for an input method.
+    let message_y = area.y + area.height - 1;
+    let hints_y = message_y - 1;
     let mut queue_h = queue::height(app, area.height).min(area.height.saturating_sub(4));
     if queue_h < 3 {
         queue_h = 0;
@@ -105,6 +132,7 @@ pub fn draw_buffer(buf: &mut Buffer, area: Rect, app: &App) -> (HitMap, Option<(
         map.queue_rows = queue::draw(buf, map.queue, app);
     }
     map.hints = draw_hints(buf, Rect::new(area.x, hints_y, area.width, 1), app);
+    map.message_end = draw_message(buf, Rect::new(area.x, message_y, area.width, 1), app);
 
     // A dialog puts the cursor where it is typed in, or hides it.
     if let Some(dialog) = &app.dialog {
@@ -129,7 +157,9 @@ pub fn draw_buffer(buf: &mut Buffer, area: Rect, app: &App) -> (HitMap, Option<(
             });
             map.buttons = Some(p.button).filter(|b| !b.is_empty()).into_iter().collect();
         } else {
-            let drawn = dialogs::draw(buf, area, app, dialog);
+            // Above the key hints and the message line, which stay readable.
+            let above = Rect { height: area.height - 2, ..area };
+            let drawn = dialogs::draw(buf, above, app, dialog);
             map.dialog = drawn.rect;
             map.buttons = drawn.buttons;
             map.dialog_list = drawn.list;
@@ -162,31 +192,55 @@ fn draw_hints(buf: &mut Buffer, area: Rect, app: &App) -> Vec<(Rect, Action)> {
     let mut x = area.x + 1;
     let mut end = area.x + area.width;
     if let Some(engine) = app.pane_engine() {
-        let name = engine.name();
-        let w = u16::try_from(width(name) + 1).unwrap_or(u16::MAX);
+        // In reverse video, a box of its own that stands out from the hints.
+        let name = format!(" {} ", engine.name());
+        let w = u16::try_from(width(&name)).unwrap_or(u16::MAX);
         if w < area.width / 2 {
             end -= w;
-            buf.set_string(end, area.y, name, Style::new().add_modifier(Modifier::DIM));
+            let style = Style::new().add_modifier(Modifier::REVERSED | Modifier::BOLD);
+            buf.set_string(end, area.y, &name, style);
             end = end.saturating_sub(1);
         }
     }
+    let hints: Vec<(Action, &str, String, u16)> = HINTS
+        .iter()
+        .filter_map(|(action, label)| {
+            let key = app.keymap.label(*action);
+            let label = label();
+            let w = u16::try_from(width(key) + 1 + width(&label)).unwrap_or(u16::MAX);
+            (!key.is_empty()).then_some((*action, key, label, w))
+        })
+        .collect();
+    // Those that fit, by priority, each with the gap of two after it.
+    let room = end.saturating_sub(x);
+    let mut used = 0u16;
+    let mut kept = Vec::new();
+    for action in HINT_PRIORITY {
+        if let Some(&(_, _, _, w)) = hints.iter().find(|h| h.0 == action) {
+            let more = if kept.is_empty() { w } else { w.saturating_add(2) };
+            if used.saturating_add(more) <= room {
+                used += more;
+                kept.push(action);
+            }
+        }
+    }
     let mut out = Vec::new();
-    for (action, label) in HINTS {
-        let label = &label();
-        let key = app.keymap.label(action);
-        if key.is_empty() {
-            continue;
-        }
-        let w = u16::try_from(width(key) + 1 + width(label)).unwrap_or(u16::MAX);
-        if x + w > end {
-            break;
-        }
+    for (action, key, label, w) in hints.iter().filter(|h| kept.contains(&h.0)) {
         buf.set_string(x, area.y, key, Style::new().add_modifier(Modifier::BOLD));
         buf.set_string(x + u16::try_from(width(key)).unwrap_or(0) + 1, area.y, label, Style::new());
-        out.push((Rect::new(x, area.y, w, 1), action));
+        out.push((Rect::new(x, area.y, *w, 1), *action));
         x += w + 2;
     }
     out
+}
+
+/// The message line: the last message (`Docs already exists`); returns the column after it.
+fn draw_message(buf: &mut Buffer, area: Rect, app: &App) -> u16 {
+    let Some(status) = &app.status else { return area.x };
+    let w = usize::from(area.width).saturating_sub(2);
+    let s = text::ellipsize_middle(&text::shown(status), w);
+    let (end, _) = buf.set_stringn(area.x + 1, area.y, &s, w, Style::new().fg(Color::Yellow));
+    end + 1
 }
 
 /// A row in white on red: overwrite mode, what it does and the key that turns it off.
@@ -201,9 +255,11 @@ fn draw_overwrite_mode(buf: &mut Buffer, area: Rect, app: &App) {
     buf.set_stringn(x, area.y, &note, w.saturating_sub(usize::from(x - area.x)), style);
 }
 
-/// The filter being typed, on the active pane's last row.
+/// The filter being typed, on the active pane's own line under its entries.
 fn draw_filter(buf: &mut Buffer, map: &HitMap, app: &App) -> Option<(u16, u16)> {
-    let list = map.panes[app.active].list;
+    // The pane's own line, or its last entry in a pane too short for that line.
+    let area = &map.panes[app.active];
+    let list = if area.footer.height > 0 { area.footer } else { area.list };
     if list.height == 0 {
         return None;
     }

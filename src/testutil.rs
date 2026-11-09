@@ -208,10 +208,10 @@ impl Harness {
     /// cursor is shown, and where the terminal's cursor is.
     pub fn draw_and_park(&mut self) -> (bool, ratatui::layout::Position) {
         let app = &self.app;
-        let mut shown = false;
-        self.terminal.draw(|f| shown = crate::ui::draw(f, app).1).unwrap_or_else(|e| panic!("{e}"));
-        crate::ui::park_cursor(&mut self.terminal, shown).unwrap_or_else(|e| panic!("{e}"));
-        (shown, self.terminal.get_cursor_position().unwrap_or_else(|e| panic!("{e}")))
+        let mut park = None;
+        self.terminal.draw(|f| park = crate::ui::draw(f, app).1).unwrap_or_else(|e| panic!("{e}"));
+        crate::ui::park_cursor(&mut self.terminal, park).unwrap_or_else(|e| panic!("{e}"));
+        (park.is_none(), self.terminal.get_cursor_position().unwrap_or_else(|e| panic!("{e}")))
     }
 
     pub fn render(&mut self) -> &str {
@@ -252,6 +252,11 @@ impl Harness {
     /// The background color of a cell on the last drawn screen.
     pub fn bg(&self, x: u16, y: u16) -> ratatui::style::Color {
         self.frame[(x, y)].bg
+    }
+
+    /// The modifiers (bold, reversed, …) of a cell on the last drawn screen.
+    pub fn cell_modifiers(&self, x: u16, y: u16) -> ratatui::style::Modifier {
+        self.frame[(x, y)].modifier
     }
 
     pub fn press(&mut self, code: KeyCode) {

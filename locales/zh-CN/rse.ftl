@@ -20,6 +20,7 @@ marked = [已选 { $count } 项]
 
 ## 底部按键提示
 
+hint-rename = 重命名
 hint-copy = 复制
 hint-move = 移动
 hint-mkdir = 新建
@@ -80,6 +81,7 @@ op-copy-title = 复制
 op-move-title = 移动
 op-delete-title = 删除
 nothing-selected = 未选择任何项
+rename-nothing = 把光标移到要重命名的项上
 same-directory = 源目录和目标目录相同
 into-itself = 不能把目录放进它自己里面
 checking-target = 正在检查目标…
@@ -189,6 +191,7 @@ remotes-title = 远程（输入以过滤）
 remotes-filter = 过滤：{ $filter }
 remotes-none = 没有匹配项
 remote-local = 本地 (~)
+remotes-how = rclone.conf 里还没有远程：用 `rclone config` 添加。服务器不添加远程也能打开：按 { $key } 输入它的地址，例如 sftp://me@box。
 errors-title = 错误日志，最新的在前（Esc 关闭）
 errors-none = 没有错误。
 

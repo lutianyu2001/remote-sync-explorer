@@ -1584,9 +1584,13 @@ fn clicking_the_path_edits_it() {
 #[test]
 fn clicking_a_key_hint_runs_it() {
     let mut h = standard();
-    let (x, y) = h.find("F7 Mkdir");
+    let (x, y) = h.find("F2 Rename");
     h.click(x, y);
-    assert!(matches!(h.app.dialog, Some(Dialog::Input { purpose: InputPurpose::Mkdir, .. })));
+    assert_eq!(h.app.status.as_deref(), Some("Move the cursor to the entry to rename"));
+    h.press(KeyCode::Down);
+    let (x, y) = h.find("F2 Rename");
+    h.click(x, y);
+    assert!(matches!(h.app.dialog, Some(Dialog::Input { purpose: InputPurpose::Rename(_), .. })));
     let (x, y) = h.find("[ Cancel ]");
     h.click(x + 2, y);
     assert_eq!(h.app.dialog, None);
@@ -2074,12 +2078,66 @@ fn a_terminal_turned_off_never_opens() {
     assert!(h.screen.contains("turned off"), "{}", h.screen);
 }
 
+/// Many entries in a pane, all with `file` in their names.
+fn crowded() -> Harness {
+    let files: Vec<Value> = (0..40).map(|i| file(&format!("file-{i:02}.txt"), 1)).collect();
+    let (backend, _) = fake_fs(&[("/home/sky", files), ("nas:backup", vec![])], &[]);
+    Harness::new(backend, home(), nas())
+}
+
+/// The filter being typed has the pane's own last row, so no entry is hidden under it, and
+/// the entries still scroll by page and by wheel.
+#[test]
+fn the_filter_has_a_row_of_its_own_and_the_entries_still_scroll() {
+    let mut h = crowded();
+    let list = h.app.hitmap.panes[0].list;
+    let footer = h.app.hitmap.panes[0].footer;
+    assert_eq!(footer.y, list.y + list.height, "the line comes after the entries");
+    h.press(KeyCode::Char('/'));
+    h.type_text("file");
+    let row = h.screen.lines().nth(usize::from(footer.y)).unwrap_or_default().to_owned();
+    assert!(row.starts_with("│/file"), "{row}");
+    let above = h.screen.lines().nth(usize::from(footer.y - 1)).unwrap_or_default().to_owned();
+    assert!(above.contains("file-"), "the last entry row shows an entry: {above}");
+    h.press(KeyCode::PageDown);
+    assert!(h.app.panes[0].cursor > 1);
+    h.press(KeyCode::End);
+    assert_eq!(cursor_name(&h, 0), "file-39.txt");
+    h.press(KeyCode::Home);
+    let (x, y) = (list.x + 2, list.y + 1);
+    h.mouse_at(MouseEventKind::ScrollDown, x, y, KeyModifiers::NONE, Instant::now());
+    assert!(h.app.panes[0].offset > 0, "the wheel scrolls under the filter");
+    assert_eq!(h.app.dialog, Some(Dialog::Filter));
+    // Kept, the filter stays on that line, with the whole name of the entry under the cursor.
+    h.press(KeyCode::Enter);
+    h.press(KeyCode::End);
+    let row = h.screen.lines().nth(usize::from(footer.y)).unwrap_or_default().to_owned();
+    assert!(row.contains("/file") && row.contains("file-39.txt"), "{row}");
+}
+
+/// The engine of copies between the panes is shown in reverse video, apart from the hints.
+#[test]
+fn the_engine_stands_out() {
+    let mut h = standard();
+    h.render();
+    let (x, y) = h.find(" rclone");
+    for x in x..x + 8 {
+        assert!(h.cell_modifiers(x, y).contains(ratatui::style::Modifier::REVERSED), "{x}");
+    }
+}
+
 #[test]
 fn the_hidden_cursor_waits_at_the_bottom_row_for_an_input_method() {
     let mut h = standard();
     let (shown, at) = h.draw_and_park();
     assert!(!shown);
     assert_eq!((at.x, at.y), (0, 23)); // 80 by 24: the start of the last row
+    // A message there keeps its place: the cursor waits after it, below the key hints.
+    h.app.status = Some("nothing selected".to_owned());
+    let (_, at) = h.draw_and_park();
+    assert_eq!((at.x, at.y), (18, 23));
+    assert!(h.render().lines().nth(23).is_some_and(|l| l.starts_with(" nothing selected")));
+    h.app.status = None;
     // Typing in the address bar shows the cursor there, and it stays there.
     h.press(KeyCode::Char(':'));
     let (shown, at) = h.draw_and_park();

@@ -131,8 +131,17 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) -> PaneArea {
     } else {
         (<[Rect; 3]>::default(), list)
     };
+    // The last row is the pane's own line, when one is left for the entries: the filter,
+    // or the whole name of the entry under the cursor. Nothing covers an entry.
+    let (list, footer) = if list.height >= 2 {
+        let footer = Rect { y: list.y + list.height - 1, height: 1, ..list };
+        (Rect { height: list.height - 1, ..list }, footer)
+    } else {
+        (list, Rect::default())
+    };
     let offset = pane.first_shown(usize::from(list.height));
     draw_list(buf, list, app, id, offset, columns);
+    draw_footer(buf, footer, app, id);
 
     PaneArea {
         frame,
@@ -141,6 +150,7 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) -> PaneArea {
         button,
         edit,
         list,
+        footer,
         columns: columns_at,
         offset,
         rows: pane.view.len(),
@@ -421,6 +431,35 @@ fn draw_list(buf: &mut Buffer, area: Rect, app: &App, id: PaneId, offset: usize,
                 if pane.entries.is_empty() { tr!("pane-empty") } else { tr!("pane-no-match") };
             buf.set_stringn(area.x + 1, y, msg, w - 1, dim);
         }
+    }
+}
+
+/// The pane's last row. While the filter is typed it is drawn over this, by `ui::draw`;
+/// otherwise a kept filter (`/rep`) and the whole name of the entry under the cursor,
+/// which the list may have shortened.
+fn draw_footer(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) {
+    let pane = &app.panes[id];
+    let w = usize::from(area.width);
+    let typing = id == app.active && app.dialog == Some(Dialog::Filter);
+    if area.height == 0 || w < 2 || typing {
+        return;
+    }
+    let mut x = area.x + 1;
+    let mut room = w - 1;
+    if !pane.filter.is_empty() {
+        let filter = format!("/{}", shown(&pane.filter));
+        let filter = ellipsize_middle(&filter, room.min(w / 2).max(1));
+        let (end, _) = buf.set_stringn(x, area.y, &filter, room, Style::new().fg(Color::Yellow));
+        room = room.saturating_sub(usize::from(end - x) + 2);
+        x = end + 2;
+    }
+    if room > 0
+        && let Some(e) = pane.current()
+    {
+        let name = shown(&e.name);
+        let name = if e.is_dir { format!("{name}/") } else { name.into_owned() };
+        let dim = Style::new().add_modifier(Modifier::DIM);
+        buf.set_stringn(x, area.y, ellipsize_middle(&name, room), room, dim);
     }
 }
 

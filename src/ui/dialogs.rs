@@ -487,7 +487,15 @@ fn drop_menu(buf: &mut Buffer, screen: Rect, plan: &Plan, focus: usize, at: (u16
 fn remotes(buf: &mut Buffer, screen: Rect, app: &App, filter: &str, cursor: usize) -> Drawn {
     let choices = app.remote_choices(filter);
     let w = 50u16.min(screen.width);
-    let want = u16::try_from(choices.len() + 4).unwrap_or(u16::MAX).max(6);
+    // With no remote in rclone.conf, how to get one, and how to open a server without.
+    let note = if app.remotes.is_empty() {
+        let how = tr!("remotes-how", key = app.keymap.label(crate::keymap::Action::Goto));
+        super::panes::wrap(&how, usize::from(w.saturating_sub(4)))
+    } else {
+        Vec::new()
+    };
+    let note_h = if note.is_empty() { 0 } else { note.len() + 1 };
+    let want = u16::try_from(choices.len() + 4 + note_h).unwrap_or(u16::MAX).max(6);
     let h = want.min(screen.height.saturating_sub(2).max(6)).min(screen.height);
     let rect = centered(screen, w, h);
     let inner = frame(buf, rect, &tr!("remotes-title"));
@@ -496,7 +504,14 @@ fn remotes(buf: &mut Buffer, screen: Rect, app: &App, filter: &str, cursor: usiz
     let text = tr!("remotes-filter", filter = filter);
     let field = Rect::new(inner.x + 1, inner.y, u16::try_from(inner_w).unwrap_or(0), 1);
     let at = Field::new(&text, text.chars().count()).render(field, buf);
-    let list = Rect::new(inner.x, inner.y + 2, inner.width, inner.height.saturating_sub(2));
+    let note_h = u16::try_from(note_h).unwrap_or(0).min(inner.height.saturating_sub(3));
+    let list =
+        Rect::new(inner.x, inner.y + 2, inner.width, inner.height.saturating_sub(2 + note_h));
+    let dim = Style::new().add_modifier(Modifier::DIM);
+    for (i, line) in note.iter().take(usize::from(note_h.saturating_sub(1))).enumerate() {
+        let y = list.y + list.height + 1 + u16::try_from(i).unwrap_or(0);
+        buf.set_stringn(list.x + 1, y, line, inner_w, dim);
+    }
     let rows = usize::from(list.height);
     let cursor = cursor.min(choices.len().saturating_sub(1));
     let offset = crate::app::visible_offset(0, cursor, rows, choices.len());

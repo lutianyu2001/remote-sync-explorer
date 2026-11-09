@@ -30,7 +30,7 @@ pub fn height(app: &App, screen_height: u16) -> u16 {
 }
 
 /// Draws the transfer window, labelled (`[5] Transfers`) in its top right corner: counts
-/// and the status line on the first row, then one job per row: the jobs of the endpoints
+/// on the first row, then one job per row: the jobs of the endpoints
 /// the panes show.
 pub fn draw(buf: &mut Buffer, area: Rect, app: &App) -> Vec<(u16, usize, u16)> {
     let focused = app.focus == Focus::Queue;
@@ -124,20 +124,10 @@ fn draw_header(buf: &mut Buffer, area: Rect, app: &App, focused: bool) {
         text.push_str("   ");
         text.push_str(&tr!("queue-keys"));
     }
-    // `2 running · 1 queued` on the left, the status line on the right.
+    // `2 running · 1 queued`.
     let w = w.saturating_sub(1);
     let text = take_width(&text, w).to_owned();
     buf.set_stringn(area.x + 1, area.y, &text, w, Style::new().add_modifier(Modifier::BOLD));
-
-    if let Some(status) = &app.status {
-        let used = width(&text) + 3;
-        if used < w {
-            let room = w - used;
-            let s = ellipsize_middle(&shown(status), room);
-            let x = area.x + u16::try_from(w.saturating_sub(width(&s))).unwrap_or(0);
-            buf.set_stringn(x, area.y, &s, room, Style::new().fg(Color::Yellow));
-        }
-    }
 }
 
 /// Draws one job row and returns the column of its cancel mark.

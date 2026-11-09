@@ -20,6 +20,9 @@ pub struct PaneArea {
     pub edit: Rect,
     /// The rows of entries, below the column headers.
     pub list: Rect,
+    /// The pane's own line under the entries (the filter, the name under the cursor);
+    /// empty when the pane is too short for it.
+    pub footer: Rect,
     /// The column headers that sort by name, size and time; empty when not shown.
     pub columns: [Rect; 3],
     /// First visible row of the pane's view.
@@ -60,6 +63,8 @@ pub struct HitMap {
     pub dialog_list: Option<(Rect, usize)>,
     /// How far the help or error log can scroll at the current size.
     pub scroll_max: usize,
+    /// The column after the message on the bottom row, where the hidden cursor waits.
+    pub message_end: u16,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -176,6 +181,7 @@ mod tests {
             frame: Rect::default(),
             bar: Rect::new(0, 0, 10, 1),
             list: Rect::new(0, 1, 10, 5),
+            footer: Rect::default(),
             columns: [Rect::new(0, 6, 4, 1), Rect::new(4, 6, 3, 1), Rect::default()],
             offset: 10,
             rows: 12,

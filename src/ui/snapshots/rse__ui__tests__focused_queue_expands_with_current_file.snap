@@ -17,7 +17,6 @@ expression: screen
 │                                      ││                                      │
 │                                      ││                                      │
 │                                      ││                                      │
-│                                      ││                                      │
 ╰───────────────────────────[2 marked]─╯╰──────────────────────────────────────╯
 ╭────────────────────────────────────────────────────────────────[5] Transfers─╮
 │ 1 running · 1 queued   x cancel · r retry · c clear · Esc back               │
@@ -25,4 +24,4 @@ expression: screen
 │     ↳ huge.bin  737 MB / 1.5 GB                                              │
 │   copy report-final-v3.pdf → nas:backup/2026                         queued ✕│
 ╰──────────────────────────────────────────────────────────────────────────────╯
- F5 Copy  F6 Move  F7 Mkdir  F8 Delete  F10 Remote  / Filter  ? Help     rclone
+ F2 Rename  F5 Copy  F6 Move  F8 Delete  F10 Remote  / Filter  ? Help    rclone

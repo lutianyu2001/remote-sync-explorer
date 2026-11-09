@@ -1094,6 +1094,8 @@ impl App {
                 if let Some(e) = self.panes[pane].current() {
                     let name = e.name.clone();
                     self.dialog = Some(input(InputPurpose::Rename(e.mark()), name));
+                } else {
+                    self.status = Some(tr!("rename-nothing"));
                 }
             }
             Action::Mkdir => self.dialog = Some(input(InputPurpose::Mkdir, String::new())),
@@ -1154,6 +1156,11 @@ impl App {
                     }
                     KeyCode::Up => self.panes[pane].move_cursor(-1),
                     KeyCode::Down => self.panes[pane].move_cursor(1),
+                    // The entries scroll while the filter is typed, as they do without it.
+                    KeyCode::PageUp => self.action(Action::PageUp, now),
+                    KeyCode::PageDown => self.action(Action::PageDown, now),
+                    KeyCode::Home => self.action(Action::Home, now),
+                    KeyCode::End => self.action(Action::End, now),
                     _ => {}
                 }
                 self.rebuild_all();
@@ -2135,7 +2142,8 @@ impl App {
             Some(Dialog::Remotes { filter, .. }) => self.remote_choices(filter).len(),
             _ => 0,
         };
-        if let Some(dialog) = &mut self.dialog {
+        // The entries scroll under the filter being typed, as they do without it.
+        if let Some(dialog) = self.dialog.as_mut().filter(|d| **d != Dialog::Filter) {
             match dialog {
                 Dialog::Help { scroll } | Dialog::Errors { scroll } => {
                     *scroll = if down {

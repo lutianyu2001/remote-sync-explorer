@@ -23,6 +23,7 @@ marked = [{ $count } marked]
 
 ## Key hints at the bottom
 
+hint-rename = Rename
 hint-copy = Copy
 hint-move = Move
 hint-mkdir = Mkdir
@@ -83,6 +84,7 @@ op-copy-title = Copy
 op-move-title = Move
 op-delete-title = Delete
 nothing-selected = nothing selected
+rename-nothing = Move the cursor to the entry to rename
 same-directory = source and target are the same directory
 into-itself = cannot put a directory inside itself
 checking-target = checking the target…
@@ -204,6 +206,7 @@ remotes-title = Remotes  (type to filter)
 remotes-filter = filter: { $filter }
 remotes-none = no match
 remote-local = Local (~)
+remotes-how = No remotes in rclone.conf yet: add one with `rclone config`. A server opens without one too: press { $key } and type its address, such as sftp://me@box.
 errors-title = Error log, newest first  (Esc to close)
 errors-none = No errors.
 
