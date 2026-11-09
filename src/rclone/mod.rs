@@ -3,7 +3,7 @@
 pub mod api;
 mod backend;
 #[cfg(feature = "embedded")]
-mod ffi;
+pub(crate) mod ffi;
 pub(crate) mod obscure;
 pub mod ssh_passwords;
 pub mod system_ssh;

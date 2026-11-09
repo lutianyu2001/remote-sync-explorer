@@ -35,8 +35,8 @@ thread_local! {
 }
 
 /// Sets the interface language; `Auto` follows the locale as gettext does ([`locale`]),
-/// and without one the system's language. Call it before starting threads: it also sets
-/// the C library's message language.
+/// and without one the system's language. The C library's messages follow it only with
+/// [`set_system_messages`].
 pub fn set(language: Language) {
     let chinese = match language {
         Language::Auto => locale(|name| std::env::var(name).ok())
@@ -46,7 +46,6 @@ pub fn set(language: Language) {
         Language::ZhCn => true,
     };
     CHINESE.store(chinese, Ordering::Relaxed);
-    set_system_messages(chinese);
 }
 
 /// The locale the environment names for messages, as gettext reads it: the first set of
@@ -67,35 +66,52 @@ fn locale(var: impl Fn(&str) -> Option<String>) -> Option<String> {
 }
 
 /// Has glibc translate system errors (`No such file or directory`), which `io::Error`
-/// shows, into the interface language. `build.rs` checks the declaration below against
-/// libintl.h.
+/// shows, into the interface language set last with [`set`]. `LANGUAGE`, when set, still
+/// comes first for glibc, as for any program. `build.rs` checks the declaration below
+/// against libintl.h, and keeps a copy of it to check this file against.
+///
+/// # Safety
+///
+/// No other thread may be using the C library's locale meanwhile: glibc's setlocale is
+/// MT-Unsafe (setlocale(3)). So it must run before rse starts a thread of its own. The Go
+/// runtime of the embedded rclone initialises its packages on a thread of its own at the
+/// same time as `main`, and some of that reads the locale (rclone's sftp, ftp and smb
+/// backends look up the current user); this waits for it to end first.
 #[cfg(all(target_os = "linux", target_env = "gnu"))]
 #[allow(unsafe_code)]
-fn set_system_messages(chinese: bool) {
+pub unsafe fn set_system_messages() {
     unsafe extern "C" {
         fn bind_textdomain_codeset(
             domain: *const libc::c_char,
             codeset: *const libc::c_char,
         ) -> *mut libc::c_char;
     }
+    let chinese = CHINESE.load(Ordering::Relaxed);
     let locales: &[&std::ffi::CStr] =
         if chinese { &[c"zh_CN.UTF-8", c"zh_CN.utf8"] } else { &[c"C"] };
+    #[cfg(feature = "embedded")]
+    crate::rclone::ffi::wait_for_go();
     // Rust leaves LC_CTYPE at "C" (ASCII); without this glibc turns Chinese into "?".
-    // SAFETY: both strings are NUL-terminated literals. `set` runs before rse starts any
-    // thread; the Go runtime of the embedded build has threads by then, but Go never reads
-    // libc's locale or text domains.
+    // SAFETY: both strings are NUL-terminated literals; glibc takes its own lock for the
+    // text domains.
     unsafe { bind_textdomain_codeset(c"libc".as_ptr(), c"UTF-8".as_ptr()) };
     for locale in locales {
-        // SAFETY: a NUL-terminated literal. setlocale must not race other locale users: `set`
-        // runs before rse starts any thread, and Go's threads never use libc's locale.
+        // SAFETY: a NUL-terminated literal; no other thread uses the locale meanwhile, as
+        // the caller promises and Go's initialisation is over.
         if !unsafe { libc::setlocale(libc::LC_MESSAGES, locale.as_ptr()) }.is_null() {
             break;
         }
     }
 }
 
+/// Has the C library's messages follow the interface language: nothing to do here.
+///
+/// # Safety
+///
+/// None needed here; the same as on glibc, so that callers are the same.
 #[cfg(not(all(target_os = "linux", target_env = "gnu")))]
-fn set_system_messages(_chinese: bool) {}
+#[allow(unsafe_code)]
+pub unsafe fn set_system_messages() {}
 
 #[cfg(test)]
 pub fn set_for_this_thread(language: Language) {

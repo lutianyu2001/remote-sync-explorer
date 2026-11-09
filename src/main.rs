@@ -220,12 +220,21 @@ fn language_before_parsing() -> Language {
         .map_or(Language::Auto, |c| c.ui.language)
 }
 
+/// Sets the interface language, and the C library's messages with it.
+#[allow(unsafe_code)]
+fn set_language(language: Language) {
+    rse::i18n::set(language);
+    // SAFETY: rse has started no thread yet: this runs in `main` and `run`, before the
+    // backend and the interface.
+    unsafe { rse::i18n::set_system_messages() };
+}
+
 fn main() {
     // ssh runs rse as its SSH_ASKPASS program to ask the running rse a question.
     if let Some(socket) = system_ssh::askpass_socket() {
         std::process::exit(system_ssh::askpass_main(&socket));
     }
-    rse::i18n::set(language_before_parsing());
+    set_language(language_before_parsing());
     let cli = parse_cli();
     if cli.licenses {
         if let Err(e) = licenses::print() {
@@ -266,7 +275,7 @@ fn run(cli: &Cli) -> Result<()> {
     let migrated = rse::config::migrate_from_rext();
     let config_path = cli.config.clone().or_else(Config::default_path);
     let config = Config::load(config_path.as_deref(), &cli.set)?;
-    rse::i18n::set(config.ui.language);
+    set_language(config.ui.language);
     if let Some(login) = &cli.forget_password {
         return forget_password(login);
     }
@@ -356,8 +365,8 @@ fn run(cli: &Cli) -> Result<()> {
     let result = run_tui(&mut app, &rx, &tx, config.ui.mouse);
 
     let workers_done = app.into_exec().shutdown_timeout(Duration::from_secs(2));
-    // Finalizing while a worker is still inside an rc call is unsafe; the process is
-    // about to exit anyway.
+    // A worker still inside an rc call would only be left to finish: the process is about
+    // to exit anyway.
     if workers_done {
         backend.finalize();
     }
@@ -647,6 +656,14 @@ fn event_loop(
 ) -> Result<()> {
     let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
     terminal.clear()?;
+    // crossterm installs its SIGWINCH handler with its event source, on the first poll.
+    #[cfg(all(unix, feature = "embedded"))]
+    {
+        ct::poll(Duration::ZERO)?;
+        if !rse::signals::on_alternate_stack(libc::SIGWINCH)? {
+            bail!("no SIGWINCH handler to run on the alternate signal stack");
+        }
+    }
     spawn_input(tx.clone());
     spawn_ticker(tx.clone());
     loop {

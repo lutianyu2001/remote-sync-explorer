@@ -678,7 +678,6 @@ impl SystemSsh {
 
     /// Runs ssh with `program` as its `SSH_ASKPASS`, answering its questions until it
     /// exits, and records how in `asked`. Returns its exit status.
-    #[allow(unsafe_code)]
     fn run_with_askpass(
         &self,
         cmd: &mut Command,
@@ -694,14 +693,7 @@ impl SystemSsh {
         cmd.env("SSH_ASKPASS", program)
             .env("SSH_ASKPASS_REQUIRE", "force")
             .env(ASKPASS_ENV, socket);
-        // Without a controlling terminal, ssh cannot ask on the terminal rse draws on.
-        let detach = || {
-            let _ = rustix::process::setsid();
-            Ok(())
-        };
-        // SAFETY: `detach` only calls setsid, which is async-signal-safe, so it may run
-        // between fork and exec.
-        unsafe { cmd.pre_exec(detach) };
+        in_a_session_of_its_own(cmd);
         let mut child = cmd.spawn()?;
         // A server that stalls must not hold this remote, and a worker, for good.
         let mut deadline = Instant::now() + self.login_time;
@@ -1475,6 +1467,21 @@ fn private_dir(dir: &Path) -> std::io::Result<()> {
         fs::set_permissions(dir, fs::Permissions::from_mode(0o700))?;
     }
     Ok(())
+}
+
+/// Starts `cmd` in a session of its own, without a controlling terminal: ssh then cannot
+/// ask on the terminal rse draws on, and its process group is its pid (`end_session`).
+#[allow(unsafe_code)]
+fn in_a_session_of_its_own(cmd: &mut Command) {
+    let detach = || {
+        rustix::process::setsid()?;
+        Ok(())
+    };
+    // SAFETY: `detach` makes one system call and allocates nothing, its error included
+    // (rustix's Errno becomes io::Error::from_raw_os_error), so it may run between fork and
+    // exec: on Linux rustix makes the call itself (its linux_raw backend), on macOS through
+    // libc's setsid, which POSIX lists as async-signal-safe.
+    unsafe { cmd.pre_exec(detach) };
 }
 
 #[cfg(test)]

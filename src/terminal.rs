@@ -528,9 +528,11 @@ fn on_its_own_terminal(cmd: &mut Command) {
         rustix::process::ioctl_tiocsctty(rustix::stdio::stdin())?;
         Ok(())
     };
-    // SAFETY: `attach` only makes two system calls, setsid and the TIOCSCTTY ioctl, which
-    // are async-signal-safe, so it may run between fork and exec; stdin is the
-    // pseudo-terminal by then.
+    // SAFETY: `attach` makes two system calls, setsid and the TIOCSCTTY ioctl, and
+    // allocates nothing, its errors included (rustix's Errno becomes
+    // io::Error::from_raw_os_error), so it may run between fork and exec: on Linux rustix
+    // makes the calls itself (its linux_raw backend), on macOS through libc's thin
+    // wrappers. std has made stdin the pseudo-terminal by then.
     unsafe { cmd.pre_exec(attach) };
 }
 

@@ -84,6 +84,9 @@ opt-level = 3
 unsafe_op_in_unsafe_fn = "deny"
 # unsafe only where a function allows it by name, so a new use cannot slip in unnoticed.
 unsafe_code = "deny"
+# A type C cannot take across an extern declaration fails the build, not only warns.
+improper_ctypes = "deny"
+improper_ctypes_definitions = "deny"
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(fuzzing)", "cfg(kani)"] }
 
 [lints.clippy]

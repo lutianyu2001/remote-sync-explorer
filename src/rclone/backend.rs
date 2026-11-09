@@ -84,8 +84,13 @@ impl Backend for Embedded {
         if self.finalized.load(Ordering::SeqCst) {
             return Err(RpcError::new(0, tr!("rclone-shut-down")));
         }
-        let (status, output) = super::ffi::rpc(method, &input.to_string())
-            .map_err(|e| RpcError::new(0, tr!("rclone-bad-call", error = e.to_string())))?;
+        let (status, output) =
+            super::ffi::rpc(method, &input.to_string()).map_err(|e| match e {
+                super::ffi::CallError::Nul(e) => {
+                    RpcError::new(0, tr!("rclone-bad-call", error = e.to_string()))
+                }
+                super::ffi::CallError::ShutDown => RpcError::new(0, tr!("rclone-shut-down")),
+            })?;
         parse_reply(status, &output)
     }
 

@@ -206,8 +206,8 @@ cargo build --release --locked --target aarch64-apple-darwin
 ```
 
 Between macOS architectures nothing else is needed: cgo uses `clang -arch <arch>`. For
-another Linux architecture, cgo uses `<arch>-linux-gnu-gcc` unless `CC_<target>` says
-otherwise, and rustc needs the same compiler as its linker
+another Linux architecture, cgo uses `<arch>-linux-gnu-gcc` (`<arch>-linux-musl-gcc` for
+a musl target) unless `CC_<target>` says otherwise, and rustc needs the same compiler as its linker
 (`CARGO_TARGET_<TRIPLE>_LINKER`). Two macOS builds can be joined into one universal
 binary:
 

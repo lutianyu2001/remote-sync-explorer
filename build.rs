@@ -9,7 +9,7 @@
 //! - `GO` names the Go binary (default `go` from `PATH`).
 //! - `CC_<target>` or `TARGET_CC` names the C compiler cgo uses for the target. Cross
 //!   builds default to `clang -arch <arch>` for macOS and `<arch>-linux-gnu-gcc` for
-//!   Linux; native builds keep Go's default.
+//!   Linux (`<arch>-linux-musl-gcc` for musl); native builds keep Go's default.
 //!
 //! `GOOS` and `GOARCH` always follow cargo's target, so `cargo build --target ...`
 //! cross-compiles librclone too. For macOS, `MACOSX_DEPLOYMENT_TARGET` (set in
@@ -43,9 +43,30 @@ const EXPECTED_STRUCT: [&str; 2] = ["char* Output;", "int Status;"];
 /// The declaration `src/i18n.rs` writes by hand for glibc targets, as libintl.h has it.
 const EXPECTED_LIBINTL: &str =
     "extern char *bind_textdomain_codeset (const char *__domainname, const char *__codeset)";
+/// The same declarations as Rust has them, in each file that writes them, spacing aside:
+/// each C one above is checked against its header, and these against the files, so that
+/// neither side can change alone.
+const RUST_DECLS: [(&str, &[&str]); 2] = [
+    (
+        "src/rclone/ffi.rs",
+        &[
+            "#[repr(C)] struct RpcReturn { output: *mut c_char, status: c_int, }",
+            "fn RcloneInitialize();",
+            "fn RcloneFinalize();",
+            "fn RcloneRPC(method: *mut c_char, input: *mut c_char) -> RpcReturn;",
+            "fn RcloneFreeString(s: *mut c_char);",
+        ],
+    ),
+    (
+        "src/i18n.rs",
+        &["fn bind_textdomain_codeset( domain: *const libc::c_char, codeset: *const \
+           libc::c_char, ) -> *mut libc::c_char;"],
+    ),
+];
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
+    check_rust_decls();
     third_party_licenses();
     // A directory: cargo looks at every file in it.
     println!("cargo:rerun-if-changed={LIBRSE}");
@@ -159,7 +180,11 @@ fn target_cc(goos: &str, goarch: &str) -> Option<String> {
     Some(match goos {
         // Apple's clang builds for every macOS architecture.
         "darwin" => format!("clang -arch {}", if goarch == "amd64" { "x86_64" } else { goarch }),
-        _ => format!("{}-linux-gnu-gcc", env_or_panic("CARGO_CFG_TARGET_ARCH")),
+        _ => format!(
+            "{}-linux-{}-gcc",
+            env_or_panic("CARGO_CFG_TARGET_ARCH"),
+            if env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("musl") { "musl" } else { "gnu" }
+        ),
     })
 }
 
@@ -368,6 +393,26 @@ fn check_libintl(cc: &str) {
         "libintl.h does not match the hand-written FFI in src/i18n.rs: expected\n  \
          {EXPECTED_LIBINTL}"
     );
+}
+
+/// Checks that the files that declare C functions by hand still declare them as
+/// [`RUST_DECLS`] has them.
+fn check_rust_decls() {
+    let squeeze = |s: &str| s.split_whitespace().collect::<String>();
+    for (file, decls) in RUST_DECLS {
+        println!("cargo:rerun-if-changed={file}");
+        let text = fs::read_to_string(file).unwrap_or_else(|e| panic!("cannot read {file}: {e}"));
+        // Not a copy in a comment: the code alone.
+        let code: String = text.lines().map(|l| l.split("//").next().unwrap_or_default()).collect();
+        let text = squeeze(&code);
+        for decl in decls {
+            assert!(
+                text.contains(&squeeze(decl)),
+                "{file} no longer declares, as build.rs expects:\n  {decl}\nChange both, and \
+                 the C declaration build.rs checks it against."
+            );
+        }
+    }
 }
 
 fn normalize(line: &str) -> String {
