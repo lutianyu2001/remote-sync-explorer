@@ -30,7 +30,7 @@ pub const REVIEWS: &str = "audit/reviews";
 /// Rust files left out although `unsafe` is a word in them, while it is only in comments (or
 /// strings): read as tokens, where `unsafe` or `global_asm` brings them back. Here the
 /// message key `names-unsafe` (src/app.rs) and a comment of src/main.rs.
-const ONLY_IN_COMMENTS: &[&str] = &["src/app.rs", "src/main.rs"];
+const ONLY_IN_COMMENTS: &[&str] = &["src/app.rs"];
 
 /// What is never reviewed here: the dependencies' code, which their audits cover (see
 /// supply-chain/), the fuzz targets and the audit's own code.

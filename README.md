@@ -94,10 +94,12 @@ system's own, never shipped with rse.
 
 ## Security Audit
 
+[![review](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Freview.json)](audit/reviews)
 [![deny](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fdeny.json)](https://github.com/lutianyu2001/remote-sync-explorer/actions/workflows/audit.yml)
 [![vet](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fvet.json)](audit/vet)
 [![geiger](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fgeiger.json)](audit/geiger)
 [![miri](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fmiri.json)](audit/miri)
+[![asan](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fasan.json)](audit/asan)
 [![coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fcoverage.json)](audit/coverage)
 [![kani](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Fkani.json)](audit/kani)
 [![fuzz](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flutianyu2001%2Fremote-sync-explorer%2Fbadges%2Ffuzz.json)](audit/fuzz)
@@ -116,7 +118,8 @@ of 2026-11-02.
 | Area | What was audited | Extent |
 |---|---|---|
 | Threat model | Every place where input from outside, or a secret, reaches rse, reviewed by hand, with each decision written down | 18 decisions in SECURITY.md: where passwords go, host keys (also after falling back to rclone's built-in ssh), what a server can make ssh do, options slipped into ssh, `--rcd` over plain http, file permissions, names and text from servers on screen, overwrites, rsync's command line, resumed files, the saved queue |
-| `unsafe` code | rse forbids `unsafe` except in functions that allow it by name | 8 blocks, each a call that has no safe form (into librclone, `setlocale`, `pre_exec`), each with the reason it is sound |
+| `unsafe` code | rse forbids `unsafe` except in functions that allow it by name; each file with `unsafe` has a review, done again whenever the file changes | 14 blocks, each a call that has no safe form (into librclone, `setlocale`, `sigaction`, `pre_exec`), each with the reason it is sound; reviewed by four independent reviewers ([`audit/reviews/`](audit/reviews/)), no undefined behaviour found |
+| AddressSanitizer | The integration tests, which call into librclone, built with AddressSanitizer, which detects invalid memory accesses and leaks at run time | 8 test programs, no error (2026-11-09) |
 | Dependencies | Sources, licenses, known vulnerabilities, abandoned and yanked crates (cargo-deny); an audit of every crate (cargo-vet); builds offline from checksummed sources | 220 crates audited: audits imported from Mozilla, Google and the Bytecode Alliance, and 189 of our own; no exemptions. Vulnerabilities are looked up again daily |
 | Tests | Unit, screen snapshot and integration tests, including ssh logins against a private `sshd` | 268 tests, reaching 93% of the lines and 80% of the branches |
 | Miri | The tests of the modules that need no process, socket or network, run under Miri, which detects undefined behaviour | 74 tests in 13 modules |

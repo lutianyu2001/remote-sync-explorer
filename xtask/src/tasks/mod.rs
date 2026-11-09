@@ -30,11 +30,9 @@ pub const KNOWN: [&str; 9] =
 
 // Per project: the tasks of KNOWN this project runs, in the same order. Not kani before
 // the first proof, nor fuzz before the first target, nor asan without tests that call into
-// C: a task with nothing to check fails. Here not review nor asan yet: the unsafe code
-// (src/rclone/ffi.rs, src/i18n.rs, src/rclone/system_ssh.rs, src/terminal.rs) has no review
-// in audit/reviews/ so far.
+// C: a task with nothing to check fails.
 /// The tasks this project runs.
-pub const TASKS: &[&str] = &["deny", "vet", "geiger", "miri", "coverage", "kani", "fuzz"];
+pub const TASKS: &[&str] = &KNOWN;
 
 /// The memory limit of the heavy tasks other than Kani, and of building the fuzz targets.
 const MEMORY: &str = "4G";

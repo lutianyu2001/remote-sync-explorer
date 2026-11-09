@@ -13,7 +13,9 @@ a known vulnerability in it; nothing is updated without the user's choice.
 
 | Check | What it covers | Command |
 |---|---|---|
-| Lints | `unsafe` only in functions that allow it by name, one unsafe operation per block, each with a `// SAFETY:` comment; no `unwrap`/`expect` | `cargo clippy --all-targets` |
+| Lints | `unsafe` only in functions that allow it by name, one unsafe operation per block, each with a `// SAFETY:` comment; types C cannot take refused in `extern` declarations; no `unwrap`/`expect` | `cargo clippy --all-targets` |
+| Review | Every Rust file with `unsafe` has a review in `audit/reviews/` whose sha256 matches the file as it is | `cargo xtask review` |
+| AddressSanitizer | The integration tests, which call into librclone, built with AddressSanitizer: invalid memory accesses and leaks at run time (Linux) | `cargo xtask asan` |
 | Unit and integration tests | Exhaustive checks of the parsers on short inputs; ssh logins against a private `sshd` | `cargo test` |
 | Go vet and tests | rse's own rc calls in `librse/` (resumed transfers), against the local backend and an sftp server in the test binary | `cd librse && go vet ./... && go test ./...` |
 | Fuzzing | The parsers of untrusted text (below), against panics, hangs and broken invariants; `fuzz/` is a workspace of its own | `cargo xtask fuzz` |
@@ -103,8 +105,8 @@ which results stand, and `--if-needed` skips a task whose result does; `cargo xt
 ### CI
 
 The Verify workflow runs at each release (the release job starts it once the release is
-published) the tasks whose length is known before they start or that are short: deny,
-vet, geiger, coverage and fuzz, four hours a target (`FUZZ_SECONDS`), all at once on a
+published) the tasks whose length is known before they start or that are short: review,
+deny, vet, geiger, asan, coverage and fuzz, four hours a target (`FUZZ_SECONDS`), all at once on a
 runner's four cores, going on from the corpus of the last run; and Kani and Miri, which
 take minutes here, with jobs that time out at 30 minutes. One new proof or test can take
 them from seconds to hours, so after changing the proofs or what Miri tests, see how long
@@ -128,14 +130,16 @@ many pinned versions are due.
 
 ```bash
 cargo xtask setup        # install the pinned tools and toolchain (once)
+cargo xtask review       # every file with unsafe has a review of it as it is
 cargo xtask deny         # sources, licenses and advisories of the dependencies
 cargo xtask vet          # every dependency is audited
 cargo xtask geiger       # unsafe code in the dependencies
 cargo xtask miri         # undefined behaviour in the tests of the pure modules
+cargo xtask asan         # the integration tests under AddressSanitizer
 cargo xtask coverage     # which branches the tests reach
 cargo xtask kani         # the proofs (Kani brings its own toolchain)
 cargo xtask fuzz         # every fuzz target, an hour each
-cargo xtask all          # the seven above in this order, each whatever the others did
+cargo xtask all          # the nine above in this order, each whatever the others did
 cargo xtask status       # how each task last ran, and whether its result still stands
 cargo xtask needed kani  # why kani needs a run; exits 1 when it does not
 cargo xtask outdated     # pinned versions that are due for an update; asks which to take
@@ -167,10 +171,16 @@ names.
 
 ## Decisions
 
-- **`unsafe`.** The crate denies `unsafe_code`; the 8 uses left are calls with no safe
-  form, into librclone, `setlocale` and `pre_exec`, each in a function that allows it
-  by name, with the reason it is sound beside it. The `extern` blocks declaring the C
-  functions allow it by name too, and `build.rs` checks them against the C headers. File
+- **`unsafe`.** The crate denies `unsafe_code`; the 14 blocks left are calls with no safe
+  form, into librclone, `setlocale`, `sigaction` (to run crossterm's `SIGWINCH` handler on
+  the alternate signal stack, as the embedded Go runtime requires) and `pre_exec`, each in
+  a function that allows it by name, with the reason it is sound beside it. The `extern`
+  blocks declaring the C functions allow it by name too, and `build.rs` checks them
+  against the C headers and against copies of them it keeps. A precondition no code can
+  check is an `unsafe fn` (`i18n::set_system_messages`), and the rest are enforced: no rc
+  call runs while rclone shuts down, and setting the C locale first waits for Go's
+  initialisation, which runs beside `main`. Each file with `unsafe` has a review in
+  `audit/reviews/`, which `cargo xtask review` holds to the file as it is. File
   descriptors, `getuid` and `setsid` go through rustix's safe functions instead.
 - **ssh questions.** A password or passphrase from rclone.conf, or a remembered one, goes
   only to ssh's own question for the server's account (`me@box's password:` or

@@ -83,7 +83,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           # Per project: TASKS in xtask/src/tasks/mod.rs, and audit and pins; the README
           # shows each of them.
-          NAMES: "audit deny vet geiger miri coverage kani fuzz pins"
+          NAMES: "audit review deny vet geiger miri asan coverage kani fuzz pins"
         run: |
           set -euo pipefail
           set -f
