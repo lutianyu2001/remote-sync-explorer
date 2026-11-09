@@ -11,6 +11,7 @@ use super::text::{ellipsize_middle, ellipsize_name, fit, format_time, human_size
 use crate::app::{App, Dialog, InputPurpose, Plan, job_label};
 use crate::event::{Entry, JobId};
 use crate::jobs::{JobState, OpKind, same_name};
+use crate::keymap::Action;
 
 /// What a drawn dialog occupies.
 #[derive(Default)]
@@ -245,7 +246,27 @@ fn job_conflict_text(
 
 fn help_text(app: &App) -> Vec<(String, Style)> {
     let bold = Style::new().add_modifier(Modifier::BOLD);
-    let mut lines = vec![(tr!("help-keys"), bold)];
+    let key = |action| app.keymap.label(action);
+    let mut lines = vec![
+        (tr!("help-start"), bold),
+        plain(format!("  {}", tr!("help-start-panes", switch = key(Action::SwitchPane)))),
+        plain(format!(
+            "  {}",
+            tr!("help-start-open", goto = key(Action::Goto), remote = key(Action::Remote))
+        )),
+        plain(format!(
+            "  {}",
+            tr!(
+                "help-start-copy",
+                mark = key(Action::Mark),
+                copy = key(Action::Copy),
+                move = key(Action::Move)
+            )
+        )),
+        plain(format!("  {}", tr!("help-start-more"))),
+        plain(String::new()),
+        (tr!("help-keys"), bold),
+    ];
     for (keys, what) in app.keymap.help() {
         lines.push(plain(format!("  {}  {what}", fit(&keys, 22))));
     }
@@ -489,7 +510,7 @@ fn remotes(buf: &mut Buffer, screen: Rect, app: &App, filter: &str, cursor: usiz
     let w = 50u16.min(screen.width);
     // With no remote in rclone.conf, how to get one, and how to open a server without.
     let note = if app.remotes.is_empty() {
-        let how = tr!("remotes-how", key = app.keymap.label(crate::keymap::Action::Goto));
+        let how = tr!("remotes-how", key = app.keymap.label(Action::Goto));
         super::panes::wrap(&how, usize::from(w.saturating_sub(4)))
     } else {
         Vec::new()

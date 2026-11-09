@@ -463,18 +463,21 @@ fn draw_footer(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) {
     }
 }
 
-/// Greedy word wrap to `w` cells; long words are cut.
+/// Greedy word wrap to `w` cells; long words are cut, and words of wide characters
+/// (Chinese, which has no spaces between words) break anywhere to fill the line. A
+/// paragraph's indent starts each of its lines, up to half the width.
 pub fn wrap(text: &str, w: usize) -> Vec<String> {
     let w = w.max(1);
     let mut lines = Vec::new();
     for para in text.split('\n') {
-        // Keep a leading indent on the first line of each paragraph.
         let body = para.trim_start_matches(' ');
-        let mut line = " ".repeat((para.len() - body.len()).min(w.saturating_sub(1)));
+        let indent = " ".repeat((para.len() - body.len()).min(w / 2));
+        let mut line = indent.clone();
         for word in body.split(' ') {
             let mut word = word.to_owned();
             loop {
-                let sep = usize::from(!line.trim_start_matches(' ').is_empty());
+                let empty = line.trim_start_matches(' ').is_empty();
+                let sep = usize::from(!empty);
                 if width(&line) + sep + width(&word) <= w {
                     if sep == 1 {
                         line.push(' ');
@@ -482,21 +485,28 @@ pub fn wrap(text: &str, w: usize) -> Vec<String> {
                     line.push_str(&word);
                     break;
                 }
-                if !line.trim_start_matches(' ').is_empty() {
-                    lines.push(std::mem::take(&mut line));
-                    continue;
-                }
-                // A character wider than `w` goes on a line of its own, or this never ends.
-                let mut head = super::text::take_width(&word, w).to_owned();
-                if head.is_empty() {
+                let room = w.saturating_sub(width(&line) + sep);
+                let wide = width(&word) > word.chars().count();
+                let mut head = if wide || empty {
+                    super::text::take_width(&word, room).to_owned()
+                } else {
+                    String::new()
+                };
+                // A character wider than the line goes on one of its own, or this never ends.
+                if head.is_empty() && empty {
                     word.graphemes(true).next().unwrap_or_default().clone_into(&mut head);
                 }
-                word = word.split_off(head.len());
-                if word.is_empty() {
-                    line = head;
-                    break;
+                if !head.is_empty() {
+                    if sep == 1 {
+                        line.push(' ');
+                    }
+                    line.push_str(&head);
+                    word = word.split_off(head.len());
+                    if word.is_empty() {
+                        break;
+                    }
                 }
-                lines.push(head);
+                lines.push(std::mem::replace(&mut line, indent.clone()));
             }
         }
         lines.push(line);
@@ -526,7 +536,9 @@ mod tests {
     fn wrap_breaks_on_words_and_cuts_long_ones() {
         assert_eq!(wrap("aa bb cc", 5), ["aa bb", "cc"]);
         assert_eq!(wrap("abcdefgh", 3), ["abc", "def", "gh"]);
-        assert_eq!(wrap("  ab cd", 5), ["  ab", "cd"]);
+        assert_eq!(wrap("  ab cd", 5), ["  ab", "  cd"]);
+        assert_eq!(wrap("按 Tab 切换窗格", 9), ["按 Tab 切", "换窗格"]);
+        assert_eq!(wrap("  一二三四五六", 8), ["  一二三", "  四五六"]);
         assert_eq!(wrap("文件", 1), ["文", "件"]);
         assert_eq!(wrap("\r ab", 1), ["\r", "a", "b"], "only spaces are indent");
     }

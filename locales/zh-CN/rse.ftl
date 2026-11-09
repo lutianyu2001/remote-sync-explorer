@@ -198,6 +198,11 @@ errors-none = 没有错误。
 ## 帮助
 
 help-title = 帮助（Esc 关闭）
+help-start = 入门
+help-start-panes = 每个窗格显示一个目录：本地磁盘、服务器或 rclone 远程上的。{ $switch } 在两个窗格之间切换。
+help-start-open = 打开服务器：按 { $goto } 输入它的地址（sftp://me@box/srv、ftp://…、smb://…）；{ $remote } 从 rclone.conf 里选一个远程，或选本地磁盘。
+help-start-copy = 用 { $mark } 选中条目；{ $copy } 把它们复制到另一个窗格的目录，{ $move } 移动过去。进度显示在“传输”窗口里。
+help-start-more = 完整说明见手册 man rse 和 README。
 help-keys = 按键
 help-mouse = 鼠标
 help-shift = 在大多数终端里，按住 Shift 拖动可以选中文字。
@@ -342,7 +347,7 @@ key-sort = 按名称、大小、时间排序
 key-sort_reverse = 反转排序顺序
 key-toggle_hidden = 显示或隐藏点文件
 key-goto = 前往路径、remote:path 或网址
-key-remote = 选择远程
+key-remote = 为窗格选择 rclone.conf 里的远程，或本地磁盘
 key-swap = 交换两个窗格
 key-refresh = 刷新窗格
 key-copy = 复制到另一个窗格

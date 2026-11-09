@@ -213,6 +213,11 @@ errors-none = No errors.
 ## Help
 
 help-title = Help  (Esc to close)
+help-start = Getting started
+help-start-panes = Each pane shows a directory: on the local disk, a server or an rclone remote. { $switch } switches between them.
+help-start-open = To open a server, press { $goto } and type its address (sftp://me@box/srv, ftp://…, smb://…); { $remote } picks a remote from rclone.conf, or the local disk.
+help-start-copy = Mark entries with { $mark }; { $copy } copies them to the other pane's directory, { $move } moves them. The Transfers window shows the progress.
+help-start-more = The whole manual: man rse, and the README.
 help-keys = Keys
 help-mouse = Mouse
 help-shift = Hold Shift while dragging to select text in most terminals.
@@ -360,7 +365,7 @@ key-sort = Sort by name, size, time
 key-sort_reverse = Reverse the sort order
 key-toggle_hidden = Show or hide dot files
 key-goto = Go to a path, remote:path or URL
-key-remote = Choose a remote
+key-remote = Choose a remote from rclone.conf, or the local disk, for the pane
 key-swap = Swap the panes
 key-refresh = Reload the pane
 key-copy = Copy to the other pane
