@@ -75,10 +75,11 @@ pub fn setup(tasks: &[String]) -> Result<(), String> {
 
 /// cargo for installing the tools: with the stable toolchain pinned for them, and outside
 /// the repository, whose .cargo/config.toml would otherwise have crates come from vendor/
-/// alone, offline.
+/// alone, offline. From /, which only root writes to: cargo reads the .cargo/config.toml of
+/// every directory above, and another user may leave one in the shared temporary directory.
 fn tool_cargo(args: &[&str]) -> Command {
     let mut cmd = Command::new("cargo");
-    cmd.arg(format!("+{STABLE}")).args(args).current_dir(env::temp_dir());
+    cmd.arg(format!("+{STABLE}")).args(args).current_dir("/");
     cmd
 }
 

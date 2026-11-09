@@ -11,7 +11,7 @@ description = "The security audit: cargo xtask <task> (see SECURITY.md)"
 # so that the tasks add nothing to Cargo.lock, vendor/ or what cargo vet covers: each with
 # only the features the code needs, since defaults could bring in crates. Per project: the
 # versions in Cargo.lock (here, with the rcd feature too; proc-macro2 through clap's
-# derive macros).
+# derive macros); a crate not there is replaced by code of xtask's own or the system's curl.
 [dependencies]
 proc-macro2 = { version = "1.0.107", default-features = false }
 serde_json = { version = "1.0.154", default-features = false, features = ["std"] }

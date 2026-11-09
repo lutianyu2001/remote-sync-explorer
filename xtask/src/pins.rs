@@ -3,7 +3,7 @@
 //! task's input (see `affects`): a new version of a tool makes only the tasks that use it
 //! need a run, through the tools each run records.
 
-/// The nightly toolchain for fuzzing, Miri and coverage. Kani brings its own.
+/// The nightly toolchain for fuzzing, Miri, `AddressSanitizer` and coverage. Kani brings its own.
 pub const NIGHTLY: &str = "nightly-2026-10-28";
 
 /// The stable toolchain the plugins below are built with: new enough for each (cargo-geiger

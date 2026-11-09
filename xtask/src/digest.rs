@@ -23,7 +23,9 @@ use std::thread;
 /// The first line of `task`'s inputs.txt, which says how its hashes were made: with another
 /// first line, none of them compare.
 pub fn format(task: &str) -> &'static str {
-    if OWN_VERSION_READ.contains(&task) {
+    if AS_THEY_ARE.contains(&task) {
+        "# all as git blobs (2)"
+    } else if OWN_VERSION_READ.contains(&task) {
         "# Rust as tokens, TOML as values, the rest as git blobs, unread metadata left out (2)"
     } else {
         "# Rust as tokens, TOML as values, the rest as git blobs, own versions and unread metadata left out (2)"
@@ -36,6 +38,10 @@ pub fn format(task: &str) -> &'static str {
 /// Cargo.toml and Cargo.lock are hashed with it; for the others a release changes nothing.
 /// Here coverage: tests/startup.rs runs `rse --version`, which prints it (src/main.rs).
 const OWN_VERSION_READ: &[&str] = &["coverage"];
+
+/// The tasks whose files are all hashed as they are: a review records each file's sha256, so
+/// that a change to its comments or its layout wants it read again too.
+const AS_THEY_ARE: &[&str] = &["review"];
 
 /// The text that stands for a file's contents, with the workspace's own version where
 /// `kept`; none when they are hashed as they are.
@@ -77,7 +83,8 @@ fn is_cargo_file(path: &str) -> bool {
 
 /// A Cargo.toml or Cargo.lock with the version of the workspace's own packages blanked: the
 /// `version` of `[package]` and `[workspace.package]`, and of each `[[package]]` of the lock
-/// without a `source`, which are the workspace's and path dependencies'. Read line by line, as
+/// without a `source`, which are the workspace's and path dependencies'; and in a Cargo.toml,
+/// the version a path dependency asks for, which a release raises with the package's. Read line by line, as
 /// Cargo writes them, so that it needs no TOML parser; whatever else is kept as it is.
 fn without_own_versions(path: &str, text: &str) -> String {
     let lock = path.ends_with("Cargo.lock");
@@ -134,20 +141,57 @@ fn push_table(out: &mut String, lines: &[&str], lock: bool) {
         line.trim_start().strip_prefix(name).is_some_and(|rest| rest.trim_start().starts_with('='))
     };
     let header = lines.first().and_then(|l| l.split('#').next()).unwrap_or_default().trim();
+    let name = header.trim_start_matches('[').trim_end_matches(']');
+    let segments: Vec<&str> = name.split('.').collect();
+    // [dependencies], [workspace.dependencies], [target.<cfg>.dev-dependencies] and the like,
+    // each dependency on a line; or [dependencies.<name>], one dependency on many.
+    let at = segments.iter().position(|s| s.ends_with("dependencies"));
+    let many = !lock && at.is_some_and(|i| i + 1 == segments.len());
+    let one = !lock && at.is_some_and(|i| i + 2 == segments.len());
     let own = if lock {
         header == "[[package]]" && !lines.iter().any(|l| key(l, "source"))
     } else {
-        header == "[package]" || header == "[workspace.package]"
+        header == "[package]"
+            || header == "[workspace.package]"
+            || one && lines.iter().any(|l| key(l, "path"))
     };
     let mut blanked = false;
     for line in lines {
         if own && !blanked && key(line, "version") {
             out.push_str("version = \"\"\n");
             blanked = true;
+        } else if many && line.contains('{') && inline_key(line, "path").is_some() {
+            out.push_str(&blank_inline_version(line));
         } else {
             out.push_str(line);
         }
     }
+}
+
+/// Where the value of `name` starts in an inline table on `line` (`a = { path = "a" }`).
+fn inline_key(line: &str, name: &str) -> Option<usize> {
+    let open = line.find('{')?;
+    let mut from = open;
+    while let Some(found) = line[from..].find(name) {
+        let start = from + found;
+        let before = line[..start].trim_end();
+        let after = line[start + name.len()..].trim_start();
+        if (before.ends_with('{') || before.ends_with(',')) && after.starts_with('=') {
+            let value = &after[1..];
+            return Some(line.len() - value.trim_start().len());
+        }
+        from = start + name.len();
+    }
+    None
+}
+
+/// `line` with the string of its inline table's `version` made empty.
+fn blank_inline_version(line: &str) -> String {
+    let Some(start) = inline_key(line, "version").filter(|&s| line[s..].starts_with('"')) else {
+        return line.to_owned();
+    };
+    let Some(end) = line[start + 1..].find('"') else { return line.to_owned() };
+    format!("{}\"\"{}", &line[..start], &line[start + 1 + end + 1..])
 }
 
 /// The files `task` reads, given with their git hashes (as `git ls-files -s` has them), with
@@ -161,6 +205,7 @@ pub fn hashes(
 ) -> Result<Vec<(String, String)>, String> {
     let kept = OWN_VERSION_READ.contains(&task);
     let wanted: Vec<usize> = (0..files.len())
+        .filter(|_| !AS_THEY_ARE.contains(&task))
         .filter(|&i| !data.contains(&files[i].0.as_str()))
         .filter(|&i| {
             let path = Path::new(&files[i].0);
@@ -349,6 +394,23 @@ mod tests {
         );
         assert!(blank("Cargo.lock", &lock("0.1.0", "1.0.0")).starts_with("version = 4\n"));
         assert!(blank("Cargo.toml", &manifest("0.1.0")).contains("b = { version = \"1\" }"));
+        // The version a path dependency asks for goes with it; a registry one's stays.
+        let member = |v: &str| {
+            format!(
+                "[dependencies]\ncore = {{ path = \"../core\", version = \"{v}\" }}\nb = {{ version = \"1\" }}\n\n[workspace.dependencies.core]\npath = \"core\"\nversion = \"{v}\"\n"
+            )
+        };
+        assert_eq!(
+            blank("crates/b/Cargo.toml", &member("0.1.0")),
+            blank("crates/b/Cargo.toml", &member("0.2.0"))
+        );
+        assert!(blank("crates/b/Cargo.toml", &member("0.1.0")).contains("b = { version = \"1\" }"));
+        assert!(
+            blank("crates/b/Cargo.toml", &member("0.1.0"))
+                .contains("core = { path = \"../core\", version = \"\" }")
+        );
+        let registry = "[dependencies.b]\nversion = \"1\"\n";
+        assert_eq!(blank("Cargo.toml", registry), registry);
         let workspace = "[workspace.package]\nversion = \"1.0.0\"\n";
         assert_eq!(blank("Cargo.toml", workspace), "[workspace.package]\nversion = \"\"\n");
         let inherited = "[package]\nversion.workspace = true\n";

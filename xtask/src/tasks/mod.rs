@@ -14,21 +14,27 @@ use crate::pins::{NIGHTLY, TOOLS};
 use crate::record;
 use crate::run::cargo;
 
+pub mod asan;
 pub mod coverage;
 pub mod deny;
 pub mod fuzz;
 pub mod geiger;
 pub mod kani;
 pub mod miri;
+pub mod review;
 pub mod vet;
 
 /// Every task there is, in the order `all` runs them: the cheap ones first.
-pub const KNOWN: [&str; 7] = ["deny", "vet", "geiger", "miri", "coverage", "kani", "fuzz"];
+pub const KNOWN: [&str; 9] =
+    ["review", "deny", "vet", "geiger", "miri", "asan", "coverage", "kani", "fuzz"];
 
 // Per project: the tasks of KNOWN this project runs, in the same order. Not kani before
-// the first proof, nor fuzz before the first target: a task with nothing to check fails.
+// the first proof, nor fuzz before the first target, nor asan without tests that call into
+// C: a task with nothing to check fails. Here not review nor asan yet: the unsafe code
+// (src/rclone/ffi.rs, src/i18n.rs, src/rclone/system_ssh.rs, src/terminal.rs) has no review
+// in audit/reviews/ so far.
 /// The tasks this project runs.
-pub const TASKS: &[&str] = &KNOWN;
+pub const TASKS: &[&str] = &["deny", "vet", "geiger", "miri", "coverage", "kani", "fuzz"];
 
 /// The memory limit of the heavy tasks other than Kani, and of building the fuzz targets.
 const MEMORY: &str = "4G";
@@ -39,7 +45,9 @@ pub fn run(root: &Path, task: &str, dir: &Path, plan: &Plan) -> Result<(), Strin
         "deny" => deny::run(root),
         "vet" => vet::run(root),
         "geiger" => geiger::run(root, dir),
+        "review" => review::run(root, dir),
         "miri" => miri::run(root),
+        "asan" => asan::run(root),
         "coverage" => coverage::run(root, dir),
         "kani" => kani::run(root, dir, &plan.proofs),
         "fuzz" => fuzz::run(root, dir, plan),
@@ -57,6 +65,7 @@ pub fn needs(task: &str) -> (&'static [&'static str], Option<&'static [&'static 
         "fuzz" => (&["fuzz"], Some(&[])),
         "kani" => (&["kani"], None),
         "miri" => (&[], Some(&["miri", "rust-src"])),
+        "asan" => (&[], Some(&[])),
         "coverage" => (&["llvm-cov"], Some(&["llvm-tools"])),
         _ => (&[], None),
     }
@@ -89,7 +98,7 @@ pub fn pins(task: &str) -> String {
 /// The memory limit of `task` (of building, for fuzz), if it is a heavy one.
 pub fn memory(task: &str) -> Option<String> {
     let default = match task {
-        "deny" | "vet" => return None,
+        "review" | "deny" | "vet" => return None,
         "kani" => kani::MEMORY,
         _ => MEMORY,
     };
@@ -158,6 +167,7 @@ fn packages(root: &Path) -> Result<String, String> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

@@ -7,7 +7,7 @@
 //! others as they were.
 //!
 //! The results are committed with the code, so a run needs a working tree without
-//! uncommitted changes (`audit/` aside), and the paths of this machine are taken out of
+//! uncommitted changes (`audit/` aside, but for the reviews), and the paths of this machine are taken out of
 //! what it wrote. One with `--no-record` may run on any tree, and goes to
 //! `target/audit/<task>/` instead.
 
@@ -21,6 +21,7 @@ use std::thread;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::outdated::{civil, day};
+use crate::tasks::review::REVIEWS;
 
 /// The log of the run in progress, if any.
 static LOG: Mutex<Option<File>> = Mutex::new(None);
@@ -260,7 +261,16 @@ fn replace_path(text: &[u8], from: &[u8], to: &[u8]) -> Vec<u8> {
     out
 }
 
-/// The files of the working tree as git sees them (ignored files left out, `audit/` too),
+/// Whether `path` is under `audit/` and not a review: the results and what runs leave there,
+/// no input of a task, and changed by the runs themselves. The reviews are written by hand,
+/// and read by the review task.
+fn results(path: &str) -> bool {
+    let reviews = format!("{REVIEWS}/");
+    path.starts_with("audit/") && !path.starts_with(&reviews)
+}
+
+/// The files of the working tree as git sees them (ignored files left out, `audit/` too but
+/// for the reviews),
 /// with the hashes git gives their contents. Read through an index of its own, so that
 /// the real one stays as it is.
 pub fn files(root: &Path) -> Result<Vec<(String, String)>, String> {
@@ -292,7 +302,7 @@ pub fn files(root: &Path) -> Result<Vec<(String, String)>, String> {
         .filter_map(|entry| {
             let (meta, path) = entry.split_once('\t')?;
             let hash = meta.split(' ').nth(1)?;
-            (!path.starts_with("audit/")).then(|| (path.to_owned(), hash.to_owned()))
+            (!results(path)).then(|| (path.to_owned(), hash.to_owned()))
         })
         .collect())
 }
@@ -302,9 +312,10 @@ pub fn tracked(root: &Path, path: &str) -> bool {
     git(root, &["ls-files", "--error-unmatch", "--", path]).is_some()
 }
 
-/// The paths with uncommitted changes, untracked files included, `audit/` aside.
+/// The paths with uncommitted changes, untracked files included, `audit/` aside but for the
+/// reviews, which a run of review reads.
 pub fn uncommitted(root: &Path) -> Vec<String> {
-    let args = ["status", "--porcelain", "-z", "--untracked-files=all", "--", ".", ":!audit"];
+    let args = ["status", "--porcelain", "-z", "--untracked-files=all", "--", "."];
     // Not trimmed, as `git` would: the first entry may start with a space.
     let Some(out) = Command::new("git")
         .args(args)
@@ -316,16 +327,29 @@ pub fn uncommitted(root: &Path) -> Vec<String> {
     else {
         return vec!["(git status failed)".to_owned()];
     };
+    // git status gives paths from the top of the repository, which is above the workspace
+    // when the workspace is in a subdirectory of it.
+    let prefix = git(root, &["rev-parse", "--show-prefix"]).unwrap_or_default();
     // `XY <path>`, each ended by a NUL; a rename is followed by its old path.
     let mut paths = Vec::new();
     let mut entries = out.split('\0').filter(|e| !e.is_empty());
     while let Some(entry) = entries.next() {
-        paths.push(entry.get(3..).unwrap_or(entry).to_owned());
+        let path = from_workspace(entry.get(3..).unwrap_or(entry), prefix.trim_end());
+        // A directory untracked as a whole is listed file by file (--untracked-files=all).
+        if !results(path) {
+            paths.push(path.to_owned());
+        }
         if entry.starts_with('R') || entry.starts_with('C') {
             entries.next();
         }
     }
     paths
+}
+
+/// `path`, given from the top of the repository, as from the workspace, `prefix` (as
+/// `git rev-parse --show-prefix` says) below it.
+fn from_workspace<'a>(path: &'a str, prefix: &str) -> &'a str {
+    path.strip_prefix(prefix).unwrap_or(path)
 }
 
 /// Why `task` needs a run, given the files it reads now (as inputs.txt has them), the
@@ -465,8 +489,36 @@ fn time(t: SystemTime) -> String {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
-    use super::{changed, covers, replace_path};
+    use super::{LAST, REVIEWS, changed, covers, from_workspace, replace_path, results, start};
+    use std::fs;
+
+    /// A run of review replaces audit/review/, and leaves audit/reviews/ as it was, whether it
+    /// succeeded or failed.
+    #[test]
+    fn the_results_of_review_are_kept_apart_from_the_reviews() {
+        let root =
+            crate::root().join("target").join(format!("xtask-record-{}", std::process::id()));
+        let reviews = root.join(REVIEWS);
+        fs::create_dir_all(&reviews).unwrap();
+        fs::write(reviews.join("a.md"), "a review").unwrap();
+        for outcome in ["succeeded", "failed: stale", "failed: stale", "succeeded"] {
+            let run = start(&root, "review", 0, true, String::new()).unwrap();
+            fs::write(run.dir().join("review.txt"), outcome).unwrap();
+            run.finish(outcome, "", "").unwrap();
+            let kept = fs::read_to_string(root.join("audit/review/review.txt")).unwrap();
+            assert_eq!(kept, outcome);
+            assert_eq!(fs::read_to_string(reviews.join("a.md")).unwrap(), "a review");
+            let last = root.join("audit/review").join(LAST).join("review.txt");
+            assert_eq!(last.exists(), outcome != "succeeded");
+        }
+        fs::remove_dir_all(&root).unwrap();
+        assert!(results("audit/review/run.txt"));
+        assert!(results("audit/.running/review/run.log"));
+        assert!(!results("audit/reviews/a.md"));
+        assert!(!results("crates/a/src/lib.rs"));
+    }
 
     #[test]
     fn a_longer_fuzz_run_stands_for_a_shorter_one() {
@@ -502,5 +554,13 @@ mod tests {
         let new = "a1\tCargo.lock\nb2\tsrc/a.rs\nd1\tsrc/new.rs\n";
         assert_eq!(changed(old, new), ["src/a.rs", "src/gone.rs", "src/new.rs"]);
         assert_eq!(changed(old, old), Vec::<String>::new());
+    }
+
+    /// git status gives paths from the top of the repository; the workspace may be below it.
+    #[test]
+    fn paths_are_read_from_the_workspace() {
+        assert_eq!(from_workspace("sub/audit/miri/run.txt", "sub/"), "audit/miri/run.txt");
+        assert_eq!(from_workspace("audit/miri/run.txt", ""), "audit/miri/run.txt");
+        assert_eq!(from_workspace("subway/x.rs", "sub/"), "subway/x.rs");
     }
 }

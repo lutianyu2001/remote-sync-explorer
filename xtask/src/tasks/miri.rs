@@ -1,4 +1,3 @@
-use std::env;
 use std::path::Path;
 
 use crate::run::{capped, nightly, status};
@@ -38,8 +37,9 @@ pub fn run(root: &Path) -> Result<(), String> {
     }
     // Miri's standard library is built first, outside the repository: built inside, it
     // follows .cargo/config.toml, which may take crates from vendor/ alone, offline, where
-    // the versions the standard library locks are missing. Once built, it is reused.
-    status(nightly(&env::temp_dir(), &["miri", "setup"]))?;
+    // the versions the standard library locks are missing. From /, not the shared temporary
+    // directory, where another user may leave a .cargo/config.toml. Once built, it is reused.
+    status(nightly(Path::new("/"), &["miri", "setup"]))?;
     let mut miri = nightly(root, &["miri", "test", "--locked"]);
     miri.args(BUILD).arg("--").args(MODULES);
     for test in SKIP {

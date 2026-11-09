@@ -159,13 +159,13 @@ jobs:
                echo "- $TASK: skipped, as the committed result stands" >> "$GITHUB_STEP_SUMMARY" ;;
           esac
           [ "$c" -le 1 ]
-      # Per project: what building with the default features needs. geiger and coverage
-      # build rse with them, which compile librclone with Go (see ci.yml); Miri, Kani and
-      # fuzzing build it without them.
+      # Per project: what building with the default features needs. geiger, asan and
+      # coverage build rse with them, which compile librclone with Go (see ci.yml); Miri,
+      # Kani and fuzzing build it without them.
       - id: go
         if: >
           steps.needed.outputs.code == '0'
-          && contains(fromJSON('["geiger", "coverage"]'), matrix.task)
+          && contains(fromJSON('["geiger", "asan", "coverage"]'), matrix.task)
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26"
@@ -203,6 +203,7 @@ jobs:
       # download-artifact puts a lone artifact's files straight into its path.
       - if: ${{ !cancelled() && steps.task.outcome != 'skipped' }}
         run: |
+          rm -rf target/results
           mkdir -p target/results
           if [ -d "audit/$TASK" ]; then cp -r "audit/$TASK" target/results/; fi
       - if: ${{ !cancelled() && steps.task.outcome != 'skipped' }}
@@ -248,6 +249,10 @@ jobs:
           merge-multiple: true
       - name: Commit the results to audit/
         env:
+          # Per project: the same tasks as plan's KNOWN. The jobs that wrote the results ran
+          # the project's code, so a directory of any other name (audit/reviews/ above all,
+          # which review trusts) is refused.
+          KNOWN: "deny vet geiger miri coverage kani fuzz"
           BRANCH: ${{ github.event.repository.default_branch }}
           # The release's tag, or the branch the run was started on.
           NAME: ${{ github.ref_name }}
@@ -267,6 +272,10 @@ jobs:
             mkdir -p audit
             for dir in results/*/; do
               task=$(basename "$dir")
+              case " $KNOWN " in
+                *" $task "*) ;;
+                *) echo "results/$task: no task of that name" >&2; exit 1 ;;
+              esac
               if printf '%s\n' "${keep[@]}" | grep -qx "$task"; then
                 echo "$task: results committed since ${sha::7} stand"
                 continue
