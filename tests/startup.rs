@@ -94,7 +94,7 @@ fn env_password_unlocks_the_config() {
 fn bad_config_file_is_an_error() {
     let dir = tempfile::tempdir().unwrap();
     let cfg = dir.path().join("config.toml");
-    std::fs::write(&cfg, "[ui]\nmouse = \"yes\"\n").unwrap();
+    std::fs::write(&cfg, "[ui]\nmouse = \"maybe\"\n").unwrap();
     let (ok, _, err) = rse(&["--config", cfg.to_str().unwrap()], &[]);
     assert!(!ok);
     assert!(err.contains("config.toml"), "{err}");

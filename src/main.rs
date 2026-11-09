@@ -50,6 +50,8 @@ struct Cli {
     right: Option<String>,
     #[arg(long)]
     config: Option<PathBuf>,
+    #[arg(short = 'c', long = "set")]
+    set: Vec<String>,
     #[arg(long)]
     rclone_config: Option<PathBuf>,
     #[arg(long)]
@@ -88,6 +90,7 @@ fn command() -> clap::Command {
         .mut_arg("left", |a| a.help(tr!("cli-left")).value_name(tr!("cli-left-value")))
         .mut_arg("right", |a| a.help(tr!("cli-right")).value_name(tr!("cli-right-value")))
         .mut_arg("config", |a| a.help(tr!("cli-config")).value_name(tr!("cli-path-value")))
+        .mut_arg("set", |a| a.help(tr!("cli-set")).value_name(tr!("cli-set-value")))
         .mut_arg("rclone_config", |a| {
             a.help(tr!("cli-rclone-config")).value_name(tr!("cli-path-value"))
         })
@@ -191,23 +194,29 @@ impl ErrorFormatter for Localized {
     }
 }
 
-/// The language set in the config file, read before the command line is parsed so
-/// that `--help` and command line errors use it too.
+/// The language of the settings, read before the command line is parsed so that `--help`
+/// and command line errors use it too: `--config` and `--set` are picked out of the
+/// arguments by hand.
 fn language_before_parsing() -> Language {
     let mut args = std::env::args_os().skip(1);
-    let mut path = None;
+    let (mut path, mut set) = (None, Vec::new());
     while let Some(arg) = args.next() {
+        let text = arg.to_str().unwrap_or_default();
         if arg == "--" {
             break;
         } else if arg == "--config" {
             path = args.next().map(PathBuf::from);
-        } else if let Some(p) = arg.to_str().and_then(|a| a.strip_prefix("--config=")) {
+        } else if let Some(p) = text.strip_prefix("--config=") {
             path = Some(PathBuf::from(p));
+        } else if arg == "--set" || arg == "-c" {
+            set.extend(args.next().and_then(|a| a.into_string().ok()));
+        } else if let Some(given) = text.strip_prefix("--set=").or_else(|| text.strip_prefix("-c"))
+        {
+            set.push(given.to_owned());
         }
     }
-    // A config file that cannot be read is reported once the command line is parsed.
-    path.or_else(Config::default_path)
-        .and_then(|p| Config::load(&p).ok())
+    // Settings that cannot be read are reported once the command line is parsed.
+    Config::load(path.or_else(Config::default_path).as_deref(), &set)
         .map_or(Language::Auto, |c| c.ui.language)
 }
 
@@ -256,10 +265,7 @@ fn make_backend(cli: &Cli) -> Result<Arc<dyn Backend>> {
 fn run(cli: &Cli) -> Result<()> {
     let migrated = rse::config::migrate_from_rext();
     let config_path = cli.config.clone().or_else(Config::default_path);
-    let config = match &config_path {
-        Some(p) => Config::load(p)?,
-        None => Config::default(),
-    };
+    let config = Config::load(config_path.as_deref(), &cli.set)?;
     rse::i18n::set(config.ui.language);
     if let Some(login) = &cli.forget_password {
         return forget_password(login);

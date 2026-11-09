@@ -229,6 +229,8 @@ cli-left-value = 左侧位置
 cli-right = 右侧窗格的初始位置，例如 nas:backup。只给一个位置且是远程时，它放在右侧而不是左侧
 cli-right-value = 右侧位置
 cli-config = remote-sync-explorer 的配置文件
+cli-set = 只在这次运行时改一个配置项，例如 ui.show_hidden=true（可以给多次）
+cli-set-value = KEY=VALUE
 cli-rclone-config = rclone 的配置文件
 cli-path-value = 路径
 cli-ask-password = 启动前先询问 rclone 配置文件的密码
@@ -277,9 +279,9 @@ startup-still-listing = 退出时仍有目录在加载
 version-unknown = 未知（{ $error }）
 version-rclone = rclone { $running }（{ $backend }；编译时基于 { $built }）
 config-in = { $path } 有误
-config-cannot-read = 无法读取 { $path }
-config-cannot-create = 无法创建 { $path }
-config-cannot-write = 无法写入 { $path }
+config-in-variable = 环境变量 { $variable } 有误
+config-on-command-line = 命令行（--set）有误
+config-set-needs-equals = --set 要写成 KEY=VALUE，不是 { $arg }
 keys-unknown-key = 未知的按键 `{ $key }`
 keys-unknown-action = [keys]：未知的动作 `{ $name }`
 keys-bad-key = [keys] { $name }：{ $error }

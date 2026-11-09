@@ -245,6 +245,11 @@ impl Default for Keymap {
     }
 }
 
+/// Every action's name with its default keys, in the order of the help screen.
+pub fn default_keys() -> impl Iterator<Item = (&'static str, &'static [&'static str])> {
+    BINDINGS.iter().map(|b| (b.name, b.keys))
+}
+
 impl Keymap {
     /// Builds the keymap from the defaults plus the config's `[keys]` overrides.
     ///

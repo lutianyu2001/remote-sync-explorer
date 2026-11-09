@@ -83,7 +83,7 @@ rse 经手密码、ssh 登录和远端服务器上的文件，所以它的代码
 |---|---|---|
 | 威胁模型 | 外来输入或机密进入 rse 的每一处都人工审查过，每个决定都写了下来 | SECURITY.md 里的 18 条决定：密码交给谁、主机密钥（包括退回 rclone 内置 ssh 之后）、服务器能让 ssh 做什么、混进 ssh 的选项、`--rcd` 走明文 http、文件权限、服务器给的文件名和文字怎么显示、覆盖文件、rsync 的命令行、续传的文件、保存的队列 |
 | `unsafe` 代码 | rse 禁止 `unsafe`，只有点名允许的函数例外 | 8 处，每处都是没有安全写法的调用（librclone、`setlocale`、`pre_exec`），旁边写着为什么是安全的 |
-| 依赖 | 来源、许可证、已知漏洞、作者放弃的和被撤回的 crate（cargo-deny）；每个 crate 都有审计记录（cargo-vet）；从校验过的源码离线构建 | 216 个 crate 审计过：从 Mozilla、Google 和 Bytecode Alliance 导入的审计，加上我们自己的 188 条；没有豁免。漏洞每天重新查 |
+| 依赖 | 来源、许可证、已知漏洞、作者放弃的和被撤回的 crate（cargo-deny）；每个 crate 都有审计记录（cargo-vet）；从校验过的源码离线构建 | 220 个 crate 审计过：从 Mozilla、Google 和 Bytecode Alliance 导入的审计，加上我们自己的 189 条；没有豁免。漏洞每天重新查 |
 | 测试 | 单元测试、界面快照测试和集成测试，包括对私有 `sshd` 的 ssh 登录 | 268 个测试，覆盖 93% 的代码行和 80% 的分支 |
 | Miri | 不用进程、socket 和网络的模块的测试，在能发现未定义行为的 Miri 下运行 | 13 个模块的 74 个测试 |
 | Fuzz | 给每个读取不可信文本的函数喂随机输入，按 SECURITY.md 里的不变式检查 | 6 个 target（地址、ssh 选项、rsync 的命令行和输出、屏幕上显示的文字、配置文件、密码），每个一小时：每个 target 试了 160 万到 6500 万个输入 |
@@ -93,7 +93,7 @@ rse 经手密码、ssh 登录和远端服务器上的文件，所以它的代码
 这些说明不了的：
 
 - Rust 排除的是 rse 自己代码里的内存错误，不排除逻辑错误；逻辑错误靠审查和测试去找。
-- 默认构建的 123 个 crate 里有 56 个用了 `unsafe` 代码。这些代码靠的是它们的作者和上面的审计，不在 rse 的测试、Miri 和 Kani 的范围内。
+- 默认构建的 128 个 crate 里有 60 个用了 `unsafe` 代码。这些代码靠的是它们的作者和上面的审计，不在 rse 的测试、Miri 和 Kani 的范围内。
 - 编译进 rse 的 rclone 是 Go 代码，上面的审计都不覆盖它，只有 `librse/` 里 rse 自己的 rc 调用有 `go vet` 和 `go test` 检查；Go 下载模块时会按 `librse/go.sum` 校验。
 - Kani 只在界限以内证明，fuzz 只是抽样。没有证明的：混淆密码的解码，以及地址、ssh 选项、连接字符串和配置文件的读取；它们由所有短输入的测试和 fuzz 检查。
 
@@ -171,7 +171,7 @@ RCLONE_RC_PASS=<password> rse --rcd http://localhost:5572 --rc-user <user>
 ## 用法
 
 ```text
-rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
+rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-password]
      [--forget-password <LOGIN>] [--rcd <URL> --rc-user <USER> --rc-pass <PASS>]
      [-T] [--version] [--licenses] [-h] [LEFT] [RIGHT]
 ```
@@ -182,6 +182,8 @@ rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
     - 右窗格的初始位置，例如 `nas:backup`。只给一个位置时，远程会在这里（而不是左边）打开
 - `--config <PATH>`（默认：`~/.config/rse/config.toml`）
     - remote-sync-explorer 的配置文件
+- `-c`、`--set <KEY=VALUE>`
+    - 只在这次运行时改一个配置项，例如 `ui.show_hidden=true`；可以给多次（见[配置](#配置)）
 - `--rclone-config <PATH>`
     - rclone 的配置文件
 - `--ask-password`
@@ -209,7 +211,7 @@ rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
 
 名字按实际内容显示：显示不出来的字符（例如控制字符、零宽空格、会改变文字顺序的方向控制符）显示为 `�`。服务器列出的条目如果名字可能指向目录之外（`..`，或含 `/`），不会显示，状态栏会说明跳过了几个。
 
-只给一个位置时，远程或服务器地址会在右窗格打开，左窗格显示配置里的 `left`（默认 `~`）：`rse sftp://me@box` 会把本地磁盘放在左边，`box` 放在右边。只给一个本地路径时，它在左边打开。
+只给一个位置时，远程或服务器地址会在右窗格打开，左窗格显示启动 rse 时所在的目录：`rse sftp://me@box` 会把当前工作目录放在左边，`box` 放在右边。只给一个本地路径时，它在左边打开。
 
 服务器也可以直接按地址打开，无需在 `rclone.conf` 里配置远程：
 
@@ -312,7 +314,19 @@ Ctrl+O 会在窗格下方横跨整个宽度打开一个终端：本地磁盘上�
 
 ## 配置
 
-`~/.config/rse/config.toml`（或 `$XDG_CONFIG_HOME/rse/config.toml`）。这个文件是可选的，缺少的设置使用下面的默认值。未知的设置会报错，所以拼写错误不会被忽略。
+每个配置项的值取自下面有它的最高一层：
+
+```text
+默认值  <  你的 config.toml  <  环境变量（RSE_...）  <  命令行的 --set
+```
+
+- **你的文件**：`~/.config/rse/config.toml`（或 `$XDG_CONFIG_HOME/rse/config.toml`，或 `--config <PATH>`）。这个文件是可选的，只写要改的配置项就行。未知的配置项和类型不对的值会报错，并给出文件、行和列，所以拼写错误不会被忽略。
+- **环境变量**：`RSE_` 加上键名，大写、点换成下划线，例如 `RSE_JOBS_MAX_CONCURRENT=4`、`RSE_UI_MOUSE=false`；列表用逗号分隔：`RSE_KEYS_COPY=F5,c`。
+- **命令行**：`--set KEY=VALUE`（或 `-c`），可以给多次，只对这次运行有效：`rse -c ui.show_hidden=true -c jobs.engine=rclone`。
+
+环境变量或命令行里的值不符合它的配置项时会报错，并说明是哪个环境变量，或者是命令行上的。
+
+配置项和它们的默认值，和 [`src/defaults.toml`](../src/defaults.toml) 里的一样，再加上 `[keys]`（每个动作的默认按键在帮助界面 `?` 里）：
 
 ```toml
 [rclone]
@@ -343,8 +357,9 @@ move = ["F6", "m"]
 # Any action from the help screen (?) by its name: switch_pane, up, down,
 # page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort,
 # sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename,
-# mkdir, delete, overwrite_mode, queue, terminal, error_log, help, quit,
-# queue_cancel, queue_retry, queue_clear.
+# mkdir, delete, overwrite_mode, queue, terminal, focus_left_address,
+# focus_left, focus_right_address, focus_right, focus_queue, error_log, help,
+# quit, queue_cancel, queue_retry, queue_clear.
 # Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn, Delete.
 ```
 
@@ -354,7 +369,7 @@ rse 以前叫 rclone-explorer-tui（命令为 `rext`）。第一次启动时，�
 
 ## 语言
 
-rse 支持英文和简体中文：`[ui]` 里的 `language` 选择其一，`auto`（默认）像 gettext 一样跟随系统语言（`LANGUAGE`、`LC_ALL`、`LC_MESSAGES`、`LANG`），macOS 上也一样；这几个变量都没有设置时，使用系统的语言（macOS 上是系统设置里的语言）。范围包括界面、`rse --help` 及其报错，以及启动时的报错和提示；配置文件里的设置对 `--help` 同样生效。glibc 有对应翻译时（Linux），"No such file or directory" 这类系统错误也会跟随。rclone、ssh 和 TOML 解析器输出的内容保持英文，日志文件也是。
+rse 支持英文和简体中文：`[ui]` 里的 `language` 选择其一，`auto`（默认）像 gettext 一样跟随系统语言（`LANGUAGE`、`LC_ALL`、`LC_MESSAGES`、`LANG`），macOS 上也一样；这几个变量都没有设置时，使用系统的语言（macOS 上是系统设置里的语言）。范围包括界面、`rse --help` 及其报错，以及启动时的报错和提示；配置里的设置对 `--help` 同样生效。glibc 有对应翻译时（Linux），"No such file or directory" 这类系统错误也会跟随。rclone、ssh 和读取配置的部分输出的内容保持英文，日志文件也是。
 
 文本保存在 [Fluent](https://projectfluent.org) 文件 `locales/en/rse.ftl` 和 `locales/zh-CN/rse.ftl` 中，编译进二进制文件。
 

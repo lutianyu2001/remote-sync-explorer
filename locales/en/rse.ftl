@@ -244,6 +244,8 @@ cli-left-value = LEFT
 cli-right = Initial location of the right pane, e.g. nas:backup. Given alone, a remote opens here instead of on the left
 cli-right-value = RIGHT
 cli-config = remote-sync-explorer config file
+cli-set = Set a setting for this run, e.g. ui.show_hidden=true (may be given more than once)
+cli-set-value = KEY=VALUE
 cli-rclone-config = rclone config file
 cli-path-value = PATH
 cli-ask-password = Ask for the rclone config password before starting
@@ -295,9 +297,9 @@ startup-still-listing = a listing was still running at exit
 version-unknown = unknown ({ $error })
 version-rclone = rclone { $running } ({ $backend }; built against { $built })
 config-in = in { $path }
-config-cannot-read = cannot read { $path }
-config-cannot-create = cannot create { $path }
-config-cannot-write = cannot write { $path }
+config-in-variable = in the environment variable { $variable }
+config-on-command-line = on the command line (--set)
+config-set-needs-equals = --set takes KEY=VALUE, not { $arg }
 keys-unknown-key = unknown key `{ $key }`
 keys-unknown-action = [keys]: unknown action `{ $name }`
 keys-bad-key = [keys] { $name }: { $error }

@@ -1,0 +1,27 @@
+# rse's settings and their defaults, which say each one's type. A setting is taken from the
+# highest layer that has it: these defaults, then the user's ~/.config/rse/config.toml (or
+# --config), then the environment (RSE_ and the key upper-cased, dots made underscores:
+# RSE_JOBS_MAX_CONCURRENT for jobs.max_concurrent), then --set KEY=VALUE on the command line.
+# [keys] is added from the key map (keymap.rs): every action with its default keys.
+
+[rclone]
+config = ""                     # rclone.conf path; empty = rclone's default
+transfers = 4                   # rclone --transfers
+checkers = 8                    # rclone --checkers
+browse_threads = 2              # threads for listings and other short calls
+system_ssh = true               # sftp through the system ssh, one login per server
+
+[ui]
+left = "~"                      # left pane at start
+right = ""                      # right pane at start; empty = first remote's root
+show_hidden = false
+mouse = true
+multi_select_modifier = "ctrl"  # or "alt"
+drop_action = "ask"             # or "copy": copy on release without the menu
+language = "auto"               # "en", "zh-CN", or "auto": Chinese for a zh* locale
+
+[jobs]
+max_concurrent = 2              # jobs running at once; the rest wait
+poll_ms = 500                   # progress refresh
+engine = "auto"                 # or "rclone": never rsync
+checksum = false                # tell files apart by checksum, not size and time

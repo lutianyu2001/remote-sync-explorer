@@ -1,12 +1,60 @@
-//! `~/.config/rse/config.toml`. Remotes stay in rclone.conf.
+//! The settings, from the highest layer that has each (layeredcfg): the defaults in
+//! `defaults.toml`, the user's `~/.config/rse/config.toml`, the environment's `RSE_*`
+//! variables, and `--set KEY=VALUE` on the command line. Remotes stay in rclone.conf.
 
 use std::collections::BTreeMap;
+use std::fmt::Write as _;
 use std::fs;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
+use layeredcfg::{Environment, Options, Source};
 use serde::{Deserialize, Serialize};
+
+/// What the settings' names in the environment begin with: `RSE_UI_MOUSE` is `ui.mouse`.
+pub const ENV_PREFIX: &str = "RSE_";
+
+/// The defaults, which say which settings there are and the type of each; `[keys]` is
+/// added from the key map.
+const DEFAULTS: &str = include_str!("defaults.toml");
+
+/// The defaults with every action's default keys as `[keys]`.
+fn defaults() -> String {
+    let mut text = DEFAULTS.to_owned();
+    text.push_str("\n[keys]\n");
+    for (name, keys) in crate::keymap::default_keys() {
+        let keys: Vec<String> =
+            keys.iter().map(|k| toml::Value::String((*k).to_owned()).to_string()).collect();
+        let _ = writeln!(text, "{name} = [{}]", keys.join(", "));
+    }
+    text
+}
+
+/// A setting's value as TOML, for serde to read into `Config`.
+fn to_toml(value: layeredcfg::Value) -> toml::Value {
+    match value {
+        layeredcfg::Value::Bool(b) => toml::Value::Boolean(b),
+        layeredcfg::Value::Int(i) => toml::Value::Integer(i),
+        layeredcfg::Value::Float(d) => toml::Value::Float(d),
+        layeredcfg::Value::Str(s) => toml::Value::String(s),
+        layeredcfg::Value::List(items) => {
+            toml::Value::Array(items.into_iter().map(toml::Value::String).collect())
+        }
+    }
+}
+
+/// `section.name = value` pairs as nested tables.
+fn tables(values: &[(String, toml::Value)]) -> toml::Value {
+    let mut root = toml::Table::new();
+    for (key, value) in values {
+        let (section, name) = key.split_once('.').unwrap_or(("", key));
+        let table = root.entry(section).or_insert_with(|| toml::Value::Table(toml::Table::new()));
+        if let toml::Value::Table(table) = table {
+            table.insert(name.to_owned(), value.clone());
+        }
+    }
+    toml::Value::Table(root)
+}
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
@@ -177,61 +225,103 @@ impl Config {
         Some(config_base()?.join("rse").join("config.toml"))
     }
 
-    /// Reads the file; a missing file gives the defaults.
+    /// The settings from every layer: the defaults, `file` (none when it is not there), the
+    /// process's environment, and `overrides`, each `KEY=VALUE`.
     ///
     /// # Errors
-    /// Fails when the file exists but cannot be read or parsed.
-    pub fn load(path: &Path) -> Result<Self> {
-        match fs::read_to_string(path) {
-            Ok(text) => Self::parse(&text)
-                .with_context(|| tr!("config-in", path = path.display().to_string())),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(Self::default()),
-            Err(e) => {
-                Err(e).with_context(|| tr!("config-cannot-read", path = path.display().to_string()))
-            }
-        }
+    /// Fails when the file cannot be read, a setting is unknown, or a value is no value of
+    /// its setting, saying where it was set.
+    pub fn load(file: Option<&Path>, overrides: &[String]) -> Result<Self> {
+        Self::layered(file, overrides, Environment::process())
     }
 
+    /// As [`Config::load`], with the environment given.
+    ///
     /// # Errors
-    /// Fails on invalid TOML or unknown settings.
+    /// As [`Config::load`].
+    pub fn layered(
+        file: Option<&Path>,
+        overrides: &[String],
+        environment: Environment,
+    ) -> Result<Self> {
+        let options = Options {
+            prefix: ENV_PREFIX.to_owned(),
+            user_files: file.map(Path::to_path_buf).into_iter().collect(),
+            // No env-style files: the user's settings are in the TOML file.
+            disabled: [Source::File].into(),
+            environment,
+            ..Options::default()
+        };
+        let mut layers = layeredcfg::Config::parse(&defaults(), options, "defaults")?;
+        for given in overrides {
+            let (key, value) = given.split_once('=').ok_or_else(|| {
+                anyhow!("{}", tr!("config-set-needs-equals", arg = given.as_str()))
+            })?;
+            layers.set(key.trim(), value.trim()).with_context(|| tr!("config-on-command-line"))?;
+        }
+        Self::from_layers(&layers, file.unwrap_or(Path::new("config.toml")))
+    }
+
+    /// The settings of TOML text written as the user's file is, over the defaults, with no
+    /// other layer (tests, fuzzing).
+    ///
+    /// # Errors
+    /// As [`Config::load`].
     pub fn parse(text: &str) -> Result<Self> {
-        let config: Self = toml::from_str(text)?;
-        anyhow::ensure!(config.jobs.max_concurrent >= 1, "jobs.max_concurrent must be at least 1");
-        anyhow::ensure!(config.jobs.poll_ms >= 50, "jobs.poll_ms must be at least 50");
+        let options =
+            Options { disabled: [Source::File, Source::Env].into(), ..Options::default() };
+        let mut layers = layeredcfg::Config::parse(&defaults(), options, "defaults")?;
+        let file = Path::new("config.toml");
+        layers.set_user_text(text, file)?;
+        Self::from_layers(&layers, file)
+    }
+
+    /// The settings as `Config`, each value checked; a mistake says which layer has it.
+    fn from_layers(layers: &layeredcfg::Config, file: &Path) -> Result<Self> {
+        let origin = |key: &str| match layers.source(key) {
+            Ok(Source::Env) => tr!("config-in-variable", variable = layers.variable(key)),
+            Ok(Source::Override) => tr!("config-on-command-line"),
+            _ => tr!("config-in", path = file.display().to_string()),
+        };
+        let mut values = Vec::new();
+        for key in layers.keys() {
+            let value = layers.get(key).with_context(|| origin(key))?;
+            values.push((key.clone(), to_toml(value)));
+        }
+        let config = match tables(&values).try_into::<Self>() {
+            Ok(config) => config,
+            Err(error) => {
+                // The setting at fault: the one that alone among the defaults does not read.
+                let defaults: Vec<_> = layers
+                    .keys()
+                    .iter()
+                    .filter_map(|k| {
+                        Some((k.clone(), to_toml(layers.default_value(k).ok()?.clone())))
+                    })
+                    .collect();
+                let culprit = values.iter().find(|(key, value)| {
+                    let mut one = defaults.clone();
+                    one.iter_mut().filter(|(k, _)| k == key).for_each(|(_, v)| v.clone_from(value));
+                    tables(&one).try_into::<Self>().is_err()
+                });
+                let error = anyhow!(error);
+                return Err(match culprit {
+                    Some((key, _)) => error.context(origin(key)),
+                    None => error,
+                });
+            }
+        };
+        let at_least = |key: &str, value: u64, least: u64| {
+            anyhow::ensure!(value >= least, "{key} must be at least {least}");
+            Ok(())
+        };
+        let max_concurrent = u64::try_from(config.jobs.max_concurrent).unwrap_or(u64::MAX);
+        at_least("jobs.max_concurrent", max_concurrent, 1)
+            .with_context(|| origin("jobs.max_concurrent"))?;
+        at_least("jobs.poll_ms", config.jobs.poll_ms, 50)
+            .with_context(|| origin("jobs.poll_ms"))?;
         Ok(config)
     }
-
-    /// Writes the file atomically: a temporary file in the same directory, then a rename.
-    ///
-    /// # Errors
-    /// Fails when the directory or file cannot be written.
-    pub fn save(&self, path: &Path) -> Result<()> {
-        let text = toml::to_string_pretty(self)?;
-        write_atomic(path, text.as_bytes())
-    }
-}
-
-/// Replaces `path` with `data` so that readers see either the old or the new content.
-///
-/// # Errors
-/// Fails when the directory or file cannot be written.
-pub fn write_atomic(path: &Path, data: &[u8]) -> Result<()> {
-    let dir = path.parent().filter(|d| !d.as_os_str().is_empty()).unwrap_or(Path::new("."));
-    fs::create_dir_all(dir)
-        .with_context(|| tr!("config-cannot-create", path = dir.display().to_string()))?;
-    let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-    let tmp = dir.join(format!(".{name}.tmp-{}", std::process::id()));
-    let result = (|| -> Result<()> {
-        let mut f = fs::File::create(&tmp)?;
-        f.write_all(data)?;
-        f.sync_all()?;
-        fs::rename(&tmp, path)?;
-        Ok(())
-    })();
-    if result.is_err() {
-        let _ = fs::remove_file(&tmp);
-    }
-    result.with_context(|| tr!("config-cannot-write", path = path.display().to_string()))
 }
 
 #[cfg(test)]
@@ -265,13 +355,32 @@ mod tests {
         assert!(!migrate(&old, &new));
     }
 
+    /// The settings with `file` and an environment of the test's own.
+    fn layered(file: Option<&Path>, env: &[(&str, &str)], overrides: &[&str]) -> Result<Config> {
+        let env: BTreeMap<String, String> =
+            env.iter().map(|(k, v)| ((*k).to_owned(), (*v).to_owned())).collect();
+        let environment =
+            Environment::new(move |name| env.get(name.to_str()?).map(|v| v.clone().into()));
+        let overrides: Vec<String> = overrides.iter().map(|o| (*o).to_owned()).collect();
+        Config::layered(file, &overrides, environment)
+    }
+
+    fn message(error: &anyhow::Error) -> String {
+        error.chain().map(ToString::to_string).collect::<Vec<_>>().join(": ")
+    }
+
     #[test]
-    fn missing_file_gives_defaults() {
+    fn the_defaults_file_has_the_defaults_and_every_actions_keys() {
         let dir = tempfile::tempdir().unwrap();
-        let c = Config::load(&dir.path().join("none.toml")).unwrap();
-        assert_eq!(c, Config::default());
+        let c = layered(Some(&dir.path().join("none.toml")), &[], &[]).unwrap();
+        assert_eq!(Config { keys: BTreeMap::new(), ..c.clone() }, Config::default());
         assert_eq!(c.jobs.max_concurrent, 2);
         assert_eq!(c.ui.left, "~");
+        let keys: BTreeMap<_, _> = crate::keymap::default_keys()
+            .map(|(name, keys)| (name.to_owned(), keys.iter().map(|k| (*k).to_owned()).collect()))
+            .collect();
+        assert_eq!(c.keys, keys);
+        assert!(crate::keymap::Keymap::new(&c.keys).is_ok());
     }
 
     #[test]
@@ -310,25 +419,59 @@ move = ["F6", "m"]
         assert_eq!(c.jobs.max_concurrent, 3);
         assert_eq!((c.jobs.engine, c.jobs.checksum), (EngineChoice::Rclone, true));
         assert_eq!(c.keys["move"], ["F6", "m"]);
+        assert_eq!(c.keys["quit"], ["q"]); // not written: the default
     }
 
     #[test]
-    fn typos_and_bad_values_are_errors() {
-        assert!(Config::parse("[ui]\nshow_hiden = true\n").is_err());
-        assert!(Config::parse("[ui]\ndrop_action = \"move\"\n").is_err());
-        assert!(Config::parse("[jobs]\nmax_concurrent = 0\n").is_err());
+    fn typos_and_bad_values_are_errors_that_say_where_they_are() {
+        let error = Config::parse("[ui]\nshow_hiden = true\n").unwrap_err();
+        assert_eq!(message(&error), "config.toml:2:1: unknown setting: ui.show_hiden");
+        let error = Config::parse("[ui]\ndrop_action = \"move\"\n").unwrap_err();
+        assert!(message(&error).starts_with("in config.toml: unknown variant `move`"), "{error:#}");
+        let error = Config::parse("[jobs]\nmax_concurrent = 0\n").unwrap_err();
+        assert_eq!(message(&error), "in config.toml: jobs.max_concurrent must be at least 1");
+        assert!(Config::parse("[keys]\nnope = [\"x\"]\n").is_err());
+        assert!(Config::parse("[rclone]\ntransfers = -1\n").is_err());
+        assert!(
+            Config::parse("[keys]\ncopy = [\"NoSuchKey\"]\n")
+                .is_ok_and(|c| { crate::keymap::Keymap::new(&c.keys).is_err() })
+        );
     }
 
     #[test]
-    fn save_is_atomic_and_round_trips() {
+    fn the_environment_is_above_the_file_and_the_command_line_above_both() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("sub/config.toml");
-        let mut c = Config::default();
-        c.ui.show_hidden = true;
-        c.keys.insert("copy".into(), vec!["F5".into()]);
-        c.save(&path).unwrap();
-        assert_eq!(Config::load(&path).unwrap(), c);
-        let leftovers: Vec<_> = fs::read_dir(path.parent().unwrap()).unwrap().collect();
-        assert_eq!(leftovers.len(), 1, "temporary file left behind");
+        let file = dir.path().join("config.toml");
+        fs::write(&file, "[jobs]\nmax_concurrent = 3\n[ui]\nmouse = false\n").unwrap();
+        let c = layered(Some(&file), &[], &[]).unwrap();
+        assert_eq!((c.jobs.max_concurrent, c.ui.mouse), (3, false));
+        let env = [("RSE_JOBS_MAX_CONCURRENT", "4"), ("RSE_KEYS_COPY", "F5, y")];
+        let c = layered(Some(&file), &env, &[]).unwrap();
+        assert_eq!((c.jobs.max_concurrent, c.ui.mouse), (4, false));
+        assert_eq!(c.keys["copy"], ["F5", "y"]);
+        let c =
+            layered(Some(&file), &env, &["jobs.max_concurrent=5", "ui.language = zh-CN"]).unwrap();
+        assert_eq!((c.jobs.max_concurrent, c.ui.language), (5, Language::ZhCn));
+        // Env-style files are no layer here, and a missing file is none.
+        let c = layered(Some(&dir.path().join("none.toml")), &[], &[]).unwrap();
+        assert_eq!(c.jobs.max_concurrent, 2);
+    }
+
+    #[test]
+    fn a_mistake_in_the_environment_or_on_the_command_line_says_so() {
+        let error = layered(None, &[("RSE_UI_MOUSE", "maybe")], &[]).unwrap_err();
+        let text = message(&error);
+        assert!(text.starts_with("in the environment variable RSE_UI_MOUSE: "), "{text}");
+        let error = layered(None, &[("RSE_UI_DROP_ACTION", "move")], &[]).unwrap_err();
+        assert!(message(&error).starts_with("in the environment variable RSE_UI_DROP_ACTION: "));
+        let error = layered(None, &[], &["jobs.poll_ms=10"]).unwrap_err();
+        assert_eq!(
+            message(&error),
+            "on the command line (--set): jobs.poll_ms must be at least 50"
+        );
+        let error = layered(None, &[], &["ui.mouse"]).unwrap_err();
+        assert_eq!(message(&error), "--set takes KEY=VALUE, not ui.mouse");
+        let error = layered(None, &[], &["ui.nope=1"]).unwrap_err();
+        assert_eq!(message(&error), "on the command line (--set): unknown setting: ui.nope");
     }
 }

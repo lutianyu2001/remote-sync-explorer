@@ -117,7 +117,7 @@ of 2026-11-02.
 |---|---|---|
 | Threat model | Every place where input from outside, or a secret, reaches rse, reviewed by hand, with each decision written down | 18 decisions in SECURITY.md: where passwords go, host keys (also after falling back to rclone's built-in ssh), what a server can make ssh do, options slipped into ssh, `--rcd` over plain http, file permissions, names and text from servers on screen, overwrites, rsync's command line, resumed files, the saved queue |
 | `unsafe` code | rse forbids `unsafe` except in functions that allow it by name | 8 blocks, each a call that has no safe form (into librclone, `setlocale`, `pre_exec`), each with the reason it is sound |
-| Dependencies | Sources, licenses, known vulnerabilities, abandoned and yanked crates (cargo-deny); an audit of every crate (cargo-vet); builds offline from checksummed sources | 216 crates audited: audits imported from Mozilla, Google and the Bytecode Alliance, and 188 of our own; no exemptions. Vulnerabilities are looked up again daily |
+| Dependencies | Sources, licenses, known vulnerabilities, abandoned and yanked crates (cargo-deny); an audit of every crate (cargo-vet); builds offline from checksummed sources | 220 crates audited: audits imported from Mozilla, Google and the Bytecode Alliance, and 189 of our own; no exemptions. Vulnerabilities are looked up again daily |
 | Tests | Unit, screen snapshot and integration tests, including ssh logins against a private `sshd` | 268 tests, reaching 93% of the lines and 80% of the branches |
 | Miri | The tests of the modules that need no process, socket or network, run under Miri, which detects undefined behaviour | 74 tests in 13 modules |
 | Fuzzing | Random input to every reader of untrusted text, checked against the invariants in SECURITY.md | 6 targets (addresses, ssh options, rsync's command line and output, text shown on screen, the config file, passwords), an hour each: from 1.6 to 65 million inputs per target |
@@ -128,7 +128,7 @@ What this does not show:
 
 - Rust rules out memory errors in rse's own code, not logic errors; the review and the
   tests are what look for those.
-- 56 of the 123 crates in the default build use `unsafe` code. That code rests on its
+- 60 of the 128 crates in the default build use `unsafe` code. That code rests on its
   authors and on the audits above, not on rse's tests, Miri or Kani.
 - The rclone compiled into rse is Go code, which none of these checks covers but for
   rse's own rc calls in `librse/`, which `go vet` and `go test` check; Go checks its
@@ -231,7 +231,7 @@ rcd elsewhere needs `https://` (`rclone rcd --rc-cert … --rc-key …`).
 ## Usage
 
 ```text
-rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
+rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-password]
      [--forget-password <LOGIN>] [--rcd <URL> --rc-user <USER> --rc-pass <PASS>]
      [-T] [--version] [--licenses] [-h] [LEFT] [RIGHT]
 ```
@@ -243,6 +243,9 @@ rse [--config <PATH>] [--rclone-config <PATH>] [--ask-password]
       here instead of on the left
 - `--config <PATH>` (default: `~/.config/rse/config.toml`)
     - remote-sync-explorer config file
+- `-c`, `--set <KEY=VALUE>`
+    - Set a setting for this run, e.g. `ui.show_hidden=true`; may be given more than once
+      (see [Configuration](#configuration))
 - `--rclone-config <PATH>`
     - rclone config file
 - `--ask-password`
@@ -460,9 +463,27 @@ servers, for when no shell should be opened from rse.
 
 ## Configuration
 
-`~/.config/rse/config.toml` (or `$XDG_CONFIG_HOME/rse/config.toml`). The file is
-optional; missing settings use these defaults. Unknown settings are errors, so typos do
-not go unnoticed.
+Each setting is taken from the highest of these layers that has it:
+
+```text
+the defaults  <  your config.toml  <  the environment (RSE_...)  <  --set on the command line
+```
+
+- **Your file**: `~/.config/rse/config.toml` (or `$XDG_CONFIG_HOME/rse/config.toml`, or
+  `--config <PATH>`). It is optional and needs only the settings you change. Unknown
+  settings and values of the wrong type are errors that give the file, line and column,
+  so typos do not go unnoticed.
+- **The environment**: `RSE_` and the key upper-cased, dots made underscores, e.g.
+  `RSE_JOBS_MAX_CONCURRENT=4` or `RSE_UI_MOUSE=false`; a list is comma-separated:
+  `RSE_KEYS_COPY=F5,c`.
+- **The command line**: `--set KEY=VALUE` (or `-c`), as many as needed, for this run
+  only: `rse -c ui.show_hidden=true -c jobs.engine=rclone`.
+
+A value of the environment or the command line that does not fit its setting is an
+error that names the variable or says it is the command line's.
+
+The settings and their defaults, as [`src/defaults.toml`](src/defaults.toml) has them,
+with `[keys]` (every action's defaults are on the help screen, `?`):
 
 ```toml
 [rclone]
@@ -515,10 +536,10 @@ rse speaks English or Simplified Chinese: `language` in `[ui]` picks one, and `a
 (the default) follows the system locale, as gettext does (`LANGUAGE`, `LC_ALL`,
 `LC_MESSAGES`, `LANG`), on macOS too; with none of them set, the system's language
 (on macOS, the one in System Settings). This covers the interface, `rse --help` and its errors, and the
-errors and prompts at start-up; the config file's setting already applies to `--help`.
+errors and prompts at start-up; the setting already applies to `--help`.
 System errors such as "No such file or directory" follow it too when glibc has the
-translations (Linux). What rclone, ssh and the TOML parser say stays in English, and so
-does the log file.
+translations (Linux). What rclone, ssh and the reader of the settings say stays in
+English, and so does the log file.
 
 The texts live in [Fluent](https://projectfluent.org) files, `locales/en/rse.ftl` and
 `locales/zh-CN/rse.ftl`, built into the binary.
