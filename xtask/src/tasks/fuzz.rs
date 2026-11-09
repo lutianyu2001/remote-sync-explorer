@@ -9,11 +9,16 @@ use crate::tasks::{deny, limit};
 
 /// How long `cargo xtask fuzz` runs each target, unless told otherwise.
 pub const SECONDS: u32 = 3600;
-/// The memory of one fuzz target, as libFuzzer's `-rss_limit_mb`, and what the scope
-/// allows each target running at once: some more, so that libFuzzer's own limit acts
-/// first and tells which input took it.
-const RSS_MB: u64 = 1024;
-const SCOPE_MB: u64 = 1280;
+/// The memory of one fuzz target, as libFuzzer's `-rss_limit_mb` (its default), and what
+/// the scope allows each target running at once: some more, so that libFuzzer's own limit
+/// acts first and tells which input took it. A target's memory grows over hours without
+/// any input keeping it: layeredcfg's, whose inputs make many small allocations of every
+/// size, went from 620M to 1G in two hours (20 million runs) with 48M of it in use, the
+/// rest the sanitizer's and libFuzzer's own. One allocation, though, is held to
+/// `-malloc_limit_mb`: an input that asks for that much at once is a finding.
+const RSS_MB: u64 = 2048;
+const SCOPE_MB: u64 = 2304;
+const MALLOC_MB: u64 = 1024;
 
 /// The checks before a run: the fuzz workspace's dependencies, the targets, how many run
 /// at once and the memory of their scope, into `plan`; the most memory the run may take.
@@ -105,6 +110,7 @@ pub fn targets(root: &Path, args: &[String]) -> ExitCode {
                 let mut cmd = nightly(root, &["fuzz", "run", target, "--"]);
                 cmd.arg(format!("-max_total_time={secs}"));
                 cmd.arg(format!("-rss_limit_mb={RSS_MB}"));
+                cmd.arg(format!("-malloc_limit_mb={MALLOC_MB}"));
                 cmd.arg("-timeout=10").stdout(out).stderr(err);
                 eprintln!("$ {} > fuzz-{target}.log", shown(&cmd));
                 cmd.spawn()
