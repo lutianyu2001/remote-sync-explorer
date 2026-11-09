@@ -96,6 +96,8 @@ expect_used = "deny"
 # Every unsafe block says why it is sound in a // SAFETY: comment.
 undocumented_unsafe_blocks = "deny"
 multiple_unsafe_ops_per_block = "deny"
+# Every unsafe fn says what its callers must uphold, in a # Safety section.
+missing_safety_doc = "deny"
 # Pedantic noise for an internal library: #[must_use] on nearly every getter, and
 # # Errors / # Panics doc sections on every fallible function.
 must_use_candidate = "allow"
