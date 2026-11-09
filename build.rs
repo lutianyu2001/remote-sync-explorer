@@ -21,6 +21,8 @@ use std::io::Write as _;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
+use proc_macro2::{Delimiter, Group, TokenStream, TokenTree};
+
 /// The rclone version this release of remote-sync-explorer is built and tested against.
 /// `librse/go.mod` requires the same.
 const RCLONE_VERSION: &str = "v1.75.2";
@@ -43,24 +45,34 @@ const EXPECTED_STRUCT: [&str; 2] = ["char* Output;", "int Status;"];
 /// The declaration `src/i18n.rs` writes by hand for glibc targets, as libintl.h has it.
 const EXPECTED_LIBINTL: &str =
     "extern char *bind_textdomain_codeset (const char *__domainname, const char *__codeset)";
-/// The same declarations as Rust has them, in each file that writes them, spacing aside:
-/// each C one above is checked against its header, and these against the files, so that
-/// neither side can change alone.
+/// The same declarations as Rust has them, in each file that writes them: each C one above
+/// is checked against its header, and these against the files, so that neither side can
+/// change alone. They are compared as tokens with the attributes before them, comments and
+/// doc comments aside, and each file must have exactly these `extern` blocks, of any ABI,
+/// and these structs of the names given: a copy in disabled code, or a block of its own,
+/// fails the build too; one in a comment or a string is no declaration.
 const RUST_DECLS: [(&str, &[&str]); 2] = [
     (
         "src/rclone/ffi.rs",
         &[
             "#[repr(C)] struct RpcReturn { output: *mut c_char, status: c_int, }",
-            "fn RcloneInitialize();",
-            "fn RcloneFinalize();",
-            "fn RcloneRPC(method: *mut c_char, input: *mut c_char) -> RpcReturn;",
-            "fn RcloneFreeString(s: *mut c_char);",
+            r#"#[allow(unsafe_code)]
+            unsafe extern "C" {
+                fn RcloneInitialize();
+                fn RcloneFinalize();
+                fn RcloneRPC(method: *mut c_char, input: *mut c_char) -> RpcReturn;
+                fn RcloneFreeString(s: *mut c_char);
+            }"#,
         ],
     ),
     (
         "src/i18n.rs",
-        &["fn bind_textdomain_codeset( domain: *const libc::c_char, codeset: *const \
-           libc::c_char, ) -> *mut libc::c_char;"],
+        &[r#"unsafe extern "C" {
+            fn bind_textdomain_codeset(
+                domain: *const libc::c_char,
+                codeset: *const libc::c_char,
+            ) -> *mut libc::c_char;
+        }"#],
     ),
 ];
 
@@ -396,21 +408,142 @@ fn check_libintl(cc: &str) {
 }
 
 /// Checks that the files that declare C functions by hand still declare them as
-/// [`RUST_DECLS`] has them.
+/// [`RUST_DECLS`] has them, and nothing else in an `extern "C"` block.
 fn check_rust_decls() {
-    let squeeze = |s: &str| s.split_whitespace().collect::<String>();
+    let tokens = |text: &str, what: &str| {
+        text.parse::<TokenStream>().unwrap_or_else(|e| panic!("{what}: cannot read: {e}"))
+    };
     for (file, decls) in RUST_DECLS {
         println!("cargo:rerun-if-changed={file}");
         let text = fs::read_to_string(file).unwrap_or_else(|e| panic!("cannot read {file}: {e}"));
-        // Not a copy in a comment: the code alone.
-        let code: String = text.lines().map(|l| l.split("//").next().unwrap_or_default()).collect();
-        let text = squeeze(&code);
-        for decl in decls {
-            assert!(
-                text.contains(&squeeze(decl)),
-                "{file} no longer declares, as build.rs expects:\n  {decl}\nChange both, and \
-                 the C declaration build.rs checks it against."
-            );
+        let mut expected: Vec<String> =
+            decls.iter().map(|d| render(&tokens(d, "build.rs"))).collect();
+        let structs: Vec<String> = expected.iter().filter_map(|d| struct_name(d)).collect();
+        let mut found = Vec::new();
+        declarations(tokens(&text, file), &structs, &mut found);
+        expected.sort();
+        found.sort();
+        assert!(
+            found == expected,
+            "{file} declares, outside comments:\n  {}\nbut build.rs expects:\n  {}\nChange both, \
+             and the C declaration build.rs checks it against.",
+            found.join("\n  "),
+            expected.join("\n  ")
+        );
+    }
+}
+
+/// A declaration's tokens as text, without doc comments, spaced as proc-macro2 prints them.
+fn render(tokens: &TokenStream) -> String {
+    undocumented(tokens.clone()).to_string()
+}
+
+/// `tokens` without `#[doc = …]` attributes (what `///` comments are as tokens), at any depth.
+fn undocumented(tokens: TokenStream) -> TokenStream {
+    let trees: Vec<TokenTree> = tokens.into_iter().collect();
+    let mut kept = Vec::new();
+    let mut i = 0;
+    while i < trees.len() {
+        // `#[doc = …]`, or `#![doc = …]` for `//!`.
+        let bang = matches!(trees.get(i + 1), Some(TokenTree::Punct(p)) if p.as_char() == '!');
+        let at = if bang { i + 2 } else { i + 1 };
+        if let (TokenTree::Punct(p), Some(TokenTree::Group(g))) = (&trees[i], trees.get(at))
+            && p.as_char() == '#'
+            && g.delimiter() == Delimiter::Bracket
+            && matches!(g.stream().into_iter().next(), Some(TokenTree::Ident(id)) if id == "doc")
+        {
+            i = at + 1;
+            continue;
+        }
+        kept.push(match &trees[i] {
+            TokenTree::Group(g) => {
+                let mut inner = Group::new(g.delimiter(), undocumented(g.stream()));
+                inner.set_span(g.span());
+                TokenTree::Group(inner)
+            }
+            other => other.clone(),
+        });
+        i += 1;
+    }
+    kept.into_iter().collect()
+}
+
+/// The name of the struct `decl` declares, if it is one.
+fn struct_name(decl: &str) -> Option<String> {
+    let trees: Vec<TokenTree> = decl.parse::<TokenStream>().ok()?.into_iter().collect();
+    trees.windows(2).find_map(|w| match w {
+        [TokenTree::Ident(kw), TokenTree::Ident(name)] if kw == "struct" => Some(name.to_string()),
+        _ => None,
+    })
+}
+
+/// Adds to `found`, rendered, every `extern` block in `tokens`, whatever its ABI (with
+/// `unsafe` and the attributes before it), and every struct named in `structs` (with its
+/// visibility and the attributes before it), at any depth: in a function's body, a module,
+/// or code a `cfg` leaves out, so that a copy there counts as one more. What the check
+/// cannot see: what a name resolves to (a `use … as` renaming a type), and what a macro
+/// expands to.
+fn declarations(tokens: TokenStream, structs: &[String], found: &mut Vec<String>) {
+    let trees: Vec<TokenTree> = tokens.into_iter().collect();
+    let ident =
+        |i: usize, name: &str| matches!(trees.get(i), Some(TokenTree::Ident(id)) if id == name);
+    // Where the item that has its keyword at `i` starts: `before` steps back over the
+    // tokens that may come right before that keyword, then over the attributes.
+    let start = |i: usize, before: &dyn Fn(usize) -> usize| {
+        let mut start = before(i);
+        while start >= 2
+            && matches!(&trees[start - 2], TokenTree::Punct(p) if p.as_char() == '#')
+            && matches!(&trees[start - 1], TokenTree::Group(g) if g.delimiter() == Delimiter::Bracket)
+        {
+            start -= 2;
+        }
+        start
+    };
+    let unsafe_before = |i: usize| if i > 0 && ident(i - 1, "unsafe") { i - 1 } else { i };
+    // `pub`, or `pub(crate)` and the like.
+    let visibility_before = |i: usize| {
+        let restricted = i >= 2
+            && ident(i - 2, "pub")
+            && matches!(&trees[i - 1], TokenTree::Group(g) if g.delimiter() == Delimiter::Parenthesis);
+        if restricted {
+            i - 2
+        } else if i > 0 && ident(i - 1, "pub") {
+            i - 1
+        } else {
+            i
+        }
+    };
+    let brace =
+        |t: &TokenTree| matches!(t, TokenTree::Group(g) if g.delimiter() == Delimiter::Brace);
+    for (i, tree) in trees.iter().enumerate() {
+        match tree {
+            TokenTree::Ident(id) if id == "extern" => {
+                // `extern "<ABI>" {`, or `extern {`; not `extern crate`, nor `extern "C" fn`.
+                let body = match trees.get(i + 1) {
+                    Some(TokenTree::Literal(_)) => i + 2,
+                    _ => i + 1,
+                };
+                if trees.get(body).is_some_and(brace) {
+                    let from = start(i, &unsafe_before);
+                    found.push(render(&trees[from..=body].iter().cloned().collect()));
+                }
+            }
+            TokenTree::Ident(id) if id == "struct" => {
+                if let Some(TokenTree::Ident(name)) = trees.get(i + 1)
+                    && structs.iter().any(|s| name == s)
+                {
+                    let end = trees[i..]
+                        .iter()
+                        .position(|t| {
+                            brace(t) || matches!(t, TokenTree::Punct(p) if p.as_char() == ';')
+                        })
+                        .map_or(trees.len() - 1, |n| i + n);
+                    let from = start(i, &visibility_before);
+                    found.push(render(&trees[from..=end].iter().cloned().collect()));
+                }
+            }
+            TokenTree::Group(g) => declarations(g.stream(), structs, found),
+            _ => {}
         }
     }
 }

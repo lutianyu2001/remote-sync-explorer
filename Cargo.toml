@@ -67,6 +67,10 @@ unicode-segmentation = "1.13.3"
 ureq = { version = "3.5.0", optional = true }
 vt100 = "0.18.1"
 
+[build-dependencies]
+# build.rs reads the hand-written C declarations as tokens.
+proc-macro2 = "1.0.107"
+
 [dev-dependencies]
 insta = "1.49.0"
 tempfile = "3.27.0"
