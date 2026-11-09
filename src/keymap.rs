@@ -226,6 +226,29 @@ impl Key {
     }
 }
 
+/// The action bound to the key of `ev`; for a full-width character bound to nothing, the
+/// action of its ASCII form, which is what the key typed with the input method off.
+fn lookup(map: &HashMap<Key, Action>, ev: &KeyEvent) -> Option<Action> {
+    let key = Key::from_event(ev);
+    map.get(&key).copied().or_else(|| match key.code {
+        KeyCode::Char(c) => map.get(&Key { code: KeyCode::Char(halfwidth(c)?), ..key }).copied(),
+        _ => None,
+    })
+}
+
+/// The ASCII character a key gives where a Chinese or Japanese input method gives `c`:
+/// most punctuation comes out full-width while one is on (`？` for `?`, `：` for `:`), and
+/// `、` and `。` for `/` (or `\`) and `.`.
+fn halfwidth(c: char) -> Option<char> {
+    match c {
+        '\u{FF01}'..='\u{FF5E}' => char::from_u32(u32::from(c) - 0xFEE0),
+        '\u{3000}' => Some(' '),
+        '、' => Some('/'),
+        '。' => Some('.'),
+        _ => None,
+    }
+}
+
 fn strip_prefix_ci<'a>(s: &'a str, prefix: &str) -> Option<&'a str> {
     let (head, rest) = s.split_at_checked(prefix.len())?;
     (!rest.is_empty() && head.eq_ignore_ascii_case(prefix)).then_some(rest)
@@ -286,11 +309,11 @@ impl Keymap {
     }
 
     pub fn pane_action(&self, ev: &KeyEvent) -> Option<Action> {
-        self.panes.get(&Key::from_event(ev)).copied()
+        lookup(&self.panes, ev)
     }
 
     pub fn queue_action(&self, ev: &KeyEvent) -> Option<Action> {
-        self.queue.get(&Key::from_event(ev)).copied()
+        lookup(&self.queue, ev)
     }
 
     /// The first key bound to `action`, as written in the config (`F5`).
@@ -380,6 +403,33 @@ mod tests {
 
     fn ev(code: KeyCode, mods: KeyModifiers) -> KeyEvent {
         KeyEvent::new(code, mods)
+    }
+
+    /// What a Chinese input method types for `?`, `:`, `/` and `.` while it is on.
+    #[test]
+    fn full_width_punctuation_acts_as_its_ascii_form() {
+        let k = Keymap::default();
+        let shift = KeyModifiers::SHIFT;
+        assert_eq!(k.pane_action(&ev(KeyCode::Char('？'), shift)), Some(Action::Help));
+        assert_eq!(k.queue_action(&ev(KeyCode::Char('？'), shift)), Some(Action::Help));
+        assert_eq!(k.pane_action(&ev(KeyCode::Char('：'), shift)), Some(Action::Goto));
+        assert_eq!(
+            k.pane_action(&ev(KeyCode::Char('／'), KeyModifiers::NONE)),
+            Some(Action::Filter)
+        );
+        assert_eq!(
+            k.pane_action(&ev(KeyCode::Char('、'), KeyModifiers::NONE)),
+            Some(Action::Filter)
+        );
+        assert_eq!(
+            k.pane_action(&ev(KeyCode::Char('。'), KeyModifiers::NONE)),
+            Some(Action::ToggleHidden)
+        );
+        // A full-width key bound in the config keeps its own action.
+        let mut keys = BTreeMap::new();
+        keys.insert("quit".to_owned(), vec!["？".to_owned()]);
+        let k = Keymap::new(&keys).unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(k.pane_action(&ev(KeyCode::Char('？'), shift)), Some(Action::Quit));
     }
 
     #[test]
