@@ -229,6 +229,54 @@ fn set_language(language: Language) {
     unsafe { rse::i18n::set_system_messages() };
 }
 
+/// Whether [`before_go`] installed the `SIGWINCH` handler, and before Go's runtime started.
+#[cfg(all(any(target_os = "linux", target_os = "macos"), feature = "embedded"))]
+static INSTALLED_BEFORE_GO: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Installs the handler crossterm will use for `SIGWINCH`, on the alternate signal stack,
+/// before the embedded Go runtime starts (see `rse::signals`). If it fails, crossterm
+/// installs the handler later, and `event_loop` adds the flag then. `SIGFPE` tells whether Go
+/// has started: its constructor installs a handler for it before it starts a thread
+/// (`libpreinit`, `runtime/os_linux.go` and `os_darwin.go`; a c-archive's runtime installs
+/// its handlers for the signals it turns into panics), and nothing else in rse does. The
+/// arguments are those the loader passes to a constructor, which it does not use.
+#[cfg(all(any(target_os = "linux", target_os = "macos"), feature = "embedded"))]
+extern "C" fn before_go(
+    _argc: libc::c_int,
+    _argv: *const *const libc::c_char,
+    _envp: *const *const libc::c_char,
+) {
+    let first = rse::signals::is_default(libc::SIGFPE).unwrap_or(false);
+    let installed = rse::signals::install_on_alternate_stack(libc::SIGWINCH).is_ok();
+    INSTALLED_BEFORE_GO.store(first && installed, std::sync::atomic::Ordering::SeqCst);
+}
+
+// Constructors run in the order of their sections: those with a priority first, in its
+// order, then the others (the GNU linker's default script, and LLVM's lld, which links
+// rse by default, sorts them the same way), among them Go's,
+// which librclone.a's go.o has in a plain `.init_array`; on macOS in the order of the
+// objects on the command line, where rse's come before the libraries. A test checks it.
+#[cfg(all(target_os = "linux", feature = "embedded"))]
+#[allow(unsafe_code)]
+#[used]
+// SAFETY: one aligned function pointer, as the loader reads `.init_array`, of the type
+// glibc calls it with, (argc, argv, envp). It runs before main, where std promises only its
+// best: before_go uses allocation, `Once`, a lock and sigaction, none of which needs what
+// main sets up, and it aborts rather than unwinds.
+#[unsafe(link_section = ".init_array.00200")]
+static BEFORE_GO: Constructor = before_go;
+#[cfg(all(target_os = "macos", feature = "embedded"))]
+#[allow(unsafe_code)]
+#[used]
+// SAFETY: as above, from dyld's list of initializers, which it calls with these arguments
+// first and more after them, which a C function does not see.
+#[unsafe(link_section = "__DATA,__mod_init_func,mod_init_funcs")]
+static BEFORE_GO: Constructor = before_go;
+#[cfg(all(any(target_os = "linux", target_os = "macos"), feature = "embedded"))]
+type Constructor =
+    extern "C" fn(libc::c_int, *const *const libc::c_char, *const *const libc::c_char);
+
 fn main() {
     // ssh runs rse as its SSH_ASKPASS program to ask the running rse a question.
     if let Some(socket) = system_ssh::askpass_socket() {
@@ -656,7 +704,9 @@ fn event_loop(
 ) -> Result<()> {
     let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
     terminal.clear()?;
-    // crossterm installs its SIGWINCH handler with its event source, on the first poll.
+    // crossterm registers for SIGWINCH with its event source, on the first poll: the
+    // handler is the one BEFORE_GO installed, which this only checks; it adds the flag
+    // where BEFORE_GO failed, or on a system it does not run on.
     #[cfg(all(unix, feature = "embedded"))]
     {
         ct::poll(Duration::ZERO)?;
@@ -689,6 +739,15 @@ fn event_loop(
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
+
+    /// The constructor ran before Go's: the linker put it first.
+    #[cfg(all(any(target_os = "linux", target_os = "macos"), feature = "embedded"))]
+    #[test]
+    fn the_sigwinch_handler_is_installed_before_go_starts() {
+        assert!(INSTALLED_BEFORE_GO.load(std::sync::atomic::Ordering::SeqCst));
+        // What tells it: by now Go's runtime has started, and installed its handler.
+        assert!(!rse::signals::is_default(libc::SIGFPE).unwrap());
+    }
 
     fn start(args: &[&str], remotes: &[&str]) -> (String, String) {
         let cli = Cli::try_parse_from(std::iter::once("rse").chain(args.iter().copied())).unwrap();

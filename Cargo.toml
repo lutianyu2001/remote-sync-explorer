@@ -39,7 +39,7 @@ path = "src/main.rs"
 [features]
 default = ["embedded"]
 # Link rclone into the binary as a static library (needs Go at build time).
-embedded = []
+embedded = ["dep:signal-hook-registry"]
 # Talk to an external `rclone rcd` over HTTP.
 rcd = ["dep:ureq", "dep:base64"]
 
@@ -60,6 +60,7 @@ rpassword = "7.5.4"
 rustix = { version = "1.1.5", features = ["fs", "process", "pty", "stdio", "termios"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
+signal-hook-registry = { version = "1.4.8", optional = true }
 sys-locale = "0.3.2"
 thiserror = "2.0.21"
 toml = "1.1.8"

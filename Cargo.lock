@@ -1156,6 +1156,7 @@ dependencies = [
  "rustix",
  "serde",
  "serde_json",
+ "signal-hook-registry",
  "sys-locale",
  "tempfile",
  "thiserror",

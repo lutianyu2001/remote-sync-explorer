@@ -171,12 +171,14 @@ names.
 
 ## Decisions
 
-- **`unsafe`.** The crate denies `unsafe_code`; the 14 blocks left are calls with no safe
-  form, into librclone, `setlocale`, `sigaction` (to run crossterm's `SIGWINCH` handler on
-  the alternate signal stack, as the embedded Go runtime requires) and `pre_exec`, each in
-  a function that allows it by name, with the reason it is sound beside it. The `extern`
-  blocks declaring the C functions allow it by name too, and `build.rs` checks them
-  against the C headers and, token by token, against copies of them it keeps. A precondition no code can
+- **`unsafe`.** The crate denies `unsafe_code`; the 15 blocks left are calls with no safe
+  form, into librclone, `setlocale`, `sigaction` and signal-hook-registry (to have
+  crossterm's `SIGWINCH` handler run on the alternate signal stack, as the embedded Go
+  runtime requires, from a constructor that runs before Go's runtime starts) and
+  `pre_exec`, each in a function that allows it by name, with the reason it is sound
+  beside it. The `extern` blocks declaring the C functions, and the constructor's
+  `link_section`, allow it by name too, and `build.rs` checks the blocks against the C
+  headers and, token by token, against copies of them it keeps. A precondition no code can
   check is an `unsafe fn` (`i18n::set_system_messages`), and the rest are enforced: no rc
   call runs while rclone shuts down, and setting the C locale first waits for Go's
   initialisation, which runs beside `main`. Each file with `unsafe` has a review in
