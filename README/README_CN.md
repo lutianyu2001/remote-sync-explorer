@@ -51,7 +51,7 @@ remote-sync-explorer（命令为 `rse`）是一个双栏终端文件管理器，
 │   copy huge.bin → nas:backup/2026       ██████░░░░░░  48%    52 MB/s   0:16 ✕│
 │   copy report-final-v3.pdf → nas:backup/2026                         queued ✕│
 ╰──────────────────────────────────────────────────────────────────────────────╯
- F5 Copy  F6 Move  F7 Mkdir  F8 Delete  F10 Remote  / Filter  ? Help     rclone
+ F2 Rename  F5 Copy  F6 Move  F8 Delete  F10 Remote  / Filter  ? Help    rclone
 ```
 
 ## 功能特性
@@ -171,12 +171,25 @@ RCLONE_RC_PASS=<password> rse --rcd http://localhost:5572 --rc-user <user>
 
 明文 `http://` 只允许连接本机（`localhost`、`127.0.0.1`、`[::1]`）；其他机器上的 rcd 需要 `https://`（`rclone rcd --rc-cert … --rc-key …`）。
 
+### 手册
+
+`rse --man` 按界面语言输出手册 `man rse`。要把英文版和中文版放到 `man` 能找到的地方，即 `rse` 所在目录的旁边（`cargo install` 之后是 `~/.cargo/share/man`）：
+
+```bash
+man_dir="$(dirname "$(command -v rse)")/../share/man"
+mkdir -p "$man_dir/man1" "$man_dir/zh_CN/man1"
+rse -c ui.language=en --man > "$man_dir/man1/rse.1"
+rse -c ui.language=zh-CN --man > "$man_dir/zh_CN/man1/rse.1"
+```
+
+之后在 `zh_CN` 区域设置下，`man rse` 显示中文版。发布的压缩包里，两份都在 `man/` 下。
+
 ## 用法
 
 ```text
 rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-password]
      [--forget-password <LOGIN>] [--rcd <URL> --rc-user <USER> --rc-pass <PASS>]
-     [-T] [--version] [--licenses] [-h] [LEFT] [RIGHT]
+     [-T] [--version] [--licenses] [--man] [-h] [LEFT] [RIGHT]
 ```
 
 - `LEFT`
@@ -203,16 +216,28 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
     - 显示 remote-sync-explorer 和 rclone 的版本
 - `--licenses`
     - 显示 remote-sync-explorer 及其中第三方代码的许可协议
+- `--man`
+    - 按界面语言输出手册（`man rse`，见[手册](#手册)）
 - `-h, --help`
     - 显示帮助
 
 加密的 rclone 配置需要在 rse 启动前提供密码：使用 `--ask-password`，或在启动 rse 的 shell 里导出 `RCLONE_CONFIG_PASS`。
 
+### 入门
+
+1. 运行 `rse`。左窗格显示你的主目录，右窗格显示你的第一个 rclone 远程（没有远程时也是主目录）；`rse ~/work sftp://me@box/srv` 则从这两处开始。
+2. 用方向键（或 `j` 和 `k`）移动，Enter 打开目录，Backspace 回到上级目录。Tab 在两个窗格之间切换。
+3. 要打开服务器，按 `:` 输入它的地址，例如 `sftp://me@box/srv`（见[位置与地址](#位置与地址)）。要打开 rclone 里的远程，按 F10（或 `g`）：会打开一个列表，里面有本地磁盘和 `rclone.conf` 里的远程；输入文字缩小范围，Enter 打开选中的那个。远程用 `rclone config` 添加；一个都没有时，列表会说明。
+4. 用 Space 标记条目，按 F5 把它们复制到另一个窗格显示的目录，F6 则移动过去。没有标记时，复制的是光标所在的条目。传输窗口显示进度；按 Ctrl+T 进入，可以取消或重试任务。
+5. `?` 列出所有按键，`man rse` 是完整的手册（见[手册](#手册)）。`q` 退出。
+
+屏幕从上到下：每个窗格上方的地址行；窗格，最后一行显示过滤条件和光标所在条目的完整名称；打开时的[终端](#终端)（Ctrl+O）；传输窗口；按键提示，最右端反色显示两个窗格之间复制时会用的引擎（`rsync` 或 `rclone`）；最底部的消息行，显示提示消息，输入法也在这里显示正在输入的内容。
+
 ### 位置与地址
 
 位置可以是本地路径（`~/x`、`/abs`、`relative`），也可以是 rclone 路径（`nas:`、`nas:backup/2026`、`sftp:/absolute/path`）。远程照常用 `rclone config` 管理。
 
-名字按实际内容显示：显示不出来的字符（例如控制字符、零宽空格、会改变文字顺序的方向控制符）显示为 `�`。服务器列出的条目如果名字可能指向目录之外（`..`，或含 `/`），不会显示，状态栏会说明跳过了几个。
+名字按实际内容显示：显示不出来的字符（例如控制字符、零宽空格、会改变文字顺序的方向控制符）显示为 `�`。服务器列出的条目如果名字可能指向目录之外（`..`，或含 `/`），不会显示，消息行会说明跳过了几个。
 
 只给一个位置时，远程或服务器地址会在右窗格打开，左窗格显示启动 rse 时所在的目录：`rse sftp://me@box` 会把当前工作目录放在左边，`box` 放在右边。只给一个本地路径时，它在左边打开。
 
@@ -253,17 +278,17 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
 | Space / Insert | 标记并下移 |
 | Esc | 清除标记；在地址栏中则回到条目列表 |
 | a | 全部标记 / 全部取消 |
-| / | 按名称过滤（Enter 保留，Esc 清除） |
+| / | 按名称过滤，在窗格的最后一行输入（Enter 保留，Esc 清除；过滤时条目照样可以滚动） |
 | s | 按名称、大小、时间排序 |
 | S | 反转排序顺序 |
 | . | 显示或隐藏点文件 |
 | : | 跳转到路径、远程或地址，例如 `nas:backup`、`ftp://me@box/pub` |
-| F10 / g | 选择远程 |
+| F10 / g | 从本地磁盘和 `rclone.conf` 里的远程组成的列表中，选择窗格要显示的内容（输入文字缩小范围；没有远程时会说明怎样添加） |
 | Ctrl+U | 交换窗格 |
 | Ctrl+R | 重新加载窗格 |
 | F5 / c | 复制到另一个窗格 |
 | F6 / m | 移动到另一个窗格 |
-| F2 / r | 重命名 |
+| F2 / r | 重命名光标所在的条目 |
 | F7 / n | 新建目录 |
 | F8 / Delete | 删除 |
 | O | 开关覆写模式：复制、移动和重命名直接覆盖已有文件，不再询问（每次启动时都是关闭的；开启时屏幕顶部有一行红色提示） |
@@ -274,6 +299,8 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
 | q | 退出 |
 
 复制和移动作用于已标记的条目；没有标记时作用于光标所在的条目。目标是另一个窗格的目录。
+
+开着中文或日文输入法时，标点键照样可用：`？`、`：`、`／`（或 `、`）和 `。` 分别当作 `?`、`:`、`/` 和 `.`。
 
 ### 鼠标
 
@@ -373,6 +400,8 @@ rse 以前叫 rclone-explorer-tui（命令为 `rext`）。第一次启动时，�
 ## 语言
 
 rse 支持英文和简体中文：`[ui]` 里的 `language` 选择其一，`auto`（默认）像 gettext 一样跟随系统语言（`LANGUAGE`、`LC_ALL`、`LC_MESSAGES`、`LANG`），macOS 上也一样；这几个变量都没有设置时，使用系统的语言（macOS 上是系统设置里的语言）。范围包括界面、`rse --help` 及其报错，以及启动时的报错和提示；配置里的设置对 `--help` 同样生效。glibc 有对应翻译时（Linux），"No such file or directory" 这类系统错误也会跟随。rclone、ssh 和读取配置的部分输出的内容保持英文，日志文件也是。
+
+手册 `man rse` 也有这两种语言（见[手册](#手册)）。
 
 文本保存在 [Fluent](https://projectfluent.org) 文件 `locales/en/rse.ftl` 和 `locales/zh-CN/rse.ftl` 中，编译进二进制文件。
 

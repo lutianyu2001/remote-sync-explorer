@@ -268,6 +268,7 @@ cli-pass-value = PASS
 cli-no-terminal = Turn the terminal off: no shell can be opened, locally or on a server
 cli-version = Print the remote-sync-explorer and rclone versions
 cli-licenses = Print the licenses of remote-sync-explorer and of the third-party code built into it
+cli-man = Print the manual (man rse), in the interface language
 cli-help = Print help
 cli-error = error:
 cli-tip = tip:

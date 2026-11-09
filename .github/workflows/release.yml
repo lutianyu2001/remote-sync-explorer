@@ -89,6 +89,7 @@ jobs:
           dir="rse-$TAG-$NAME"
           mkdir -p "$dir" dist
           cp target/release/rse README.md LICENSE "$dir/"
+          cp -R man "$dir/man"
           cp -R "$RUNNER_TEMP/third-party" "$dir/third-party"
           ./target/release/rse --version > "$dir/VERSIONS"
           tar czf "dist/$dir.tar.gz" "$dir"

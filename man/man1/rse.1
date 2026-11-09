@@ -1,0 +1,608 @@
+.\" -*- coding: UTF-8 -*-
+.\" The manual of remote-sync-explorer. Its Chinese translation is man/zh_CN/man1/rse.1;
+.\" change both together. `rse --man` prints the one in the interface language.
+.TH RSE 1 "November 2026" "rse 0.1.1" "User Commands"
+.SH NAME
+rse \- remote-sync-explorer, a dual-pane terminal file manager for the local disk,
+servers and rclone remotes
+.SH SYNOPSIS
+.B rse
+.RB [ \-\-config
+.IR PATH ]
+.RB [ \-c
+.IR KEY = VALUE ]...\&
+.RB [ \-\-rclone\-config
+.IR PATH ]
+.RB [ \-\-ask\-password ]
+.RB [ \-T ]
+.RI [ LEFT ]
+.RI [ RIGHT ]
+.br
+.B rse \-\-forget\-password
+.IB user @ host
+.br
+.B rse
+.BR \-\-version " | " \-\-licenses " | " \-\-man " | " \-h
+.SH DESCRIPTION
+.B rse
+shows two directories side by side, each on the local disk, on a server or on any
+.BR rclone (1)
+remote, and copies, moves, deletes and renames between them.
+Copies and moves go into a transfer queue that shows their progress.
+Between the local disk and an sftp server that has
+.BR rsync (1),
+rse transfers with rsync, so a changed file sends only what changed;
+everything else goes through rclone, which is built into rse.
+A stopped transfer goes on from where it stopped wherever the target allows it.
+.PP
+Remotes are those of your
+.IR rclone.conf ,
+managed with
+.B rclone config
+as usual; a server can also be opened by its address, without a remote.
+.SH GETTING STARTED
+.IP 1. 4
+Start
+.BR rse .
+The left pane shows your home directory; give one or two locations to start
+elsewhere:
+.B rse \(ti/work sftp://me@box/srv
+opens both.
+.IP 2. 4
+Move with the arrow keys (or
+.B j
+and
+.BR k ),
+open a directory with Enter, go up with Backspace.
+Tab switches between the panes.
+.IP 3. 4
+To open a server in a pane, press
+.B :
+and type its address, such as
+.BR sftp://me@box/srv ;
+to open one of your rclone remotes, press
+.B F10
+(or
+.BR g )
+and pick it from the list, which also has the local disk.
+.IP 4. 4
+Mark entries with Space (or click them with Ctrl held) and press
+.B F5
+to copy them, or
+.B F6
+to move them, into the directory the other pane shows.
+With nothing marked, the entry under the cursor is copied.
+The Transfers window shows each job; Ctrl+T enters it, to cancel or retry one.
+.IP 5. 4
+.B ?
+shows every key on the screen;
+.B q
+quits.
+.PP
+With a Chinese or Japanese input method on, the punctuation keys still work:
+.BR ？ ,
+.BR ： ,
+.B ／
+(or
+.BR 、 )
+and
+.B 。
+work as
+.BR ? ,
+.BR : ,
+.B /
+and
+.B .
+would.
+.SH THE SCREEN
+From the top:
+.TP
+.B the address row
+over each pane: the protocol
+.RB ( sftp:// ,
+.BR smb:// ,
+\&..., or
+.B Local
+on the local disk), the address bar
+.RB ( [1]
+and
+.BR [3] ),
+and a button,
+.BR ↻ ,
+that reloads the pane.
+Enter in the focused address bar,
+.B :
+in a pane, or a click on the address edits it.
+.TP
+.B the panes
+.RB ( [2]
+and
+.BR [4] ,
+named Local or Remote after what they show): the entries under column headers
+that sort them when clicked.
+The pane's last row is its own line: the filter while it is typed or kept, and the
+whole name of the entry under the cursor, which the list may shorten.
+Marked entries are counted in the bottom right corner
+.RB ( "[2 marked]" ).
+.TP
+.B the terminal
+under the panes, while it is open (Ctrl+O; see
+.BR TERMINAL ).
+.TP
+.B Transfers
+.RB ( [5] ):
+how many jobs run and wait, then a row for each.
+.TP
+.B the key hints
+of the most used keys; click one to run it.
+At its right end, in reverse video, the engine a copy between the two panes would use:
+.B rsync
+or
+.BR rclone .
+.TP
+.B the message line
+at the bottom: what the last action said (\(lqnothing selected\(rq, an error).
+An input method shows what it is composing there.
+.PP
+While overwrite mode is on, a red row across the top of the screen says so.
+.SH OPTIONS
+.TP
+.I LEFT
+The location the left pane starts in, such as
+.BR ~/work .
+.TP
+.I RIGHT
+The location the right pane starts in, such as
+.BR nas:backup .
+Given alone, a remote or server address opens here and the left pane shows the
+directory rse was started in; a single local path opens on the left.
+.TP
+.BI \-\-config " PATH"
+rse's config file (default:
+.IR ~/.config/rse/config.toml ).
+.TP
+.BI \-c " KEY=VALUE\fR, " \-\-set " KEY=VALUE"
+A setting for this run only, such as
+.BR ui.show_hidden=true ;
+may be given more than once.
+See
+.BR CONFIGURATION .
+.TP
+.BI \-\-rclone\-config " PATH"
+The rclone config file.
+.TP
+.B \-\-ask\-password
+Ask for the rclone config password before starting.
+An encrypted rclone config needs it before rse starts: give this, or export
+.BR RCLONE_CONFIG_PASS .
+.TP
+.BI \-\-forget\-password " LOGIN"
+Forget the ssh password remembered for
+.I LOGIN
+.RI ( user @ host )
+and exit.
+.TP
+.BI \-\-rcd " URL"
+Use an external
+.B rclone rcd
+instead of the built-in rclone (only in a build with the
+.B rcd
+feature).
+.TP
+.BI \-\-rc\-user " USER\fR, " \-\-rc\-pass " PASS"
+User and password for
+.BR \-\-rcd .
+.B RCLONE_RC_USER
+and
+.B RCLONE_RC_PASS
+are read when these are not given, and keep the password out of
+.BR ps (1).
+.TP
+.BR \-T ", " \-\-no\-terminal
+No terminal can be opened, locally or on a server.
+.TP
+.B \-\-version
+Print the versions of rse and of the rclone in it.
+.TP
+.B \-\-licenses
+Print the licenses of rse and of the third-party code built into it.
+.TP
+.B \-\-man
+Print this manual, in the interface language, as
+.BR man (1)
+reads it (see
+.BR FILES ).
+.TP
+.BR \-h ", " \-\-help
+Print the options.
+.SH LOCATIONS AND ADDRESSES
+A location is a local path
+.RI ( ~/x ,
+.IR /abs ,
+.IR relative )
+or an rclone path
+.RB ( nas: ,
+.BR nas:backup/2026 ).
+A server opens by its address, without a remote in
+.IR rclone.conf :
+.TP
+.BR sftp://me@box/srv ", or scp's " me@box:/srv
+sftp through the system
+.BR ssh (1)
+(see
+.BR "SFTP THROUGH OPENSSH" ).
+Paths are absolute;
+.BR sftp://me@box/~/docs ,
+or no path at all, is in the home directory, and so is scp's
+.BR me@box:docs .
+.TP
+.BR ftp://me@box/pub ", " ftps://...
+FTP;
+.B ftps
+is implicit TLS on port 990.
+Without a user, FTP logs in as
+.BR anonymous .
+.TP
+.B smb://me@nas/share/dir
+SMB; the first name is the share.
+.TP
+.BR webdav://host/path ", " webdavs://...
+WebDAV over http or https
+.RB ( dav:// ", " davs://
+too).
+.PP
+A port goes after the host:
+.BR sftp://me@box:2222/srv .
+When a login needs a password the address does not have, rse asks for it and keeps it
+in memory until it quits.
+Any other rclone backend opens with a connection string, such as
+.BR :s3,provider=AWS,env_auth=true:bucket/path .
+.PP
+A name that would not show, such as one with a control character, appears with
+.B �
+in its place.
+An entry a server lists under a name that could lead out of the directory
+.RB ( .. ,
+or one with
+.B /
+in it) is left out, and the message line says how many were.
+.SH KEYS
+All keys can be changed in the config file
+.RB ( [keys] ).
+The F keys have letter aliases for keyboards without them.
+.SS The panes
+.TP
+.B Tab
+Switch between the panes.
+.TP
+.BR 1 ", " 2 ", " 3 ", " 4 ", " 5
+Focus a window: the left address bar, the left pane, the right address bar, the right
+pane, Transfers.
+The key is shown in each window's top right corner.
+.TP
+.BR Up ", " Down ", " k ", " j ", " PgUp ", " PgDn ", " Home ", " End
+Move the cursor.
+.TP
+.BR Enter ", " l
+Open the directory.
+.TP
+.BR Backspace ", " h
+The parent directory; the cursor lands on the directory you left.
+.TP
+.BR Space ", " Insert
+Mark or unmark the entry, and move down.
+.TP
+.B a
+Mark all, or unmark all.
+.TP
+.B Esc
+Clear the marks; in the address bar, back to the entries.
+.TP
+.B /
+Filter by name, on the pane's own line: type to narrow the entries, Enter keeps the
+filter, Esc clears it.
+The cursor keys, PgUp, PgDn, Home, End and the wheel still move through the entries.
+.TP
+.BR s ", " S
+Sort by name, size or time, in turn; the other way round.
+.TP
+.B .
+Show or hide dot files.
+.TP
+.B :
+Go to a path, a remote or an address, such as
+.B nas:backup
+or
+.BR ftp://me@box/pub .
+.TP
+.BR F10 ", " g
+Choose what the pane shows from a list of the local disk and the remotes in
+.IR rclone.conf :
+type to narrow the list, Enter opens the chosen one at its top.
+With no remotes, the list says how to add one.
+.TP
+.B Ctrl+U
+Swap the panes.
+.TP
+.B Ctrl+R
+Reload the pane.
+.TP
+.BR F5 ", " c
+Copy the marked entries, or the one under the cursor, to the other pane's directory.
+.TP
+.BR F6 ", " m
+Move them there.
+.TP
+.BR F2 ", " r
+Rename the entry under the cursor.
+.TP
+.BR F7 ", " n
+New directory.
+.TP
+.BR F8 ", " Delete
+Delete.
+.TP
+.B O
+Overwrite mode, on or off: copies, moves and renames replace existing files without
+asking.
+It is off at every start.
+.TP
+.B Ctrl+T
+Enter or leave Transfers.
+.TP
+.B Ctrl+O
+Open the terminal, or give it the keys; in the terminal, back to the panes.
+.TP
+.B E
+The error log (the last 100).
+.TP
+.B ?
+Help: every key, as configured.
+.TP
+.B q
+Quit; rse asks first when that would stop transfers.
+.SS Transfers
+.TP
+.BR Up ", " Down ", " k ", " j
+Choose a job.
+.TP
+.B x
+Cancel it.
+.TP
+.B r
+Retry it.
+.TP
+.B c
+Clear the finished jobs.
+.TP
+.BR Esc ", " Ctrl+T
+Back to the panes.
+.SS Dialogs
+Enter presses the highlighted button, Esc cancels, and Tab, the arrow keys or a click
+choose another.
+In a text field, Ctrl+U clears it, and
+.B <
+or
+.B >
+at either end says the text goes on beyond it.
+.SH MOUSE
+Mouse support is on by default
+.RB ( ui.mouse ).
+A click moves the cursor there, clears the marks and focuses that pane;
+a click with Ctrl held, or a right click, marks or unmarks, keeping the other marks;
+a double click opens a directory, or goes up on
+.BR .. ;
+the wheel scrolls the pane under the pointer;
+a click on a column header sorts by it, and again the other way round;
+a click on blank space in a pane clears the marks;
+a click on the address edits it, on
+.B ↻
+reloads the pane;
+a click on a queue row selects the job, on its
+.B ✕
+cancels it;
+a click on a key hint runs it.
+.PP
+Dragging copies or moves: press on an entry and move; marked entries move together.
+Drop on a directory to put them inside it, anywhere else in a pane to put them in that
+pane's directory.
+A menu then offers
+.IR "Copy here" ,
+.I "Move here"
+and
+.IR Cancel ;
+.B drop_action = """copy"""
+copies without it.
+.PP
+While mouse support is on, hold Shift to select text in most terminals.
+In
+.BR tmux (1),
+turn the mouse on with
+.BR "set \-g mouse on" .
+.SH TERMINAL
+Ctrl+O opens a terminal across the bottom of the panes, in the directory the pane
+shows: your login shell on the local disk, or on a server reached through the system
+ssh, through the connection rse already holds.
+Other remotes have no terminal.
+While it has the keys (its border is green), every key goes to the shell, Ctrl+C and
+Esc included; Ctrl+O gives them back to the panes.
+When the pane goes to another directory on the same disk or server, rse types a
+.B cd
+into the shell, once no command runs there.
+.B exit
+or Ctrl+D closes it.
+.SH CONFLICTS AND OVERWRITING
+When the target already has an entry of the same name, rse asks: overwrite, skip,
+overwrite all, skip all or cancel; skip is the default.
+Names that differ only in case count as the same.
+Moves and deletes are always confirmed.
+Each job checks its target again as it starts, and two jobs never write one file at
+once.
+Overwriting goes on where it can: identical files are skipped, a half-done file is
+resumed, different ones are replaced.
+A stopped transfer keeps what it has done as
+.I <name>.rse\-partial
+(rclone) or in a
+.I .rse\-partial/
+directory (rsync) beside the target; delete them if you give the transfer up.
+A move across remotes copies, then deletes the source.
+.SH CONFIGURATION
+Each setting is taken from the highest of these layers that has it: the defaults, the
+config file, the environment
+.RB ( RSE_ ...),
+and
+.B \-\-set
+on the command line.
+The file needs only the settings you change; a misspelt setting is an error that gives
+its line and column.
+The settings, with their defaults:
+.PP
+.EX
+[rclone]
+config = ""              # rclone.conf; empty: rclone's default
+transfers = 4            # rclone \-\-transfers
+checkers = 8             # rclone \-\-checkers
+browse_threads = 2       # threads for listings and other short calls
+system_ssh = true        # sftp through the system ssh
+
+[ui]
+left = "\(ti"              # left pane at start
+right = ""               # right pane at start; empty: the first remote, or \(ti
+show_hidden = false
+mouse = true
+multi_select_modifier = "ctrl"  # or "alt"
+drop_action = "ask"      # or "copy"
+language = "auto"        # "en", "zh\-CN", or the system's
+
+[jobs]
+max_concurrent = 2       # jobs running at once
+poll_ms = 500            # progress refresh
+engine = "auto"          # or "rclone": never rsync
+checksum = false         # compare files by checksum
+
+[keys]
+copy = ["F5", "c"]       # any action, by its name below
+.EE
+.PP
+The actions are named switch_pane, up, down, page_up, page_down, home, end, enter,
+parent, mark, mark_all, filter, sort, sort_reverse, toggle_hidden, goto, remote, swap,
+refresh, copy, move, rename, mkdir, delete, overwrite_mode, queue, terminal,
+focus_left_address, focus_left, focus_right_address, focus_right, focus_queue,
+error_log, help, quit, queue_cancel, queue_retry and queue_clear.
+Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn or Delete.
+.SH SFTP THROUGH OPENSSH
+rse reaches sftp servers through the system ssh, so
+.I ~/.ssh/config
+applies.
+It logs in once per server and keeps that master connection; every connection rclone
+makes goes through it, so the server sees one login per session.
+The connection forwards no agent, X11 or ports.
+A password, key passphrase or one-time code ssh asks for is asked in a dialog, which
+can remember a password (see
+.BR FILES ).
+rclone's built-in ssh is used instead when there is no ssh,
+.B rclone.system_ssh
+is false, the remote needs something only it can do, or logging in through ssh fails;
+it then checks host keys against ssh's
+.IR known_hosts .
+.SH ENVIRONMENT
+.TP
+.BR RSE_ *
+A setting:
+.B RSE_
+and its key upper-cased, dots made underscores, such as
+.BR RSE_UI_MOUSE=false ;
+a list is comma-separated:
+.BR RSE_KEYS_COPY=F5,c .
+.TP
+.B RCLONE_CONFIG_PASS
+The password of an encrypted rclone config.
+.TP
+.BR RCLONE_RC_USER ", " RCLONE_RC_PASS
+The login for
+.BR \-\-rcd .
+.TP
+.BR LANGUAGE ", " LC_ALL ", " LC_MESSAGES ", " LANG
+The interface language, while
+.B ui.language
+is
+.BR auto :
+Chinese for a
+.B zh
+locale, English otherwise.
+.TP
+.BR XDG_CONFIG_HOME ", " XDG_STATE_HOME ", " XDG_RUNTIME_DIR
+Where the files below are.
+.SH FILES
+.TP
+.I ~/.config/rse/config.toml
+The config file
+.RI ( $XDG_CONFIG_HOME/rse/config.toml ).
+.TP
+.I ~/.local/state/rse/queue.json
+Unfinished jobs, which come back at the next start; readable by you alone.
+.TP
+.I ~/.cache/rse/rclone.log
+rclone's log while the interface is open
+.RI ( ~/Library/Caches/rse/
+on macOS).
+.TP
+.I ~/.ssh/rse\-passwords
+Remembered ssh passwords, one account a line, obscured as
+.I rclone.conf
+keeps passwords; used only while readable by you alone.
+.TP
+.IR $XDG_RUNTIME_DIR/rse/ ", " /tmp/rse\-<uid>/
+The sockets of ssh's master connections.
+.TP
+.IR <bin>/../share/man/man1/rse.1 ", " <bin>/../share/man/zh_CN/man1/rse.1
+This manual in English and in Chinese, where
+.B man rse
+finds it:
+.BR man (1)
+looks beside each directory of
+.B PATH
+that holds programs, and shows the Chinese one in a
+.B zh_CN
+locale.
+.I <bin>
+is the directory rse is in, such as
+.I \(ti/.cargo/bin
+after
+.BR "cargo install" .
+To put both there:
+.RS
+.PP
+.EX
+man_dir="$(dirname "$(command \-v rse)")/../share/man"
+mkdir \-p "$man_dir/man1" "$man_dir/zh_CN/man1"
+rse \-c ui.language=en \-\-man > "$man_dir/man1/rse.1"
+rse \-c ui.language=zh\-CN \-\-man > "$man_dir/zh_CN/man1/rse.1"
+.EE
+.RE
+.SH EXIT STATUS
+0 when rse quits normally, 1 when it cannot start (such as for a config error) or
+fails.
+.SH EXAMPLES
+.TP
+.B rse
+Your home directory on the left, the first remote on the right (with no remote, your
+home directory again).
+.TP
+.B rse . nas:backup
+The current directory and the remote
+.BR nas .
+.TP
+.B rse sftp://me@box
+The current directory, and your home directory on the server
+.BR box .
+.TP
+.B rse \-c jobs.engine=rclone
+Never use rsync, for this run.
+.SH SEE ALSO
+.BR rclone (1),
+.BR rsync (1),
+.BR ssh (1),
+.BR ssh_config (5)
+.PP
+The README: https://github.com/lutianyu2001/remote-sync-explorer

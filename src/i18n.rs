@@ -126,6 +126,11 @@ pub fn set_for_this_thread(language: Language) {
     THREAD_CHINESE.set(Some(language == Language::ZhCn));
 }
 
+/// Whether the interface is in Chinese.
+pub fn is_chinese() -> bool {
+    *current() == ZH_CN
+}
+
 fn current() -> &'static LanguageIdentifier {
     #[cfg(test)]
     if let Some(chinese) = THREAD_CHINESE.get() {

@@ -58,7 +58,7 @@ system's own, never shipped with rse.
 │   copy huge.bin → nas:backup/2026       ██████░░░░░░  48%    52 MB/s   0:16 ✕│
 │   copy report-final-v3.pdf → nas:backup/2026                         queued ✕│
 ╰──────────────────────────────────────────────────────────────────────────────╯
- F5 Copy  F6 Move  F7 Mkdir  F8 Delete  F10 Remote  / Filter  ? Help     rclone
+ F2 Rename  F5 Copy  F6 Move  F8 Delete  F10 Remote  / Filter  ? Help    rclone
 ```
 
 ## Features
@@ -231,12 +231,28 @@ RCLONE_RC_PASS=<password> rse --rcd http://localhost:5572 --rc-user <user>
 Plain `http://` is accepted only to this machine (`localhost`, `127.0.0.1`, `[::1]`); an
 rcd elsewhere needs `https://` (`rclone rcd --rc-cert … --rc-key …`).
 
+### Manual Page
+
+`rse --man` prints the manual, `man rse`, in the interface language. To put the English
+and the Chinese one where `man` finds them, beside the directory `rse` is in
+(`~/.cargo/share/man` after `cargo install`):
+
+```bash
+man_dir="$(dirname "$(command -v rse)")/../share/man"
+mkdir -p "$man_dir/man1" "$man_dir/zh_CN/man1"
+rse -c ui.language=en --man > "$man_dir/man1/rse.1"
+rse -c ui.language=zh-CN --man > "$man_dir/zh_CN/man1/rse.1"
+```
+
+`man rse` then shows the Chinese one in a `zh_CN` locale. A release archive has both in
+`man/`.
+
 ## Usage
 
 ```text
 rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-password]
      [--forget-password <LOGIN>] [--rcd <URL> --rc-user <USER> --rc-pass <PASS>]
-     [-T] [--version] [--licenses] [-h] [LEFT] [RIGHT]
+     [-T] [--version] [--licenses] [--man] [-h] [LEFT] [RIGHT]
 ```
 
 - `LEFT`
@@ -267,11 +283,40 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
     - Print the remote-sync-explorer and rclone versions
 - `--licenses`
     - Print the licenses of remote-sync-explorer and of the third-party code built into it
+- `--man`
+    - Print the manual (`man rse`) in the interface language (see
+      [Manual Page](#manual-page))
 - `-h, --help`
     - Print help
 
 An encrypted rclone config needs its password before rse starts: use
 `--ask-password`, or export `RCLONE_CONFIG_PASS` in the shell that starts rse.
+
+### Getting Started
+
+1. Run `rse`. The left pane shows your home directory, the right one your first rclone
+   remote (or your home directory again); `rse ~/work sftp://me@box/srv` starts in those
+   two places instead.
+2. Move with the arrow keys (or `j` and `k`), open a directory with Enter, go up with
+   Backspace. Tab switches between the panes.
+3. To open a server, press `:` and type its address, such as `sftp://me@box/srv` (see
+   [Locations and Addresses](#locations-and-addresses)). To open one of your rclone
+   remotes, press F10 (or `g`): a list of the local disk and the remotes in
+   `rclone.conf` opens; type to narrow it, and Enter opens the one chosen. Remotes are
+   added with `rclone config`; with none, the list says so.
+4. Mark entries with Space and press F5 to copy them into the directory the other pane
+   shows, or F6 to move them there. With nothing marked, the entry under the cursor is
+   copied. The Transfers window shows the progress; Ctrl+T enters it, to cancel or retry
+   a job.
+5. `?` lists every key, and `man rse` has the whole manual (see
+   [Manual Page](#manual-page)). `q` quits.
+
+The screen, from the top: the address row over each pane; the panes, whose last row
+shows the filter and the whole name of the entry under the cursor; the
+[terminal](#terminal) (Ctrl+O), while it is open; Transfers; the key hints, with the
+engine a copy between the panes would use (`rsync` or `rclone`) in reverse video at the
+right; and the message line, where messages appear and an input method shows what it
+is composing.
 
 ### Locations and Addresses
 
@@ -282,7 +327,7 @@ usual.
 Names are shown as they are: a character that would not show, such as a control
 character, a zero-width space or a mark that reorders text, appears as `�`. An entry a server lists under a
 name that could lead out of the directory (`..`, or one with `/` in it) is left out,
-and the status bar says how many were.
+and the message line says how many were.
 
 With a single location, a remote or server address opens in the right pane and the left
 pane shows the directory rse was started in: `rse sftp://me@box` puts the working
@@ -347,17 +392,17 @@ without them.
 | Space / Insert | Mark and move down |
 | Esc | Clear marks; in the address bar, go back to the entries |
 | a | Mark all / unmark all |
-| / | Filter by name (Enter keeps it, Esc clears it) |
+| / | Filter by name, on the pane's last row (Enter keeps it, Esc clears it; the entries still scroll meanwhile) |
 | s | Sort by name, size, time |
 | S | Reverse the sort order |
 | . | Show or hide dot files |
 | : | Go to a path, remote or address, e.g. `nas:backup`, `ftp://me@box/pub` |
-| F10 / g | Choose a remote |
+| F10 / g | Choose what the pane shows from a list of the local disk and the remotes in `rclone.conf` (type to narrow it; with no remotes, it says how to add one) |
 | Ctrl+U | Swap panes |
 | Ctrl+R | Reload the pane |
 | F5 / c | Copy to the other pane |
 | F6 / m | Move to the other pane |
-| F2 / r | Rename |
+| F2 / r | Rename the entry under the cursor |
 | F7 / n | New directory |
 | F8 / Delete | Delete |
 | O | Overwrite mode on or off: copies, moves and renames replace existing files without asking (off at every start; a red row across the top shows it is on) |
@@ -369,6 +414,9 @@ without them.
 
 Copy and move act on the marked entries, or on the entry under the cursor when nothing
 is marked. The target is the other pane's directory.
+
+With a Chinese or Japanese input method on, the punctuation keys still work: `？`, `：`,
+`／` (or `、`) and `。` act as `?`, `:`, `/` and `.`.
 
 ### Mouse
 
@@ -543,6 +591,8 @@ errors and prompts at start-up; the setting already applies to `--help`.
 System errors such as "No such file or directory" follow it too when glibc has the
 translations (Linux). What rclone, ssh and the reader of the settings say stays in
 English, and so does the log file.
+
+The manual, `man rse`, is in both languages too (see [Manual Page](#manual-page)).
 
 The texts live in [Fluent](https://projectfluent.org) files, `locales/en/rse.ftl` and
 `locales/zh-CN/rse.ftl`, built into the binary.

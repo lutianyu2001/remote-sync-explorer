@@ -70,7 +70,13 @@ struct Cli {
     version: bool,
     #[arg(long)]
     licenses: bool,
+    #[arg(long)]
+    man: bool,
 }
+
+/// The manual, `man rse`, in English and in Chinese, as `--man` prints it.
+const MANUAL: [&str; 2] =
+    [include_str!("../man/man1/rse.1"), include_str!("../man/zh_CN/man1/rse.1")];
 
 /// `Cli` with its help in the interface language.
 fn command() -> clap::Command {
@@ -104,6 +110,7 @@ fn command() -> clap::Command {
         .mut_arg("no_terminal", |a| a.help(tr!("cli-no-terminal")))
         .mut_arg("version", |a| a.help(tr!("cli-version")))
         .mut_arg("licenses", |a| a.help(tr!("cli-licenses")))
+        .mut_arg("man", |a| a.help(tr!("cli-man")))
         .arg(Arg::new("help").short('h').long("help").action(ArgAction::Help).help(tr!("cli-help")))
 }
 
@@ -284,6 +291,10 @@ fn main() {
     }
     set_language(language_before_parsing());
     let cli = parse_cli();
+    if cli.man {
+        print!("{}", MANUAL[usize::from(rse::i18n::is_chinese())]);
+        return;
+    }
     if cli.licenses {
         if let Err(e) = licenses::print() {
             eprintln!("rse: {e}");
@@ -747,6 +758,38 @@ mod tests {
         assert!(INSTALLED_BEFORE_GO.load(std::sync::atomic::Ordering::SeqCst));
         // What tells it: by now Go's runtime has started, and installed its handler.
         assert!(!rse::signals::is_default(libc::SIGFPE).unwrap());
+    }
+
+    /// Both manuals name every option, setting, action and default key, and the version.
+    #[test]
+    fn the_manuals_cover_the_options_settings_and_keys() {
+        let defaults: toml::Table = toml::from_str(include_str!("defaults.toml")).unwrap();
+        for page in MANUAL {
+            // roff writes `-` in options as `\-`.
+            let page = page.replace("\\-", "-");
+            let version = format!("\"rse {}\"", env!("CARGO_PKG_VERSION"));
+            assert!(page.lines().any(|l| l.starts_with(".TH") && l.contains(&version)));
+            for arg in command().get_arguments() {
+                if let Some(long) = arg.get_long() {
+                    assert!(page.contains(&format!("--{long}")), "--{long}");
+                }
+                if let Some(short) = arg.get_short() {
+                    assert!(page.contains(&format!("-{short}")), "-{short}");
+                }
+            }
+            for (table, settings) in &defaults {
+                let settings = settings.as_table().unwrap();
+                for name in settings.keys().filter(|_| table != "keys") {
+                    assert!(page.contains(&format!("{name} = ")), "{table}.{name}");
+                }
+            }
+            for (action, keys) in rse::keymap::default_keys() {
+                assert!(page.contains(action), "{action}");
+                for key in keys {
+                    assert!(page.contains(key), "{action}: {key}");
+                }
+            }
+        }
     }
 
     fn start(args: &[&str], remotes: &[&str]) -> (String, String) {

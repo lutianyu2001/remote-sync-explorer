@@ -1,0 +1,320 @@
+.\" -*- coding: UTF-8 -*-
+.\" remote-sync-explorer 的中文手册，译自 man/man1/rse.1，两份一起改。
+.\" `rse --man` 按界面语言输出其中一份。
+.\" 中文不两端对齐（groff 的 man 宏在每节开头按 AD 重设对齐），也不断字。
+.ds AD l
+.TH RSE 1 "2026 年 11 月" "rse 0.1.1" "用户命令"
+.nh
+.SH 名称
+rse \- remote-sync-explorer，本地磁盘、服务器与 rclone 远程的双栏终端文件管理器
+.SH 概述
+\fBrse\fR [\fB\-\-config\fR \fI路径\fR] [\fB\-c\fR \fI键\fR=\fI值\fR]...\& [\fB\-\-rclone\-config\fR \fI路径\fR] [\fB\-\-ask\-password\fR] [\fB\-T\fR] [\fI左侧位置\fR] [\fI右侧位置\fR]
+.br
+\fBrse \-\-forget\-password\fR \fI用户\fR\fB@\fR\fI主机\fR
+.br
+\fBrse\fR \fB\-\-version\fR | \fB\-\-licenses\fR | \fB\-\-man\fR | \fB\-h\fR
+.SH 描述
+\fBrse\fR 并排显示两个目录，各自可以在本地磁盘、服务器或任意 \fBrclone\fR(1) 远程上，并在两者之间复制、移动、删除和重命名。复制和移动进入传输队列，队列显示它们的进度。在本地磁盘和装有 \fBrsync\fR(1) 的 sftp 服务器之间，rse 用 rsync 传输，改过的文件只传改动的部分；其余都经由 rse 内置的 rclone。停下的传输在目标允许时从停下的地方接着传。
+.PP
+远程就是你的 \fIrclone.conf\fR 里的远程，照常用 \fBrclone config\fR 管理；服务器也可以不加远程、直接按地址打开。
+.SH 入门
+.IP 1. 4
+运行 \fBrse\fR。左侧窗格显示你的主目录；给出一两个位置就从别处开始：\fBrse \(ti/work sftp://me@box/srv\fR 同时打开这两处。
+.IP 2. 4
+用方向键（或 \fBj\fR 和 \fBk\fR）移动，Enter 打开目录，Backspace 回到上级目录。Tab 在两个窗格之间切换。
+.IP 3. 4
+要在窗格里打开服务器，按 \fB:\fR 输入它的地址，例如 \fBsftp://me@box/srv\fR；要打开 rclone 里的远程，按 \fBF10\fR（或 \fBg\fR），从列表里选，列表里也有本地磁盘。
+.IP 4. 4
+用 Space 选中条目（或按住 Ctrl 点击），按 \fBF5\fR 把它们复制到另一个窗格显示的目录，按 \fBF6\fR 移动过去。没有选中任何条目时，复制的是光标所在的条目。“传输”窗口显示每个任务；按 Ctrl+T 进入，可以取消或重试任务。
+.IP 5. 4
+\fB?\fR 在屏幕上列出所有按键；\fBq\fR 退出。
+.PP
+开着中文或日文输入法时，标点键照样可用：\fB？\fR、\fB：\fR、\fB／\fR（或\fB、\fR）和\fB。\fR分别当作 \fB?\fR、\fB:\fR、\fB/\fR 和 \fB.\fR 使用。
+.SH 界面
+从上到下：
+.TP
+\fB地址行\fR
+在每个窗格上方：协议（\fBsftp://\fR、\fBsmb://\fR、\&……，本地磁盘为\fB本地\fR），地址栏（\fB[1]\fR 和 \fB[3]\fR），以及一个按钮 \fB↻\fR，用来刷新窗格。在获得焦点的地址栏里按 Enter、在窗格里按 \fB:\fR，或点击地址，都可以编辑地址。
+.TP
+\fB窗格\fR
+（\fB[2]\fR 和 \fB[4]\fR，按显示的内容叫“本地”或“远程”）：列标题下的条目，点击列标题按该列排序。窗格的最后一行是它自己的一行：正在输入或已保留的过滤条件，以及光标所在条目的完整名称（列表里可能显示不全）。选中的条目数显示在右下角（\fB[已选 2 项]\fR）。
+.TP
+\fB终端\fR
+打开时（Ctrl+O，见\fB终端\fR一节）在窗格下方。
+.TP
+\fB传输\fR
+（\fB[5]\fR）：正在进行和等待的任务数，然后每个任务一行。
+.TP
+\fB按键提示\fR
+最常用的按键；点击即执行。最右端反色显示两个窗格之间复制时会用的引擎：\fBrsync\fR 或 \fBrclone\fR。
+.TP
+\fB消息行\fR
+在最底部：上一个操作的结果（“未选择任何项”、错误）。输入法在这里显示正在输入的内容。
+.PP
+覆写模式开着时，屏幕顶部有一行红色提示。
+.SH 选项
+.TP
+\fI左侧位置\fR
+左侧窗格开始时的位置，例如 \fB\(ti/work\fR。
+.TP
+\fI右侧位置\fR
+右侧窗格开始时的位置，例如 \fBnas:backup\fR。只给一个位置时，远程或服务器地址在右侧打开，左侧显示启动 rse 时所在的目录；只给一个本地路径时在左侧打开。
+.TP
+\fB\-\-config\fR\fI 路径\fR
+rse 的配置文件（默认 \fI\(ti/.config/rse/config.toml\fR）。
+.TP
+\fB\-c\fR\fI 键=值\fR、\fR\fB\-\-set\fR\fI 键=值\fR
+只在本次运行生效的设置，例如 \fBui.show_hidden=true\fR；可以给多次。见\fB配置\fR一节。
+.TP
+\fB\-\-rclone\-config\fR\fI 路径\fR
+rclone 的配置文件。
+.TP
+\fB\-\-ask\-password\fR
+启动前询问 rclone 配置的密码。加密的 rclone 配置在 rse 启动前就需要密码：给出这个选项，或导出 \fBRCLONE_CONFIG_PASS\fR。
+.TP
+\fB\-\-forget\-password\fR\fI 登录\fR
+忘掉为\fI登录\fR（\fI用户\fR@\fI主机\fR）记住的 ssh 密码，然后退出。
+.TP
+\fB\-\-rcd\fR\fI URL\fR
+使用外部的 \fBrclone rcd\fR，而不是内置的 rclone（仅限启用了 \fBrcd\fR 功能的构建）。
+.TP
+\fB\-\-rc\-user\fR\fI 用户\fR、\fR\fB\-\-rc\-pass\fR\fI 密码\fR
+\fB\-\-rcd\fR 的用户名和密码。没有给出时读取 \fBRCLONE_RC_USER\fR 和 \fBRCLONE_RC_PASS\fR，这样密码不会出现在 \fBps\fR(1) 里。
+.TP
+\fB\-T\fR、\fB\-\-no\-terminal\fR
+不能打开终端，本地和服务器上都不能。
+.TP
+\fB\-\-version\fR
+显示 rse 及其内置 rclone 的版本。
+.TP
+\fB\-\-licenses\fR
+显示 rse 及其中第三方代码的许可协议。
+.TP
+\fB\-\-man\fR
+按界面语言输出本手册，格式供 \fBman\fR(1) 读取（见\fB文件\fR一节）。
+.TP
+\fB\-h\fR、\fB\-\-help\fR
+显示选项。
+.SH 位置与地址
+位置是本地路径（\fI\(ti/x\fR、\fI/abs\fR、\fIrelative\fR）或 rclone 路径（\fBnas:\fR、\fBnas:backup/2026\fR）。服务器可以按地址打开，不需要在 \fIrclone.conf\fR 里有远程：
+.TP
+\fBsftp://me@box/srv\fR，或 scp 写法 \fBme@box:/srv\fR
+经由系统的 \fBssh\fR(1) 访问 sftp（见\fB经由 OpenSSH 的 SFTP\fR一节）。路径是绝对路径；\fBsftp://me@box/\(ti/docs\fR 或不写路径，都在主目录里，scp 写法的 \fBme@box:docs\fR 也一样。
+.TP
+\fBftp://me@box/pub\fR、\fBftps://...\fR
+FTP；\fBftps\fR 是 990 端口上的隐式 TLS。不写用户时以 \fBanonymous\fR 登录。
+.TP
+\fBsmb://me@nas/share/dir\fR
+SMB；第一级名称是共享名。
+.TP
+\fBwebdav://host/path\fR、\fBwebdavs://...\fR
+基于 http 或 https 的 WebDAV（也可以写 \fBdav://\fR、\fBdavs://\fR）。
+.PP
+端口写在主机后面：\fBsftp://me@box:2222/srv\fR。登录需要密码而地址里没有时，rse 会询问，并在内存里保留到退出。其他 rclone 后端用连接字符串打开，例如 \fB:s3,provider=AWS,env_auth=true:bucket/path\fR。
+.PP
+显示不出来的名称（例如含控制字符的）里，该字符显示为 \fB�\fR。服务器列出的名称如果可能跳出当前目录（\fB..\fR 或含 \fB/\fR 的名称），这样的条目不显示，消息行会说明有几个。
+.SH 按键
+所有按键都可以在配置文件里修改（\fB[keys]\fR）。F 键都有字母键的替代，供没有 F 键的键盘使用。
+.SS 窗格
+.TP
+\fBTab\fR
+在两个窗格之间切换。
+.TP
+\fB1\fR、\fB2\fR、\fB3\fR、\fB4\fR、\fB5\fR
+切换焦点：左侧地址栏、左侧窗格、右侧地址栏、右侧窗格、传输。每个窗口的右上角显示它的按键。
+.TP
+\fBUp\fR、\fBDown\fR、\fBk\fR、\fBj\fR、\fBPgUp\fR、\fBPgDn\fR、\fBHome\fR、\fBEnd\fR
+移动光标。
+.TP
+\fBEnter\fR、\fBl\fR
+打开目录。
+.TP
+\fBBackspace\fR、\fBh\fR
+上级目录；光标落在刚离开的目录上。
+.TP
+\fBSpace\fR、\fBInsert\fR
+选中或取消选中条目，并下移。
+.TP
+\fBa\fR
+全选或全不选。
+.TP
+\fBEsc\fR
+清除选中；在地址栏里则回到条目。
+.TP
+\fB/\fR
+按名称过滤，在窗格自己的那一行里：输入以缩小范围，Enter 保留过滤，Esc 清除过滤。方向键、PgUp、PgDn、Home、End 和滚轮仍然可以浏览条目。
+.TP
+\fBs\fR、\fBS\fR
+依次按名称、大小、时间排序；反转排序顺序。
+.TP
+\fB.\fR
+显示或隐藏点文件。
+.TP
+\fB:\fR
+前往路径、远程或地址，例如 \fBnas:backup\fR 或 \fBftp://me@box/pub\fR。
+.TP
+\fBF10\fR、\fBg\fR
+从本地磁盘和 \fIrclone.conf\fR 里的远程组成的列表中，选择窗格要显示的内容：输入以缩小列表，Enter 在所选项的顶层打开。没有远程时，列表会说明怎样添加。
+.TP
+\fBCtrl+U\fR
+交换两个窗格。
+.TP
+\fBCtrl+R\fR
+刷新窗格。
+.TP
+\fBF5\fR、\fBc\fR
+把选中的条目（没有选中时为光标所在的条目）复制到另一个窗格的目录。
+.TP
+\fBF6\fR、\fBm\fR
+把它们移动过去。
+.TP
+\fBF2\fR、\fBr\fR
+重命名光标所在的条目。
+.TP
+\fBF7\fR、\fBn\fR
+新建目录。
+.TP
+\fBF8\fR、\fBDelete\fR
+删除。
+.TP
+\fBO\fR
+开关覆写模式：复制、移动和重命名不经询问直接替换已有文件。每次启动时都是关闭的。
+.TP
+\fBCtrl+T\fR
+进入或离开“传输”。
+.TP
+\fBCtrl+O\fR
+打开终端，或把按键交给终端；在终端里则回到窗格。
+.TP
+\fBE\fR
+错误日志（最近 100 条）。
+.TP
+\fB?\fR
+帮助：按当前配置列出所有按键。
+.TP
+\fBq\fR
+退出；会中断传输时先询问。
+.SS 传输
+.TP
+\fBUp\fR、\fBDown\fR、\fBk\fR、\fBj\fR
+选择任务。
+.TP
+\fBx\fR
+取消任务。
+.TP
+\fBr\fR
+重试任务。
+.TP
+\fBc\fR
+清除已结束的任务。
+.TP
+\fBEsc\fR、\fBCtrl+T\fR
+回到窗格。
+.SS 对话框
+Enter 按下高亮的按钮，Esc 取消，Tab、方向键或点击选择别的按钮。在文本框里，Ctrl+U 清空内容；两端的 \fB<\fR 或 \fB>\fR 表示文字超出了那一端。
+.SH 鼠标
+鼠标默认开启（\fBui.mouse\fR）。单击把光标移到那里、清除选中并让该窗格获得焦点；按住 Ctrl 单击或右键单击，选中或取消选中，保留其他选中；双击打开目录，在 \fB..\fR 上则回到上级；滚轮滚动指针下的窗格；点击列标题按该列排序，再点一次反向；点击窗格里的空白处清除选中；点击地址编辑地址，点击 \fB↻\fR 刷新窗格；点击队列中的一行选中该任务，点击它的 \fB✕\fR 取消任务；点击按键提示即执行。
+.PP
+拖动可以复制或移动：在条目上按下并移动；选中的条目一起拖动。放在目录上则放进该目录，放在窗格的其他地方则放进该窗格的目录。随后的菜单提供\fI复制到这里\fR、\fI移动到这里\fR和\fI取消\fR；设置 \fBdrop_action = "copy"\fR 则不经菜单直接复制。
+.PP
+鼠标开启时，大多数终端里按住 Shift 拖动才能选择文字。在 \fBtmux\fR(1) 里，用 \fBset \-g mouse on\fR 开启鼠标。
+.SH 终端
+Ctrl+O 在窗格下方打开一个终端，位于窗格显示的目录：本地磁盘上是你的登录 shell，经由系统 ssh 访问的服务器上则通过 rse 已有的连接打开。其他远程没有终端。终端拿着按键时（边框为绿色），所有按键都交给 shell，包括 Ctrl+C 和 Esc；Ctrl+O 把按键交还给窗格。窗格在同一磁盘或服务器上换到别的目录时，rse 会在 shell 里没有命令运行时输入 \fBcd\fR。\fBexit\fR 或 Ctrl+D 关闭终端。
+.SH 冲突与覆盖
+目标里已有同名条目时，rse 会询问：覆盖、跳过、全部覆盖、全部跳过或取消；默认跳过。只有大小写不同的名称算作同名。移动和删除总要确认。每个任务开始时会再检查一次目标，两个任务从不同时写同一个文件。覆盖时能接着来的就接着来：相同的文件跳过，传了一半的文件续传，不同的文件替换。停下的传输把已完成的部分留在目标旁边：rclone 为 \fI<名称>.rse\-partial\fR，rsync 为 \fI.rse\-partial/\fR 目录；放弃这次传输时请删掉它们。跨远程移动是先复制、再删除源文件。
+.SH 配置
+每项设置取自下列各层中有它的最高一层：默认值、配置文件、环境变量（\fBRSE_\fR...），以及命令行上的 \fB\-\-set\fR。配置文件只需写要改的设置；写错的设置名是错误，会给出所在的行和列。各项设置及其默认值：
+.PP
+.EX
+[rclone]
+config = ""              # rclone.conf；空表示 rclone 的默认位置
+transfers = 4            # rclone \-\-transfers
+checkers = 8             # rclone \-\-checkers
+browse_threads = 2       # 用于列目录等短调用的线程数
+system_ssh = true        # sftp 经由系统 ssh
+
+[ui]
+left = "\(ti"              # 启动时左侧窗格
+right = ""               # 启动时右侧窗格；空表示第一个远程，没有则为 \(ti
+show_hidden = false
+mouse = true
+multi_select_modifier = "ctrl"  # 或 "alt"
+drop_action = "ask"      # 或 "copy"
+language = "auto"        # "en"、"zh\-CN"，或跟随系统
+
+[jobs]
+max_concurrent = 2       # 同时运行的任务数
+poll_ms = 500            # 进度刷新间隔
+engine = "auto"          # 或 "rclone"：不用 rsync
+checksum = false         # 按校验和比较文件
+
+[keys]
+copy = ["F5", "c"]       # 任何操作，按下面的名称
+.EE
+.PP
+操作的名称有 switch_pane, up, down, page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort, sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename, mkdir, delete, overwrite_mode, queue, terminal, focus_left_address, focus_left, focus_right_address, focus_right, focus_queue, error_log, help, quit, queue_cancel, queue_retry, queue_clear。按键写作 F5、c、E、Ctrl+U、Alt+x、Space、Enter、PgDn 或 Delete 这样。
+.SH 经由 OpenSSH 的 SFTP
+rse 经由系统 ssh 访问 sftp 服务器，所以 \fI\(ti/.ssh/config\fR 里的设置都适用。每台服务器只登录一次，并保持这条主连接；rclone 的所有连接都经由它，所以服务器每次会话只看到一次登录。这条连接不转发 agent、X11 或端口。ssh 要的密码、密钥口令或一次性验证码在对话框里询问，对话框可以记住密码（见\fB文件\fR一节）。没有 ssh、\fBrclone.system_ssh\fR 为 false、远程需要只有 rclone 内置 ssh 才能做的事，或经由 ssh 登录失败时，改用 rclone 内置的 ssh；这时它按 ssh 的 \fIknown_hosts\fR 检查主机密钥。
+.SH 环境变量
+.TP
+\fBRSE_\fR*
+一项设置：\fBRSE_\fR 加上它的键，大写，点换成下划线，例如 \fBRSE_UI_MOUSE=false\fR；列表用逗号分隔：\fBRSE_KEYS_COPY=F5,c\fR。
+.TP
+\fBRCLONE_CONFIG_PASS\fR
+加密的 rclone 配置的密码。
+.TP
+\fBRCLONE_RC_USER\fR、\fBRCLONE_RC_PASS\fR
+\fB\-\-rcd\fR 的登录信息。
+.TP
+\fBLANGUAGE\fR、\fBLC_ALL\fR、\fBLC_MESSAGES\fR、\fBLANG\fR
+\fBui.language\fR 为 \fBauto\fR 时决定界面语言：\fBzh\fR 区域设置为中文，其他为英文。
+.TP
+\fBXDG_CONFIG_HOME\fR、\fBXDG_STATE_HOME\fR、\fBXDG_RUNTIME_DIR\fR
+决定下列文件的位置。
+.SH 文件
+.TP
+\fI\(ti/.config/rse/config.toml\fR
+配置文件（\fI$XDG_CONFIG_HOME/rse/config.toml\fR）。
+.TP
+\fI\(ti/.local/state/rse/queue.json\fR
+未完成的任务，下次启动时恢复；只有你自己能读。
+.TP
+\fI\(ti/.cache/rse/rclone.log\fR
+界面打开期间 rclone 的日志（macOS 上在 \fI\(ti/Library/Caches/rse/\fR）。
+.TP
+\fI\(ti/.ssh/rse\-passwords\fR
+记住的 ssh 密码，每个账户一行，像 \fIrclone.conf\fR 保存密码那样做了混淆；只在只有你自己能读时才使用。
+.TP
+\fI$XDG_RUNTIME_DIR/rse/\fR、\fI/tmp/rse\-<uid>/\fR
+ssh 主连接的套接字。
+.TP
+\fI<bin>/../share/man/man1/rse.1\fR、\fI<bin>/../share/man/zh_CN/man1/rse.1\fR
+本手册的英文版和中文版放在这里，\fBman rse\fR 就能找到：\fBman\fR(1) 会在 \fBPATH\fR 里每个存放程序的目录旁边查找，并在 \fBzh_CN\fR 区域设置下显示中文版。\fI<bin>\fR 是 rse 所在的目录，例如 \fBcargo install\fR 之后的 \fI\(ti/.cargo/bin\fR。把两份都放进去：
+.RS
+.PP
+.EX
+man_dir="$(dirname "$(command \-v rse)")/../share/man"
+mkdir \-p "$man_dir/man1" "$man_dir/zh_CN/man1"
+rse \-c ui.language=en \-\-man > "$man_dir/man1/rse.1"
+rse \-c ui.language=zh\-CN \-\-man > "$man_dir/zh_CN/man1/rse.1"
+.EE
+.RE
+.SH 退出状态
+正常退出时为 0；无法启动（例如配置有误）或运行失败时为 1。
+.SH 示例
+.TP
+\fBrse\fR
+左侧是你的主目录，右侧是第一个远程（没有远程时也是主目录）。
+.TP
+\fBrse . nas:backup\fR
+当前目录和远程 \fBnas\fR。
+.TP
+\fBrse sftp://me@box\fR
+当前目录，以及服务器 \fBbox\fR 上你的主目录。
+.TP
+\fBrse \-c jobs.engine=rclone\fR
+本次运行不用 rsync。
+.SH 参见
+\fBrclone\fR(1)、\fBrsync\fR(1)、\fBssh\fR(1)、\fBssh_config\fR(5)
+.PP
+README：https://github.com/lutianyu2001/remote-sync-explorer

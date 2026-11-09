@@ -253,6 +253,7 @@ cli-pass-value = 密码
 cli-no-terminal = 关闭终端功能：本地和服务器上都无法打开 shell
 cli-version = 显示 remote-sync-explorer 和 rclone 的版本
 cli-licenses = 显示 remote-sync-explorer 及其中第三方代码的许可协议
+cli-man = 按界面语言输出手册（man rse）
 cli-help = 显示帮助
 cli-error = 错误：
 cli-tip = 提示：
