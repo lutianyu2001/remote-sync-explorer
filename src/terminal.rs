@@ -249,28 +249,9 @@ impl Session {
         events: Sender<Event>,
         now: Instant,
     ) -> io::Result<Self> {
-        use rustix::pty::{OpenptFlags, grantpt, openpt, ptsname, unlockpt};
+        use rustix::pty::{grantpt, ptsname, unlockpt};
         let (rows, cols) = (nonzero(rows), nonzero(cols));
-        // posix_openpt takes O_CLOEXEC on Linux and the BSDs that have it, not on macOS, where
-        // the flag is set once the terminal is open, before any command is started.
-        #[cfg(any(
-            target_os = "linux",
-            target_os = "android",
-            target_os = "freebsd",
-            target_os = "netbsd"
-        ))]
-        let master = openpt(OpenptFlags::RDWR | OpenptFlags::NOCTTY | OpenptFlags::CLOEXEC)?;
-        #[cfg(not(any(
-            target_os = "linux",
-            target_os = "android",
-            target_os = "freebsd",
-            target_os = "netbsd"
-        )))]
-        let master = {
-            let master = openpt(OpenptFlags::RDWR | OpenptFlags::NOCTTY)?;
-            rustix::io::fcntl_setfd(&master, rustix::io::FdFlags::CLOEXEC)?;
-            master
-        };
+        let master = open_master()?;
         grantpt(&master)?;
         unlockpt(&master)?;
         let name = ptsname(&master, Vec::new())?;
@@ -532,8 +513,51 @@ fn on_its_own_terminal(cmd: &mut Command) {
     // allocates nothing, its errors included (rustix's Errno becomes
     // io::Error::from_raw_os_error), so it may run between fork and exec: on Linux rustix
     // makes the calls itself (its linux_raw backend), on macOS through libc's thin
-    // wrappers. std has made stdin the pseudo-terminal by then.
+    // wrappers, which make the system call and nothing else (ioctl: xnu-12377.121.6,
+    // libsyscall/wrappers/ioctl.c), as BSD's login_tty does after forkpty's fork (Apple's
+    // Libc-1752.120.2, util/login_tty.c and util/pty.c). std has made stdin the
+    // pseudo-terminal by then.
     unsafe { cmd.pre_exec(attach) };
+}
+
+/// Opens the master side of a new pseudo-terminal, close-on-exec.
+fn open_master() -> io::Result<rustix::fd::OwnedFd> {
+    // Close-on-exec from the moment it is open, so that no command another thread starts
+    // meanwhile inherits it. posix_openpt takes O_CLOEXEC on Linux and the BSDs that
+    // have it. macOS's is open("/dev/ptmx", flags) (Libc-1752.120.2, stdlib/grantpt.c),
+    // so it would take it too, but rustix leaves the flag out there: the same call, with
+    // it. Elsewhere the flag is set once the terminal is open, which leaves a moment in
+    // which a command another thread starts inherits it; rse is built for Linux and macOS.
+    #[cfg(any(
+        target_os = "linux",
+        target_os = "android",
+        target_os = "freebsd",
+        target_os = "netbsd"
+    ))]
+    let master = {
+        use rustix::pty::{OpenptFlags, openpt};
+        openpt(OpenptFlags::RDWR | OpenptFlags::NOCTTY | OpenptFlags::CLOEXEC)?
+    };
+    #[cfg(target_os = "macos")]
+    let master = rustix::fs::open(
+        "/dev/ptmx",
+        rustix::fs::OFlags::RDWR | rustix::fs::OFlags::NOCTTY | rustix::fs::OFlags::CLOEXEC,
+        rustix::fs::Mode::empty(),
+    )?;
+    #[cfg(not(any(
+        target_os = "linux",
+        target_os = "android",
+        target_os = "freebsd",
+        target_os = "netbsd",
+        target_os = "macos"
+    )))]
+    let master = {
+        use rustix::pty::{OpenptFlags, openpt};
+        let master = openpt(OpenptFlags::RDWR | OpenptFlags::NOCTTY)?;
+        rustix::io::fcntl_setfd(&master, rustix::io::FdFlags::CLOEXEC)?;
+        master
+    };
+    Ok(master)
 }
 
 fn nonzero(n: u16) -> NonZeroU16 {
@@ -627,6 +651,15 @@ mod tests {
 
     fn target(root: &str) -> ShellTarget {
         ShellTarget { open: vec![], run: vec![], root: root.to_owned(), env: vec![] }
+    }
+
+    /// The master side is close-on-exec, on Linux and on macOS: that it is so from the
+    /// moment it is open, the flag being given to the call that opens it, no test can see.
+    #[test]
+    fn the_terminal_is_closed_on_exec_from_the_start() {
+        let master = super::open_master().unwrap_or_else(|e| panic!("{e}"));
+        let flags = rustix::io::fcntl_getfd(&master).unwrap_or_else(|e| panic!("{e}"));
+        assert!(flags.contains(rustix::io::FdFlags::CLOEXEC));
     }
 
     #[test]
