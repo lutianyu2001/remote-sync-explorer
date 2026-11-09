@@ -59,8 +59,10 @@ pub fn on_alternate_stack(signal: libc::c_int) -> io::Result<bool> {
     action.sa_flags |= libc::SA_ONSTACK;
     // SAFETY: the handler, mask and flags the signal has now, with SA_ONSTACK besides, so
     // the handler is called as before but on the thread's alternate stack, where it has
-    // one: 32 KiB on Go's threads, a Rust thread's with a guard page. A handler needing more
-    // would overrun it, as it would a goroutine's stack without the flag; rse's, the
+    // one: 32 KiB on Go's threads. Rust's threads have none here, as std sets them up only
+    // when it installs its own SIGSEGV handler, which Go's comes before; the handler runs
+    // on the thread's stack there, as without the flag. A handler needing more than 32 KiB
+    // would overrun Go's, as it would a goroutine's stack without the flag; rse's, the
     // registry's, takes far less (atomics and a write to a pipe). A null old action is
     // allowed (POSIX sigaction()). What another thread set in between would be replaced:
     // rse calls this before it starts one, or for a signal no other code sets.
