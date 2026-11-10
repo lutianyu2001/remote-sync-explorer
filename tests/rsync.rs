@@ -262,6 +262,7 @@ fn rsync_through_the_master_connection() {
     fs::write(server.join("tree/sub/d"), "d").unwrap();
 
     copies_both_ways(&remote, &local, &server);
+    empty_files(&remote, &local, &server);
     stopped_transfers_pick_up_again(&remote, &local, &server);
     moves(&remote, &local, &server);
     relative_paths(&ssh, &fs_name, &remote, &local, &server);
@@ -307,6 +308,25 @@ fn copies_both_ways(remote: &RsyncRemote, local: &Path, server: &Path) {
     }
     assert_eq!(fs::read_to_string(local.join("down/notes.md")).unwrap(), "server notes");
     assert_eq!(tree(&local.join("down/tree")), tree(&server.join("tree")));
+}
+
+/// An empty file, up and down: written, with nothing to send and nothing left over.
+fn empty_files(remote: &RsyncRemote, local: &Path, server: &Path) {
+    fs::write(local.join("empty up"), "").unwrap();
+    fs::write(server.join("empty down"), "").unwrap();
+    let up = args(Op::Copy, &here(local), &there(remote, &server.join("up")), "empty up", false);
+    let down =
+        args(Op::Copy, &there(remote, server), &here(&local.join("down")), "empty down", false);
+    for (args, written, dir) in [
+        (up, server.join("up/empty up"), server.join("up")),
+        (down, local.join("down/empty down"), local.join("down")),
+    ] {
+        let (stats, result, _) = run(args);
+        assert_eq!(result, Ok(()), "{}", written.display());
+        assert_eq!((stats.bytes, stats.total_bytes, stats.errors), (0, 0, 0));
+        assert_eq!(fs::read(&written).unwrap(), b"");
+        assert!(!dir.join(PARTIAL_DIR).exists());
+    }
 }
 
 /// A stopped upload leaves its partial file on the server, and the next run sends only the
