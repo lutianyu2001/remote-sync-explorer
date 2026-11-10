@@ -75,7 +75,9 @@ pub fn initialize() {
     INIT.get_or_init(|| unsafe { RcloneInitialize() });
 }
 
-/// Waits until Go has initialised its packages (see the module's documentation).
+/// Waits until Go has initialised its packages (see the module's documentation). Only
+/// `i18n::set_system_messages` waits, on glibc.
+#[cfg(all(target_os = "linux", target_env = "gnu"))]
 #[allow(unsafe_code)]
 pub fn wait_for_go() {
     // SAFETY: RcloneFreeString is `C.free` (librse/main.go), and freeing a null pointer does
