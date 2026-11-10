@@ -213,11 +213,13 @@ cargo build --release --locked --target aarch64-apple-darwin
 ```
 
 Between macOS architectures nothing else is needed: cgo uses `clang -arch <arch>`. For
-another Linux architecture, cgo uses `<arch>-linux-gnu-gcc` (`<arch>-linux-musl-gcc` for
-a musl target; `i686` for x86, and arm's ABI after it, as in `arm-linux-gnueabihf-gcc`)
-unless `CC_<target>` says otherwise, and rustc needs the same compiler as its linker
-(`CARGO_TARGET_<TRIPLE>_LINKER`). Two macOS builds can be joined into one universal
-binary:
+another Linux architecture, cgo uses `<arch>-linux-gnu-gcc` (`i686` for x86, and arm's ABI
+after it, as in `arm-linux-gnueabihf-gcc`) unless `CC_<target>` says otherwise, and rustc
+needs the same compiler as its linker (`CARGO_TARGET_<TRIPLE>_LINKER`). A musl target
+takes the [`rcd` feature](#without-go-the-rcd-feature): with rclone embedded, rse cannot
+start on musl, since Go's runtime, linked in as a C archive, reads its arguments from those
+of its initialiser, which musl does not pass. Two macOS builds can be joined into one
+universal binary:
 
 ```bash
 lipo -create -output rse <x86_64 rse> <arm64 rse>
