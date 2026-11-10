@@ -47,11 +47,14 @@ system's own, never shipped with rse.
 │ Local ││ /home/sky/projects     ││ ↻ ││ smb:// ││ nas:backup/2026       ││ ↻ │
 ╰───────╯╰────────────────────────╯╰───╯╰────────╯╰───────────────────────╯╰───╯
 ╭────────────────────────────[2] Local─╮╭───────────────────────────[4] Remote─╮
+│ Name ▲                           Size││ Name ▲                           Size│
 │ ..                                   ││ ..                                   │
 │ rse/                            <DIR>││ photos/                         <DIR>│
 │*huge.bin                       1.5 GB││ notes.md                       4.1 KB│
 │*report-final-v3.pdf            2.4 MB││ report-final-v2.pdf            2.3 MB│
 │ very-long-file-n…ing.tar.gz     12 MB││                                      │
+│                                      ││                                      │
+│ very-long-file-nam…-shortening.tar.gz││ refreshed at 14:03:27 · 1 new        │
 ╰───────────────────────────[2 marked]─╯╰──────────────────────────────────────╯
 ╭────────────────────────────────────────────────────────────────[5] Transfers─╮
 │ 1 running · 1 queued                                                         │
@@ -59,6 +62,7 @@ system's own, never shipped with rse.
 │   copy report-final-v3.pdf → nas:backup/2026                         queued ✕│
 ╰──────────────────────────────────────────────────────────────────────────────╯
  F2 Rename  F5 Copy  F6 Move  F8 Delete  F10 Remote  / Filter  ? Help    rclone
+ copy 2 items queued
 ```
 
 ## Features
