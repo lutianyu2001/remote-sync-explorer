@@ -9,7 +9,8 @@
 //! - `GO` names the Go binary (default `go` from `PATH`).
 //! - `CC_<target>` or `TARGET_CC` names the C compiler cgo uses for the target. Cross
 //!   builds default to `clang -arch <arch>` for macOS and `<arch>-linux-gnu-gcc` for
-//!   Linux (`<arch>-linux-musl-gcc` for musl); native builds keep Go's default.
+//!   Linux (`<arch>-linux-musl-gcc` for musl; `i686` for x86, and arm's ABI after it, as
+//!   in `arm-linux-gnueabihf-gcc`); native builds keep Go's default.
 //!
 //! `GOOS` and `GOARCH` always follow cargo's target, so `cargo build --target ...`
 //! cross-compiles librclone too. For macOS, `MACOSX_DEPLOYMENT_TARGET` (set in
@@ -222,15 +223,19 @@ fn target_cc(goos: &str, goarch: &str) -> Option<String> {
     if env_or_panic("HOST") == target {
         return None;
     }
-    Some(match goos {
-        // Apple's clang builds for every macOS architecture.
-        "darwin" => format!("clang -arch {}", if goarch == "amd64" { "x86_64" } else { goarch }),
-        _ => format!(
-            "{}-linux-{}-gcc",
-            env_or_panic("CARGO_CFG_TARGET_ARCH"),
-            if env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("musl") { "musl" } else { "gnu" }
-        ),
-    })
+    // Apple's clang builds for every macOS architecture.
+    if goos == "darwin" {
+        return Some(format!("clang -arch {}", if goarch == "amd64" { "x86_64" } else { goarch }));
+    }
+    // The GNU triple's names: i686 for any x86, arm with its ABI (`gnueabihf`).
+    let arch = match env_or_panic("CARGO_CFG_TARGET_ARCH").as_str() {
+        "x86" => "i686".to_owned(),
+        arch => arch.to_owned(),
+    };
+    let env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
+    let abi = env::var("CARGO_CFG_TARGET_ABI").unwrap_or_default();
+    let env = if env == "musl" { "musl" } else { "gnu" };
+    Some(format!("{arch}-linux-{env}{abi}-gcc"))
 }
 
 /// Builds librclone into `OUT_DIR/librclone-<version>`, reusing an earlier build of the

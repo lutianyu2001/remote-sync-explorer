@@ -153,7 +153,7 @@ cargo build --release --locked --target aarch64-apple-darwin
 # → target/aarch64-apple-darwin/release/rse
 ```
 
-在 macOS 的两种架构之间不需要别的设置：cgo 会使用 `clang -arch <arch>`。编译到其他 Linux 架构时，cgo 使用 `<arch>-linux-gnu-gcc`（musl 目标用 `<arch>-linux-musl-gcc`），除非用 `CC_<target>` 另行指定，rustc 也需要用同一个编译器作为链接器（`CARGO_TARGET_<TRIPLE>_LINKER`）。两个 macOS 构建可以合并成一个通用二进制文件：
+在 macOS 的两种架构之间不需要别的设置：cgo 会使用 `clang -arch <arch>`。编译到其他 Linux 架构时，cgo 使用 `<arch>-linux-gnu-gcc`（musl 目标用 `<arch>-linux-musl-gcc`；x86 用 `i686`，arm 在后面加上 ABI，例如 `arm-linux-gnueabihf-gcc`），除非用 `CC_<target>` 另行指定，rustc 也需要用同一个编译器作为链接器（`CARGO_TARGET_<TRIPLE>_LINKER`）。两个 macOS 构建可以合并成一个通用二进制文件：
 
 ```bash
 lipo -create -output rse <x86_64 rse> <arm64 rse>
