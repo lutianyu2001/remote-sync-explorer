@@ -23,8 +23,8 @@ under AddressSanitizer without an error.
 
 ## Verdict
 
-Sound: no undefined behaviour reachable in the code as committed, and no false safety claim, but for the open items
-below.
+Sound: no undefined behaviour reachable in the code as committed, and no false safety claim, within the known
+limits below.
 
 ## Findings, and what was done
 
@@ -62,41 +62,45 @@ below.
   test module, and an `extern crate` at a crate root. The ninth review found the lint only denied, so an `allow`
   let a macro's declaration through, the scan limited to two files, so an integration test could declare
   `RcloneRPC` anew, and that a `#[path]` could swap the file built for the one checked; each fails the build now.
-- **crossterm's handler lacked `SA_ONSTACK` for a few microseconds at start-up** (an open item of the first
-  reviews): a constructor ordered before Go's (`.init_array.00200` on Linux; `__mod_init_func` in object order on
-  macOS) now has signal-hook-registry install the `SIGWINCH` handler with the flag, before any thread exists;
-  crossterm's later registration reuses it, as the registry installs a signal's handler once. Seen in the binary's
-  `.init_array` and under strace; a test checks the order on both systems in CI, by `SIGFPE` still having no
-  handler when the constructor runs, which Go installs in its own (sixth and eighth reviews; the eighth found the
-  first such test proved nothing, as Rust's std installs one for `SIGSEGV`).
-- **On macOS the pseudo-terminal was open a moment without close-on-exec** (an open item of the first reviews):
+- **crossterm's handler lacked `SA_ONSTACK` for a few microseconds at start-up** (left by the first reviews): a
+  constructor ordered before Go's (`.init_array.00200` on Linux; `__mod_init_func` in object order on macOS) now has
+  signal-hook-registry install the `SIGWINCH` handler with the flag, before any thread exists; crossterm's later
+  registration reuses it, as the registry installs a signal's handler once. Seen in the binary's `.init_array` and under
+  strace; a test checks the order on both systems in CI, by `SIGFPE` still having no handler when the constructor runs,
+  which Go installs in its own (sixth and eighth reviews; the eighth found the first such test proved nothing, as Rust's
+  std installs one for `SIGSEGV`).
+- **On macOS the pseudo-terminal was open a moment without close-on-exec** (left by the first reviews):
   an ssh or rsync another thread started then inherited it. macOS's `posix_openpt` is `open("/dev/ptmx", flags)`
   (Libc-1752.120.2, stdlib/grantpt.c), and rustix leaves `O_CLOEXEC` out there; rse makes that call itself, with
   the flag, which xnu sets before the descriptor is visible to other threads (tenth review). The slave side and
   its copies were already close-on-exec (std's `open`, `F_DUPFD_CLOEXEC`).
-- **No source for `ioctl(TIOCSCTTY)` after fork on macOS** (an open item): the comment now cites xnu's `ioctl`
-  wrapper, which makes the system call and nothing else, and Apple's `login_tty`, which `forkpty` calls in the
+- **No source for `ioctl(TIOCSCTTY)` after fork on macOS** (left by the first reviews): the comment now cites xnu's
+  `ioctl` wrapper, which makes the system call and nothing else, and Apple's `login_tty`, which `forkpty` calls in the
   child.
-- **The `SIGWINCH` handler in every mode** (an open item): the askpass helper cannot get the signal, as ssh runs
-  in a session of its own with no controlling terminal; a prompt reads the terminal, which `SA_RESTART`
-  restarts, and std and Go retry the calls it does not restart. The tenth review found one exception: on macOS a
-  blocking `connect` interrupted by a signal fails, and std's retry then left an unconnected socket, so a window
-  change while rse first reached a remote `--rcd` could stop it; it connects with a timeout now, through `poll`,
-  which goes on. It also found the `on_alternate_stack` comment wrong in saying Rust's threads have an alternate
-  stack: std sets them up only with its own `SIGSEGV` handler, which Go's comes before; corrected.
-- **The constructor's order on macOS** (an open item): CI's macOS run of the test passed (commit a319ca2).
+- **The `SIGWINCH` handler in every mode** (left by the first reviews): the askpass helper cannot get the signal, as ssh
+  runs in a session of its own with no controlling terminal; a prompt reads the terminal, which `SA_RESTART` restarts,
+  and std and Go retry the calls it does not restart. The tenth review found one exception: on macOS a blocking
+  `connect` interrupted by a signal fails, and std's retry then left an unconnected socket, so a window change while rse
+  first reached a remote `--rcd` could stop it; it connects with a timeout now, through `poll`, which goes on. It also
+  found the `on_alternate_stack` comment wrong in saying Rust's threads have an alternate stack: std sets them up only
+  with its own `SIGSEGV` handler, which Go's comes before; corrected.
+- **The constructor's order on macOS** (left by the first reviews): CI's macOS run of the test passed (commit a319ca2).
 - **SAFETY comments that gave wrong or no reasons**: the owner of rclone's output (the caller, freed with `C.free`),
   why the `pre_exec` closures are async-signal-safe (raw system calls through rustix on Linux; nothing allocated, the
   errors included), and that rclone's first config access calls C's `setenv`, which is why it comes before rse starts
   threads.
 - **A musl cross build defaulted to a glibc compiler for cgo**: it uses `<arch>-linux-musl-gcc` now.
 
-## Open
+## Known limits
+
+What the reviews pointed out and is left as it is, and why; none of it is work still to do.
 
 - `build.rs` checks the files the package's Rust code is in, not what Cargo.toml makes of them: a `[lib] path`
-  elsewhere, or a dependency renamed `core`, would get past it. Both take deliberate changes to Cargo.toml.
-- On systems other than Linux, Android, FreeBSD, NetBSD and macOS the pseudo-terminal is still opened without
-  close-on-exec and set so right after; rse is built for Linux and macOS.
+  elsewhere, or a dependency renamed `core`, would get past it. Left so: both take a deliberate change to
+  Cargo.toml, which a review of that change would see.
+- On systems other than Linux, Android, FreeBSD, NetBSD and macOS the pseudo-terminal would be opened without
+  close-on-exec and set so right after. Left so: rse is built for Linux and macOS only.
 - An embedded build for musl is untested: Go's library start-up reads argc and argv from the constructor's
-  registers, which musl may not pass. rse is not built for musl, by decision.
-- `LANGUAGE`, when set, still decides glibc's message language over the one rse sets, as for any program.
+  registers, which musl may not pass. Left so: rse is not built for musl, by decision.
+- `LANGUAGE`, when set, decides glibc's message language over the one rse sets. Left so: that is how gettext
+  works, for every program.
