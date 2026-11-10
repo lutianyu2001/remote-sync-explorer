@@ -504,7 +504,7 @@ mod tests {
         fs::create_dir_all(&reviews).unwrap();
         fs::write(reviews.join("a.md"), "a review").unwrap();
         for outcome in ["succeeded", "failed: stale", "failed: stale", "succeeded"] {
-            let run = start(&root, "review", 0, true, String::new()).unwrap();
+            let run = start_again(&root);
             fs::write(run.dir().join("review.txt"), outcome).unwrap();
             run.finish(outcome, "", "").unwrap();
             let kept = fs::read_to_string(root.join("audit/review/review.txt")).unwrap();
@@ -518,6 +518,21 @@ mod tests {
         assert!(results("audit/.running/review/run.log"));
         assert!(!results("audit/reviews/a.md"));
         assert!(!results("crates/a/src/lib.rs"));
+    }
+
+    /// Starts a run of review at `root`, whose lock the last run let go of. A child process
+    /// another test starts meanwhile may still hold it for a moment: between fork and exec,
+    /// a child has every descriptor of this process, the closed lock's among them.
+    fn start_again(root: &std::path::Path) -> super::Run {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        loop {
+            match start(root, "review", 0, true, String::new()) {
+                Err(e) if e.contains("in progress") && std::time::Instant::now() < deadline => {
+                    std::thread::sleep(std::time::Duration::from_millis(10));
+                }
+                run => return run.unwrap(),
+            }
+        }
     }
 
     #[test]
