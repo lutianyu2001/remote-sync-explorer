@@ -10,7 +10,7 @@ use super::*;
 use crate::config::{DropAction, UiConfig};
 use crate::endpoint::Scheme;
 use crate::jobs::Engine;
-use crate::rclone::FakeBackend;
+use crate::rclone::{Backend as _, FakeBackend};
 use crate::testutil::{Harness, Tree, dir, fake_fs, file};
 
 fn home() -> Location {
@@ -1053,13 +1053,39 @@ fn quit_gives_up_waiting_after_the_grace_period() {
 
 // ----- checks as jobs start, overwrite mode ----------------------------------------
 
+/// Lets the jobs' checks of their target go on when dropped.
+struct Checks(Arc<AtomicBool>);
+
+impl Drop for Checks {
+    fn drop(&mut self) {
+        self.0.store(true, Ordering::SeqCst);
+    }
+}
+
 /// `names` are queued for nas:backup, which has none of them when listed for the
 /// conflict check; they arrive there while their jobs list it again before starting.
-fn taken_after_queueing(names: &[&str]) -> (Harness, Tree) {
-    let (backend, tree) = fake_fs(
+/// Those listings wait until the `Checks` returned is dropped, so the jobs are checking
+/// until then, and the names have arrived when they look.
+fn taken_after_queueing(names: &[&str]) -> (Harness, Tree, Checks) {
+    let (fs, tree) = fake_fs(
         &[("/home/sky", names.iter().map(|n| file(n, 2048)).collect()), ("nas:backup", vec![])],
-        &[("nas:backup", Duration::from_millis(200))],
+        &[],
     );
+    let open = Arc::new(AtomicBool::new(false));
+    let o = open.clone();
+    let listed = AtomicUsize::new(0);
+    let backend = Arc::new(FakeBackend::new(move |m, input| {
+        // The pane's listing and the conflict check go on; the jobs' checks wait.
+        if m == "operations/list"
+            && input["fs"] == "nas:backup"
+            && listed.fetch_add(1, Ordering::SeqCst) >= 2
+        {
+            while !o.load(Ordering::SeqCst) {
+                std::thread::sleep(Duration::from_millis(5));
+            }
+        }
+        fs.rpc(m, input.clone())
+    }));
     let mut h = Harness::new(backend, home(), nas());
     h.wait_until(|a| a.panes[1].status == PaneStatus::Ready);
     h.press(KeyCode::Char('a'));
@@ -1071,7 +1097,7 @@ fn taken_after_queueing(names: &[&str]) -> (Harness, Tree) {
     });
     let arrived = names.iter().map(|n| file(n, 1)).collect();
     tree.lock().unwrap().insert("nas:backup".to_owned(), arrived);
-    (h, tree)
+    (h, tree, Checks(open))
 }
 
 /// How many jobs the conflict dialog for jobs holds, 0 if it is not open.
@@ -1084,7 +1110,7 @@ fn job_conflicts(app: &App) -> usize {
 
 #[test]
 fn a_file_that_arrives_before_the_job_starts_is_not_overwritten() {
-    let (mut h, _) = taken_after_queueing(&["b.txt"]);
+    let (mut h, _, _) = taken_after_queueing(&["b.txt"]);
     h.wait_until(|a| a.dialog.is_some());
     assert!(matches!(h.app.dialog, Some(Dialog::JobConflict { focus: 1, .. })), "Skip");
     for text in [
@@ -1112,7 +1138,7 @@ fn a_file_that_arrives_before_the_job_starts_is_not_overwritten() {
 /// again; free, it copies.
 #[test]
 fn a_retry_checks_the_target_again() {
-    let (mut h, tree) = taken_after_queueing(&["b.txt"]);
+    let (mut h, tree, _) = taken_after_queueing(&["b.txt"]);
     h.wait_until(|a| a.dialog.is_some());
     h.press(KeyCode::Esc);
     assert!(matches!(h.app.queue.jobs[0].state, JobState::Failed(_)));
@@ -1134,7 +1160,7 @@ fn a_retry_checks_the_target_again() {
 /// first opened, whose "all" choices then take in both.
 #[test]
 fn jobs_in_conflict_together_are_decided_together() {
-    let (mut h, _) = taken_after_queueing(&["a.txt", "b.txt"]);
+    let (mut h, _, _) = taken_after_queueing(&["a.txt", "b.txt"]);
     h.wait_until(|a| job_conflicts(a) == 2);
     assert!(h.screen.contains("conflict 1 of 2"), "{}", h.screen);
     assert!(matches!(h.app.dialog, Some(Dialog::JobConflict { focus: 1, .. })), "still Skip");
@@ -1149,7 +1175,7 @@ fn jobs_in_conflict_together_are_decided_together() {
 /// the second is not asked about until a retry.
 #[test]
 fn cancel_leaves_every_job_not_yet_decided_failed() {
-    let (mut h, _) = taken_after_queueing(&["a.txt", "b.txt"]);
+    let (mut h, _, _) = taken_after_queueing(&["a.txt", "b.txt"]);
     h.wait_until(|a| job_conflicts(a) == 2);
     let note = "Cancel leaves the 2 jobs not yet decided failed in the queue;";
     assert!(h.screen.contains(note), "{}", h.screen);
@@ -1185,8 +1211,9 @@ fn a_click_right_after_a_conflict_joins_is_ignored() {
 
 #[test]
 fn a_conflict_waits_for_the_dialog_in_front_of_it() {
-    let (mut h, _) = taken_after_queueing(&["b.txt"]);
+    let (mut h, _, checks) = taken_after_queueing(&["b.txt"]);
     h.press(KeyCode::Char('?'));
+    drop(checks);
     h.wait_until(|a| matches!(a.queue.jobs[0].state, JobState::Failed(_)));
     assert!(matches!(h.app.dialog, Some(Dialog::Help { .. })));
     h.press(KeyCode::Esc);
@@ -1313,8 +1340,9 @@ fn a_drop_leaves_a_dialog_that_came_up_during_the_drag() {
 /// Overwrite mode, turned on while a job lists its target, lets it replace what it finds.
 #[test]
 fn overwrite_mode_turned_on_during_a_check_applies_to_it() {
-    let (mut h, _) = taken_after_queueing(&["b.txt"]);
+    let (mut h, _, checks) = taken_after_queueing(&["b.txt"]);
     h.press(KeyCode::Char('O'));
+    drop(checks);
     h.wait_until(|a| a.queue.jobs[0].state == JobState::Done);
     assert_eq!(h.app.dialog, None);
     assert_eq!(h.calls("rse/copy").len(), 1);
