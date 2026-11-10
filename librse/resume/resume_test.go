@@ -332,6 +332,29 @@ func TestDownloadFromSftpResumes(t *testing.T) {
 	assertFile(t, filepath.Join(dst, "big"), data)
 }
 
+// An empty file has nothing to resume: it is copied, or moved, as rclone does, to
+// the local disk and over sftp alike.
+func TestEmptyFiles(t *testing.T) {
+	src, dst, home := t.TempDir(), t.TempDir(), t.TempDir()
+	randomFile(t, filepath.Join(src, "empty"), 0)
+	_, err := call(t, "rse/copy", copyParams(src, "empty", dst, "empty"))
+	require.NoError(t, err)
+	assertFile(t, filepath.Join(dst, "empty"), []byte{})
+
+	// A directory no other test names: rclone keeps the connection of an fs string.
+	require.NoError(t, os.MkdirAll(filepath.Join(home, "empty"), 0o755))
+	_, err = call(t, "rse/copy", copyParams(src, "empty", sftpRemote(t, home, "empty"), "empty"))
+	require.NoError(t, err)
+	assertFile(t, filepath.Join(home, "empty", "empty"), []byte{})
+
+	in := copyParams(src, "empty", dst, "moved")
+	in["move"] = true
+	_, err = call(t, "rse/copy", in)
+	require.NoError(t, err)
+	assertFile(t, filepath.Join(dst, "moved"), []byte{})
+	assert.NoFileExists(t, filepath.Join(src, "empty"))
+}
+
 func TestOtherTargetsCopyWithRclone(t *testing.T) {
 	src := t.TempDir()
 	randomFile(t, filepath.Join(src, "f"), 1000)

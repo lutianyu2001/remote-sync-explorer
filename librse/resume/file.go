@@ -54,7 +54,8 @@ func (j *job) file(ctx context.Context, remote string, src fs.Object) error {
 		}
 		return nil
 	}
-	if j.target == nil || src.Size() < 0 || len(path.Base(remote))+len(PartialSuffix) > maxName {
+	// An empty file has nothing to resume, and writing it would leave no partial file.
+	if j.target == nil || src.Size() <= 0 || len(path.Base(remote))+len(PartialSuffix) > maxName {
 		if j.move {
 			_, err = operations.Move(ctx, j.fdst, dst, remote, src)
 		} else {
