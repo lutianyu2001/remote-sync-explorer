@@ -122,6 +122,8 @@ named Local or Remote after what they show): the entries under column headers
 that sort them when clicked.
 The pane's last row is its own line: the filter while it is typed or kept, and the
 whole name of the entry under the cursor, which the list may shorten.
+A refresh (Ctrl+R or \fB↻\fR) shows there while it runs, then for a few
+seconds the time it ended and what changed (\(lqrefreshed at 14:03:27 \(pc 2 new\(rq).
 Marked entries are counted in the bottom right corner
 .RB ( "[2 marked]" ).
 .TP
@@ -141,7 +143,9 @@ or
 .BR rclone .
 .TP
 .B the message line
-at the bottom: what the last action said (\(lqnothing selected\(rq, an error).
+at the bottom: what the last action said (\(lqnothing selected\(rq, an error),
+for a few seconds, or until a key or click; an error stays longer.
+When the jobs just queued all end in that time, the message says how they went.
 An input method shows what it is composing there.
 .PP
 While overwrite mode is on, a red row across the top of the screen says so.

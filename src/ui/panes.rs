@@ -12,7 +12,7 @@ use unicode_segmentation::UnicodeSegmentation as _;
 use super::text::{
     ellipsize_middle, ellipsize_name, fit, fit_right, format_time, human_size, shown, width,
 };
-use crate::app::{App, Dialog, Drag, Focus, InputPurpose, Pane, PaneStatus, Row, SortKey};
+use crate::app::{App, Dialog, Drag, Focus, InputPurpose, Pane, PaneStatus, Refresh, Row, SortKey};
 use crate::event::PaneId;
 use crate::hitmap::PaneArea;
 use crate::keymap::Action;
@@ -453,13 +453,45 @@ fn draw_footer(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) {
         room = room.saturating_sub(usize::from(end - x) + 2);
         x = end + 2;
     }
-    if room > 0
-        && let Some(e) = pane.current()
-    {
+    if room == 0 {
+        return;
+    }
+    if let Some(refresh) = refresh_note(app, pane) {
+        let style = match pane.refresh {
+            Some(Refresh::Done { .. }) => Style::new().fg(Color::Green),
+            _ => Style::new(),
+        };
+        buf.set_stringn(x, area.y, &refresh, room, style);
+    } else if let Some(e) = pane.current() {
         let name = shown(&e.name);
         let name = if e.is_dir { format!("{name}/") } else { name.into_owned() };
         let dim = Style::new().add_modifier(Modifier::DIM);
         buf.set_stringn(x, area.y, ellipsize_middle(&name, room), room, dim);
+    }
+}
+
+/// How the refresh the user asked for goes: under way, or what it found, until the cursor
+/// moves.
+fn refresh_note(app: &App, pane: &Pane) -> Option<String> {
+    match pane.refresh.as_ref()? {
+        Refresh::Running => Some(tr!("refreshing", spinner = SPINNER[app.spinner % SPINNER.len()])),
+        Refresh::Done { cursor, .. } if *cursor != pane.cursor => None,
+        Refresh::Done { time, added, removed, changed, .. } => {
+            let found: Vec<String> = [
+                (*added > 0).then(|| tr!("refresh-added", count = *added)),
+                (*removed > 0).then(|| tr!("refresh-removed", count = *removed)),
+                (*changed > 0).then(|| tr!("refresh-changed", count = *changed)),
+            ]
+            .into_iter()
+            .flatten()
+            .collect();
+            let found = if found.is_empty() {
+                tr!("refresh-same")
+            } else {
+                found.join(&tr!("list-separator"))
+            };
+            Some(format!("{} · {found}", tr!("refreshed", time = time.as_str())))
+        }
     }
 }
 

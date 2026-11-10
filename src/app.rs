@@ -33,6 +33,12 @@ const SKIP: usize = 1;
 /// Clicks on a dialog's buttons this soon after it appeared are ignored, so the second
 /// click of a double click cannot land on a dialog that opened under the pointer.
 const CLICK_GUARD: Duration = Duration::from_millis(300);
+/// How long a message stays on the message line, unless a key or click clears it first.
+const MESSAGE_SHORT: Duration = Duration::from_secs(5);
+/// The same for a failure, which also goes to the error log.
+const MESSAGE_LONG: Duration = Duration::from_secs(10);
+/// How long the result of a refresh stays under the list.
+const REFRESHED_FOR: Duration = Duration::from_secs(3);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SortKey {
@@ -71,6 +77,37 @@ pub enum PaneStatus {
     Error(String),
 }
 
+/// A refresh the user asked for, shown in the row under the list.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Refresh {
+    Running,
+    /// Listed at `time` (HH:MM:SS), with the entries that are new, gone or changed since
+    /// the listing before; shown while the cursor stays on row `cursor`, for
+    /// `REFRESHED_FOR` from `since` (set at the first tick after).
+    Done {
+        time: String,
+        added: usize,
+        removed: usize,
+        changed: usize,
+        cursor: usize,
+        since: Option<Instant>,
+    },
+}
+
+/// How long the message line keeps its message.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Life {
+    Short,
+    Long,
+    /// Until replaced: work under way.
+    Lasting,
+    /// Short, unless these jobs all finish first: then it says how they went.
+    Batch {
+        op: OpKind,
+        jobs: Vec<JobId>,
+    },
+}
+
 /// One visible row of a pane.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Row {
@@ -99,6 +136,7 @@ pub struct Pane {
     /// The listing request being worked on. At most one per pane, so a hung remote
     /// occupies one browse worker, not all of them.
     in_flight: Option<u64>,
+    pub refresh: Option<Refresh>,
 }
 
 impl Pane {
@@ -118,6 +156,7 @@ impl Pane {
             detached: false,
             select: None,
             in_flight: None,
+            refresh: None,
         }
     }
 
@@ -573,7 +612,11 @@ pub struct App {
     pub drag: Drag,
     pub hitmap: HitMap,
     pub errors: VecDeque<LogEntry>,
+    /// The message line; set with `say` and the like, which time it.
     pub status: Option<String>,
+    /// When the message appeared (stamped at the first tick after), and how long it stays.
+    status_since: Option<Instant>,
+    status_life: Life,
     pub remotes: Vec<String>,
     /// Backend type of each remote, for the protocol tag.
     pub remote_types: HashMap<String, String>,
@@ -635,6 +678,8 @@ impl App {
             hitmap: HitMap::default(),
             errors: VecDeque::new(),
             status: None,
+            status_since: None,
+            status_life: Life::Short,
             remotes: init.remotes.iter().map(|(name, _)| name.clone()).collect(),
             remote_types: init.remotes.into_iter().collect(),
             show_hidden: init.ui.show_hidden,
@@ -813,6 +858,7 @@ impl App {
         p.cursor = 0;
         p.offset = 0;
         p.detached = false;
+        p.refresh = None;
         let loc = p.loc.clone();
         self.terminal_follow(pane, &loc, Instant::now());
         self.request_listing(pane);
@@ -820,6 +866,12 @@ impl App {
         self.run_effects(effects);
         self.ask_engine();
         self.queue_cursor = self.queue_cursor.min(self.queue.visible().len().saturating_sub(1));
+    }
+
+    /// A refresh the user asked for: as `reload`, and says under the list how it went.
+    fn refresh(&mut self, pane: PaneId) {
+        self.panes[pane].refresh = Some(Refresh::Running);
+        self.reload(pane);
     }
 
     /// Lists the pane's location again, keeping what is shown until the result arrives.
@@ -878,17 +930,26 @@ impl App {
                 let listed = entries.len();
                 entries.retain(|e| safe_name(&e.name));
                 let left_out = listed - entries.len();
+                let changes = (p.refresh == Some(Refresh::Running))
+                    .then(|| changes(&p.entries, &entries, show_hidden));
                 p.entries = entries;
                 p.status = PaneStatus::Ready;
                 p.rebuild(show_hidden);
+                p.refresh = changes.map(|(added, removed, changed)| Refresh::Done {
+                    time: chrono::Local::now().format("%H:%M:%S").to_string(),
+                    added,
+                    removed,
+                    changed,
+                    cursor: p.cursor,
+                    since: None,
+                });
                 if left_out > 0 {
                     let dir = shown(&p.loc.to_string()).into_owned();
-                    let message = tr!("names-unsafe", count = left_out, dir = dir);
-                    self.log_error(message.clone());
-                    self.status = Some(message);
+                    self.fail(tr!("names-unsafe", count = left_out, dir = dir));
                 }
             }
             Err(e) => {
+                p.refresh = None;
                 p.entries.clear();
                 p.select = None;
                 p.rebuild(show_hidden);
@@ -1066,7 +1127,7 @@ impl App {
                 let p = &mut self.panes[pane];
                 let key = if action == Action::Sort { p.sort.next() } else { p.sort };
                 p.sort_by(key, self.show_hidden);
-                self.status = Some(tr!("sorted-by", key = p.sort.label()));
+                self.say(tr!("sorted-by", key = self.panes[pane].sort.label()));
             }
             Action::ToggleHidden => {
                 self.show_hidden = !self.show_hidden;
@@ -1086,7 +1147,7 @@ impl App {
                 self.panes.swap(0, 1);
                 self.exec.set_wanted([self.panes[0].generation, self.panes[1].generation]);
             }
-            Action::Refresh => self.reload(pane),
+            Action::Refresh => self.refresh(pane),
             Action::Copy => self.start_transfer(OpKind::Copy),
             Action::Move => self.start_transfer(OpKind::Move),
             Action::Delete => self.start_delete(),
@@ -1095,13 +1156,13 @@ impl App {
                     let name = e.name.clone();
                     self.dialog = Some(input(InputPurpose::Rename(e.mark()), name));
                 } else {
-                    self.status = Some(tr!("rename-nothing"));
+                    self.say(tr!("rename-nothing"));
                 }
             }
             Action::Mkdir => self.dialog = Some(input(InputPurpose::Mkdir, String::new())),
             Action::OverwriteMode => {
                 self.queue.overwrite = !self.queue.overwrite;
-                self.status = Some(if self.queue.overwrite {
+                self.say(if self.queue.overwrite {
                     tr!("overwrite-on")
                 } else {
                     tr!("overwrite-off")
@@ -1330,13 +1391,13 @@ impl App {
         match purpose {
             // An unchanged address reloads, like the address bar's button.
             InputPurpose::Goto { scheme } if !self.address_edited(scheme, &text) => {
-                self.reload(pane);
+                self.refresh(pane);
             }
             InputPurpose::Goto { scheme } => {
                 match Location::parse_address(&text, scheme, &self.home, &self.cwd) {
                     Ok(Destination::Ready(loc)) => self.navigate(pane, loc),
                     Ok(Destination::Login(address)) => self.log_in(pane, address),
-                    Err(e) => self.status = Some(e),
+                    Err(e) => self.say(e),
                 }
             }
             InputPurpose::Login(mut address) => {
@@ -1351,7 +1412,7 @@ impl App {
             }
             InputPurpose::Mkdir => {
                 if let Err(e) = check_name(&text, &self.panes[pane]) {
-                    self.status = Some(e);
+                    self.say(e);
                     return;
                 }
                 let req = self.req(Pending::Mkdir { dir: dir.clone(), name: text.clone() });
@@ -1369,7 +1430,7 @@ impl App {
                     check_name(&text, &self.panes[pane])
                 };
                 if let Err(e) = checked {
-                    self.status = Some(e);
+                    self.say(e);
                     return;
                 }
                 if overwrite {
@@ -1629,9 +1690,9 @@ impl App {
             dst_dir: Some(dst.loc.clone()),
         };
         if plan.items.is_empty() {
-            self.status = Some(tr!("nothing-selected"));
+            self.say(tr!("nothing-selected"));
         } else if let Some(reason) = plan.invalid_reason() {
-            self.status = Some(reason);
+            self.say(reason);
         } else {
             self.dialog = Some(Dialog::Confirm { plan, focus: 0 });
         }
@@ -1646,7 +1707,7 @@ impl App {
             dst_dir: None,
         };
         if plan.items.is_empty() {
-            self.status = Some(tr!("nothing-selected"));
+            self.say(tr!("nothing-selected"));
         } else {
             // Deleting defaults to Cancel.
             self.dialog = Some(Dialog::Confirm { plan, focus: 1 });
@@ -1673,7 +1734,7 @@ impl App {
         }
         let req = self.req(Pending::Probe(plan));
         self.exec.probe(req, dst);
-        self.status = Some(tr!("checking-target"));
+        self.show(tr!("checking-target"), Life::Lasting);
     }
 
     fn resolve_conflicts(&mut self, plan: Plan, existing: &[Entry]) {
@@ -1700,17 +1761,20 @@ impl App {
         let transfers = plan.transfers(skip, overwrite);
         let n = transfers.len();
         if n == 0 {
-            self.status = Some(tr!("all-skipped"));
+            self.say(tr!("all-skipped"));
             return;
         }
+        let first = self.queue.next_id();
         let effects = self.queue.push(transfers);
+        let jobs = (first..self.queue.next_id()).collect();
+        let queued = tr!("queued", op = plan.kind.verb(), count = n);
+        self.show(queued, Life::Batch { op: plan.kind, jobs });
         self.run_effects(effects);
         for p in &mut self.panes {
             if p.loc == plan.src_dir {
                 p.marks.clear();
             }
         }
-        self.status = Some(tr!("queued", op = plan.kind.verb(), count = n));
     }
 
     fn run_effects(&mut self, effects: Vec<Effect>) {
@@ -1839,9 +1903,70 @@ impl App {
         self.run_effects(effects);
     }
 
+    /// Shows `message` on the message line for `MESSAGE_SHORT`.
+    fn say(&mut self, message: String) {
+        self.show(message, Life::Short);
+    }
+
+    fn show(&mut self, message: String, life: Life) {
+        self.status = Some(message);
+        self.status_since = None;
+        self.status_life = life;
+    }
+
+    /// Shows `message` for `MESSAGE_LONG` and logs it.
     fn fail(&mut self, message: String) {
-        self.status = Some(message.clone());
+        self.show(message.clone(), Life::Long);
         self.log_error(message);
+    }
+
+    /// Clears the message line once its time is up; a batch of jobs that all finished
+    /// in that time has its message replaced by how they went.
+    fn age_status(&mut self, now: Instant) {
+        if self.status.is_none() {
+            return;
+        }
+        if let Life::Batch { op, jobs } = &self.status_life {
+            let (op, n) = (*op, jobs.len());
+            let ours: Vec<&JobState> =
+                self.queue.jobs.iter().filter(|j| jobs.contains(&j.id)).map(|j| &j.state).collect();
+            if ours.iter().all(|s| s.is_finished()) {
+                let done = ours.iter().filter(|s| **s == &JobState::Done).count();
+                let failed = ours.iter().filter(|s| matches!(s, JobState::Failed(_))).count();
+                if failed > 0 {
+                    let key = self.keymap.label(Action::ErrorLog).to_owned();
+                    let message =
+                        tr!("batch-failed", op = op.verb(), count = n, failed = failed, key = key);
+                    self.show(message, Life::Long);
+                } else if done > 0 {
+                    self.say(tr!("batch-done", op = op.verb(), count = done));
+                } else {
+                    self.status = None;
+                    return;
+                }
+            }
+        }
+        let since = *self.status_since.get_or_insert(now);
+        let life = match self.status_life {
+            Life::Short | Life::Batch { .. } => MESSAGE_SHORT,
+            Life::Long => MESSAGE_LONG,
+            Life::Lasting => return,
+        };
+        if now.saturating_duration_since(since) >= life {
+            self.status = None;
+        }
+    }
+
+    /// Ends the result of a refresh once its time is up or the cursor moved.
+    fn age_refresh(&mut self, now: Instant) {
+        for p in &mut self.panes {
+            if let Some(Refresh::Done { cursor, since, .. }) = &mut p.refresh {
+                let since = *since.get_or_insert(now);
+                if *cursor != p.cursor || now.saturating_duration_since(since) >= REFRESHED_FOR {
+                    p.refresh = None;
+                }
+            }
+        }
     }
 
     pub fn log_error(&mut self, message: String) {
@@ -1868,6 +1993,8 @@ impl App {
 
     fn on_tick(&mut self, now: Instant) {
         self.spinner = self.spinner.wrapping_add(1);
+        self.age_status(now);
+        self.age_refresh(now);
         self.check_quit(now);
         self.terminal_tick(now);
         // Keep scrolling while a drag rests on the top or bottom row of a pane.
@@ -2124,7 +2251,7 @@ impl App {
                 // A dialog that came up during the drag, such as a conflict, keeps its
                 // place: nothing is dropped.
                 if self.dialog.is_some() {
-                    self.status = Some(tr!("drop-dialog"));
+                    self.say(tr!("drop-dialog"));
                     return;
                 }
                 let plan = Plan { kind: OpKind::Copy, src_dir, items, dst_dir: Some(target.dst) };
@@ -2301,6 +2428,25 @@ fn is_not_found(e: &RpcError) -> bool {
 
 /// Adds a hint to errors from remotes that run the system ssh: the terminal belongs to
 /// rse, so ssh cannot ask for a password.
+/// What a new listing has that the one before had not, what it lost, and what changed
+/// in size or time, counting only the entries a pane shows.
+fn changes(before: &[Entry], after: &[Entry], show_hidden: bool) -> (usize, usize, usize) {
+    let shown = |es: &'_ [Entry]| -> HashMap<(String, bool), Entry> {
+        es.iter()
+            .filter(|e| show_hidden || !e.name.starts_with('.'))
+            .map(|e| ((e.name.clone(), e.is_dir), e.clone()))
+            .collect()
+    };
+    let (before, after) = (shown(before), shown(after));
+    let added = after.keys().filter(|k| !before.contains_key(*k)).count();
+    let removed = before.keys().filter(|k| !after.contains_key(*k)).count();
+    let changed = after
+        .iter()
+        .filter(|(k, e)| before.get(*k).is_some_and(|b| (b.size, b.mtime) != (e.size, e.mtime)))
+        .count();
+    (added, removed, changed)
+}
+
 pub fn with_hint(message: &str) -> String {
     let m = message.to_lowercase();
     let hint = tr!("ssh-hint");

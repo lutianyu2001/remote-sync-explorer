@@ -313,10 +313,12 @@ An encrypted rclone config needs its password before rse starts: use
    [Manual Page](#manual-page)). `q` quits.
 
 The screen, from the top: the address row over each pane; the panes, whose last row
-shows the filter and the whole name of the entry under the cursor; the
+shows the filter and the whole name of the entry under the cursor, and for a few
+seconds after a refresh (Ctrl+R or ↻) when it ended and what changed; the
 [terminal](#terminal) (Ctrl+O), while it is open; Transfers; the key hints, with the
 engine a copy between the panes would use (`rsync` or `rclone`) in reverse video at the
-right; and the message line, where messages appear and an input method shows what it
+right; and the message line, where messages appear for a few seconds (errors longer;
+jobs just queued that end meanwhile say how they went) and an input method shows what it
 is composing.
 
 ### Locations and Addresses

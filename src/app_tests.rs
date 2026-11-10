@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use crossterm::event::{KeyCode, KeyModifiers, MouseButton, MouseEventKind};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEventKind};
 use ratatui::style::Color;
 use serde_json::{Value, json};
 
@@ -2143,4 +2143,128 @@ fn the_hidden_cursor_waits_at_the_bottom_row_for_an_input_method() {
     let (shown, at) = h.draw_and_park();
     assert!(shown);
     assert!(at.y < 23, "{at:?}");
+}
+
+// ----- the message line and refreshes -----------------------------------------------
+
+#[test]
+fn messages_go_after_a_while() {
+    let mut h = standard();
+    let t = Instant::now();
+    let after = |s| t + Duration::from_secs(s);
+    h.app.say("nothing selected".to_owned());
+    h.app.handle(Event::Tick, t);
+    h.app.handle(Event::Tick, after(4));
+    assert!(h.app.status.is_some());
+    h.app.handle(Event::Tick, after(5));
+    assert_eq!(h.app.status, None);
+    // A failure, logged too, stays longer.
+    h.app.fail("cannot create x".to_owned());
+    h.app.handle(Event::Tick, t);
+    h.app.handle(Event::Tick, after(9));
+    assert!(h.app.status.is_some());
+    h.app.handle(Event::Tick, after(10));
+    assert_eq!(h.app.status, None);
+    // Work under way stays until it ends.
+    h.app.show(tr!("checking-target"), Life::Lasting);
+    h.app.handle(Event::Tick, t);
+    h.app.handle(Event::Tick, after(60));
+    assert!(h.app.status.is_some());
+}
+
+#[test]
+fn a_batch_that_ends_at_once_says_how_it_went() {
+    let mut h = standard();
+    select(&mut h, "b.txt");
+    h.press(KeyCode::F(5));
+    h.press(KeyCode::Enter);
+    h.wait_until(|a| a.queue.jobs.first().is_some_and(|j| j.state == JobState::Done));
+    assert_eq!(h.app.status.as_deref(), Some("copy 1 item queued"));
+    let t = Instant::now();
+    h.app.handle(Event::Tick, t);
+    assert_eq!(h.app.status.as_deref(), Some("copy 1 item done"));
+    h.app.handle(Event::Tick, t + Duration::from_secs(5));
+    assert_eq!(h.app.status, None);
+}
+
+#[test]
+fn a_batch_with_failures_says_where_to_look() {
+    let backend = Arc::new(FakeBackend::new(|m, input| match m {
+        "operations/list" if input["fs"] == "nas:backup" => Ok(json!({"list": []})),
+        "operations/list" => Ok(json!({"list": [file("a", 1), file("b", 1)]})),
+        "job/status" => Ok(json!({
+            "id": input["jobid"], "finished": true, "success": false, "error": "disk full"
+        })),
+        _ if input.get("_async").is_some() => Ok(json!({"jobid": 1})),
+        _ => Ok(json!({})),
+    }));
+    let mut h = Harness::new(backend, home(), nas());
+    h.press(KeyCode::Char('a'));
+    h.press(KeyCode::F(5));
+    h.press(KeyCode::Enter);
+    h.wait_until(|a| a.queue.jobs.len() == 2 && a.queue.jobs.iter().all(|j| j.state.is_finished()));
+    h.app.handle(Event::Tick, Instant::now());
+    let key = h.app.keymap.label(Action::ErrorLog).to_owned();
+    let expected = format!("copy: 2 of 2 failed; {key} shows why");
+    assert_eq!(h.app.status.as_deref(), Some(expected.as_str()));
+}
+
+/// A batch still under way when its message's time is up leaves the line empty, and its
+/// end later says nothing there: the transfers window shows it.
+#[test]
+fn a_batch_still_running_is_not_announced_later() {
+    let (mut h, release) = hanging_checks(&["a"]);
+    let t = Instant::now();
+    h.app.handle(Event::Tick, t);
+    assert_eq!(h.app.status.as_deref(), Some("copy 1 item queued"));
+    h.app.handle(Event::Tick, t + Duration::from_secs(5));
+    assert_eq!(h.app.status, None);
+    release.store(true, Ordering::SeqCst);
+    h.wait_until(|a| a.queue.jobs[0].state == JobState::Done);
+    h.app.handle(Event::Tick, t + Duration::from_secs(6));
+    assert_eq!(h.app.status, None);
+}
+
+#[test]
+fn a_refresh_says_when_and_what_changed() {
+    let (backend, tree) = fake_fs(
+        &[("/home/sky", vec![file("a", 1), file("b", 1), file("c", 1)]), ("nas:backup", vec![])],
+        &[],
+    );
+    let mut h = Harness::new(backend, home(), nas());
+    tree.lock()
+        .unwrap()
+        .insert("/home/sky".into(), vec![file("a", 1), file("b", 2), file("d", 1), file(".e", 1)]);
+    let ctrl_r = || Event::Key(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL));
+    h.app.handle(ctrl_r(), Instant::now());
+    assert_eq!(h.app.panes[0].refresh, Some(Refresh::Running));
+    assert!(h.render().contains(" refreshing…"), "{}", h.screen);
+    h.wait_until(|a| matches!(a.panes[0].refresh, Some(Refresh::Done { .. })));
+    // The hidden .e is not counted.
+    let Some(Refresh::Done { added, removed, changed, .. }) = h.app.panes[0].refresh else {
+        unreachable!()
+    };
+    assert_eq!((added, removed, changed), (1, 1, 1));
+    assert!(h.screen.contains("refreshed at "), "{}", h.screen);
+    // Gone after a while, and the row shows the current entry again.
+    let t = Instant::now();
+    h.app.handle(Event::Tick, t);
+    h.app.handle(Event::Tick, t + Duration::from_secs(3));
+    assert_eq!(h.app.panes[0].refresh, None);
+    assert!(!h.render().contains("refreshed at "), "{}", h.screen);
+    // Nothing changed: it says so. Moving the cursor ends it at once.
+    h.press_mod(KeyCode::Char('r'), KeyModifiers::CONTROL);
+    h.wait_until(|a| matches!(a.panes[0].refresh, Some(Refresh::Done { .. })));
+    assert!(h.screen.contains(" · no change"), "{}", h.screen);
+    h.press(KeyCode::Down);
+    assert!(!h.screen.contains("no change"), "{}", h.screen);
+}
+
+/// Listings rse makes itself, such as after a job, say nothing under the list.
+#[test]
+fn only_a_refresh_asked_for_is_shown() {
+    let mut h = standard();
+    h.app.reload(0);
+    h.wait_until(|a| a.panes[0].status == PaneStatus::Ready);
+    assert_eq!(h.app.panes[0].refresh, None);
 }

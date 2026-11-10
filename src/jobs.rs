@@ -248,6 +248,11 @@ impl Queue {
         }
     }
 
+    /// The id the next job pushed gets; the ones after it count up from there.
+    pub fn next_id(&self) -> JobId {
+        self.next_id
+    }
+
     /// Adds transfers as queued jobs and starts as many as the limit allows.
     pub fn push(&mut self, transfers: Vec<Transfer>) -> Vec<Effect> {
         for transfer in transfers {

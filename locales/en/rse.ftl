@@ -56,6 +56,12 @@ pane-error = error: { $error }
 pane-loading = { $spinner } loading…
 pane-empty = (empty)
 pane-no-match = (nothing matches)
+refreshing = { $spinner } refreshing…
+refreshed = refreshed at { $time }
+refresh-same = no change
+refresh-added = { $count } new
+refresh-removed = { $count } gone
+refresh-changed = { $count } changed
 dir-size = <DIR>
 sort-name = name
 sort-size = size
@@ -93,6 +99,11 @@ queued = { $op } { $count ->
     [one] 1 item
    *[other] { $count } items
 } queued
+batch-done = { $op } { $count ->
+    [one] 1 item
+   *[other] { $count } items
+} done
+batch-failed = { $op }: { $failed } of { $count } failed; { $key } shows why
 probe-late = { $op } not started: the target check finished while another dialog was open
 probe-failed = cannot check the target: { $error }
 drop-dialog = nothing dropped: a dialog opened during the drag
