@@ -47,7 +47,8 @@ jobs:
           persist-credentials: false
 
       # Per project: the steps that build the program from the tag and put it, with its license
-      # texts, into dist/ as one archive per system, named <project>-<tag>-<name>.
+      # texts, into dist/ as one archive per system, named <project>-<version>-<name>, the version
+      # being the tag without its v.
       # vendor/ is downloaded per Cargo.lock and fuzz/Cargo.lock, never restored from a cache.
       - name: Download dependencies per Cargo.lock and fuzz/Cargo.lock
         run: >
@@ -86,7 +87,7 @@ jobs:
           NAME: ${{ matrix.name }}
           TAG: ${{ github.ref_name }}
         run: |
-          dir="rse-$TAG-$NAME"
+          dir="rse-${TAG#v}-$NAME"
           mkdir -p "$dir" dist
           cp target/release/rse README.md LICENSE "$dir/"
           cp -R man "$dir/man"
