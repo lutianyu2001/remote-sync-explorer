@@ -115,7 +115,7 @@ The crates with the most unsafe expressions used by the build:
 |---|---|---|---|---|---|
 | memchr 2.8.3 | 34/48 | 1992/2440 | 2/2 | 110/148 | vectorised byte search |
 | hashbrown 0.17.1 | 1/1 | 1399/1612 | 20/23 | 86/99 | hash tables |
-| rustix 1.1.5 | 63/436 | 1264/7521 | 10/22 | 29/62 | system calls |
+| rustix 1.1.6 | 63/436 | 1298/7554 | 10/22 | 29/62 | system calls |
 | parking_lot_core 0.9.12 | 16/16 | 912/1343 | 0/0 | 8/58 | locks (crossterm, ratatui) |
 | allocator-api2 0.2.21 | 2/3 | 819/903 | 12/13 | 28/32 | allocator API for hashbrown |
 | aes 0.8.4 | 18/43 | 765/1113 | 0/0 | 0/0 | AES with CPU instructions (obscured passwords) |
@@ -169,7 +169,7 @@ portable-atomic 1.15.0 [custom-build]
 proc-macro-hack 0.5.20+deprecated [custom-build,proc-macro]
 proc-macro2 1.0.107 [custom-build]
 quote 1.0.47 [custom-build]
-rustix 1.1.5 [custom-build]
+rustix 1.1.6 [custom-build]
 rustversion 1.0.23 [custom-build,proc-macro]
 serde 1.0.229 [custom-build]
 serde_core 1.0.229 [custom-build]

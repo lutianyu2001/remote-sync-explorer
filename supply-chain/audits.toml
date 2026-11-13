@@ -552,6 +552,11 @@ who = "Tianyu (Sky) Lu <tianyu@lu.fm>"
 criteria = "safe-to-deploy"
 delta = "0.37.13 -> 1.1.5"
 
+[[audits.rustix]]
+who = "Tianyu (Sky) Lu <tianyu@lu.fm>"
+criteria = "safe-to-deploy"
+delta = "1.1.5 -> 1.1.6"
+
 [[audits.rustls]]
 who = "Tianyu (Sky) Lu <tianyu@lu.fm>"
 criteria = "safe-to-deploy"
