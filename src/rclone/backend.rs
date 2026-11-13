@@ -43,6 +43,7 @@ pub trait Backend: Send + Sync {
     fn describe(&self) -> String;
 }
 
+#[cfg(any(feature = "embedded", feature = "rcd", test))]
 fn parse_reply(status: i32, output: &str) -> Result<Value, RpcError> {
     if status == 200 {
         if output.trim().is_empty() {
