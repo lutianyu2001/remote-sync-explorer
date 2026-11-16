@@ -1,4 +1,5 @@
-//! The terminal under the panes, as the interface sees it: opening it for the active pane,
+//! The terminals under the panes, one a pane, as the interface sees them: opening one for the
+//! active pane,
 //! keys and the wheel while it has them, and following the pane's directory (see
 //! [`crate::terminal`]).
 
@@ -17,9 +18,7 @@ const DEFAULT_SIZE: (u16, u16) = (24, 80);
 const WHEEL_LINES: isize = 3;
 
 pub struct Terminal {
-    /// The pane whose directory it follows.
-    pub pane: PaneId,
-    /// The server, by `endpoint_key`: the pane is followed while it shows this one.
+    /// The server, by `endpoint_key`: its pane is followed while it shows this one.
     endpoint: String,
     pub state: TermState,
 }
@@ -31,14 +30,15 @@ pub enum TermState {
 }
 
 impl App {
-    /// Opens the terminal for the active pane, or gives it the keys; from the terminal,
-    /// back to the panes.
+    /// Opens the active pane's terminal, under it, or gives it the keys; from the
+    /// terminal, back to the panes.
     pub(super) fn toggle_terminal(&mut self) {
         if self.focus == Focus::Terminal {
             self.focus = Focus::Panes;
             return;
         }
-        if self.terminal.is_some() {
+        let pane = self.active;
+        if self.terminals[pane].is_some() {
             self.focus = Focus::Terminal;
             return;
         }
@@ -46,12 +46,11 @@ impl App {
             self.status = Some(tr!("terminal-disabled"));
             return;
         }
-        let pane = self.active;
         let loc = self.panes[pane].loc.clone();
         let req = self.next_req;
         self.next_req += 1;
-        self.terminal =
-            Some(Terminal { pane, endpoint: endpoint_key(&loc), state: TermState::Opening(req) });
+        self.terminals[pane] =
+            Some(Terminal { endpoint: endpoint_key(&loc), state: TermState::Opening(req) });
         self.focus = Focus::Terminal;
         self.exec.shell(req, loc);
     }
@@ -62,17 +61,19 @@ impl App {
         result: Result<Option<ShellTarget>, RpcError>,
         now: Instant,
     ) {
-        let Some(t) = &self.terminal else { return };
-        if !matches!(t.state, TermState::Opening(r) if r == req) {
+        let Some(pane) = self.terminals.iter().position(
+            |t| matches!(t, Some(Terminal { state: TermState::Opening(r), .. }) if *r == req),
+        ) else {
             return;
-        }
-        let loc = &self.panes[t.pane].loc;
+        };
+        let loc = &self.panes[pane].loc;
+        let same = self.terminals[pane].as_ref().is_some_and(|t| endpoint_key(loc) == t.endpoint);
         // The pane may have left the server meanwhile: then its login directory.
-        let path = if endpoint_key(loc) == t.endpoint { loc.path.as_str() } else { "" };
+        let path = if same { loc.path.as_str() } else { "" };
         let opened = match result {
             Ok(Some(target)) => {
                 let dir = target.dir(path);
-                let size = self.terminal_size();
+                let size = self.terminal_size(pane);
                 Session::open(req, target, dir, size, self.exec.events(), now)
                     .map_err(|e| e.to_string())
             }
@@ -81,7 +82,7 @@ impl App {
         };
         match opened {
             Ok(session) => {
-                if let Some(t) = &mut self.terminal {
+                if let Some(t) = &mut self.terminals[pane] {
                     t.state = TermState::Running(Box::new(session));
                 }
             }
@@ -91,22 +92,35 @@ impl App {
                 } else {
                     tr!("terminal-failed", error = why)
                 });
-                self.close_terminal();
+                self.close_terminal(pane);
             }
         }
     }
 
-    fn close_terminal(&mut self) {
-        self.terminal = None;
-        if self.focus == Focus::Terminal {
+    fn close_terminal(&mut self, pane: PaneId) {
+        self.terminals[pane] = None;
+        self.terminal_focus_check();
+    }
+
+    /// The terminal focus belongs to the active pane's terminal: without one, the panes.
+    pub(super) fn terminal_focus_check(&mut self) {
+        if self.focus == Focus::Terminal && self.terminals[self.active].is_none() {
             self.focus = Focus::Panes;
         }
     }
 
+    /// The pane whose running terminal is `id`.
+    fn session_pane(&self, id: TermId) -> Option<PaneId> {
+        self.terminals.iter().position(
+            |t| matches!(t, Some(Terminal { state: TermState::Running(s), .. }) if s.id == id),
+        )
+    }
+
     fn session(&mut self, id: TermId) -> Option<&mut Session> {
-        match &mut self.terminal.as_mut()?.state {
-            TermState::Running(s) if s.id == id => Some(s),
-            _ => None,
+        let pane = self.session_pane(id)?;
+        match &mut self.terminals[pane].as_mut()?.state {
+            TermState::Running(s) => Some(s),
+            TermState::Opening(_) => None,
         }
     }
 
@@ -117,11 +131,11 @@ impl App {
     }
 
     pub(super) fn on_term_closed(&mut self, id: TermId) {
-        let Some(s) = self.session(id) else { return };
-        if let Some(why) = s.closed() {
+        let Some(pane) = self.session_pane(id) else { return };
+        if let Some(why) = self.session(id).and_then(Session::closed) {
             self.status = Some(tr!("terminal-failed", error = why));
         }
-        self.close_terminal();
+        self.close_terminal(pane);
     }
 
     pub(super) fn on_term_idle(&mut self, id: TermId, idle: Option<bool>, now: Instant) {
@@ -131,15 +145,16 @@ impl App {
     }
 
     pub(super) fn terminal_tick(&mut self, now: Instant) {
-        if let Some(Terminal { state: TermState::Running(s), .. }) = &mut self.terminal {
-            s.tick(now);
+        for t in &mut self.terminals {
+            if let Some(Terminal { state: TermState::Running(s), .. }) = t {
+                s.tick(now);
+            }
         }
     }
 
-    /// Sends the terminal along when `pane`, the one it follows, went to `loc`.
+    /// Sends `pane`'s terminal along when the pane went to `loc`.
     pub(super) fn terminal_follow(&mut self, pane: PaneId, loc: &Location, now: Instant) {
-        if let Some(t) = &mut self.terminal
-            && t.pane == pane
+        if let Some(t) = &mut self.terminals[pane]
             && t.endpoint == endpoint_key(loc)
             && let TermState::Running(s) = &mut t.state
         {
@@ -148,15 +163,16 @@ impl App {
         }
     }
 
-    /// The panes swapped places: the terminal follows the one it followed.
+    /// The panes swapped places: each terminal goes along with its pane.
     pub(super) fn terminal_swapped(&mut self) {
-        if let Some(t) = &mut self.terminal {
-            t.pane = 1 - t.pane;
-        }
+        self.terminals.swap(0, 1);
     }
 
+    /// Keys for the active pane's terminal, which has the focus.
     pub(super) fn terminal_key(&mut self, key: &KeyEvent) {
-        if let Some(Terminal { state: TermState::Running(s), .. }) = &mut self.terminal {
+        if let Some(Terminal { state: TermState::Running(s), .. }) =
+            &mut self.terminals[self.active]
+        {
             let bytes = key_bytes(key, s.screen().application_cursor());
             if !bytes.is_empty() {
                 s.input(&bytes);
@@ -164,26 +180,27 @@ impl App {
         }
     }
 
-    /// The wheel over the terminal: through the lines above its screen.
-    pub(super) fn terminal_wheel(&mut self, down: bool) {
-        if let Some(Terminal { state: TermState::Running(s), .. }) = &mut self.terminal {
+    /// The wheel over `pane`'s terminal: through the lines above its screen.
+    pub(super) fn terminal_wheel(&mut self, pane: PaneId, down: bool) {
+        if let Some(Terminal { state: TermState::Running(s), .. }) = &mut self.terminals[pane] {
             s.scroll_by(if down { -WHEEL_LINES } else { WHEEL_LINES });
         }
     }
 
-    /// The size the last frame gave the terminal's screen, which it takes on.
+    /// The sizes the last frame gave the terminals' screens, which they take on.
     pub(super) fn terminal_resize(&mut self) {
-        let screen = self.hitmap.terminal_screen;
-        if screen.is_empty() {
-            return;
-        }
-        if let Some(Terminal { state: TermState::Running(s), .. }) = &mut self.terminal {
-            s.resize(screen.height, screen.width);
+        for (t, screen) in self.terminals.iter_mut().zip(self.hitmap.terminal_screen) {
+            if screen.is_empty() {
+                continue;
+            }
+            if let Some(Terminal { state: TermState::Running(s), .. }) = t {
+                s.resize(screen.height, screen.width);
+            }
         }
     }
 
-    fn terminal_size(&self) -> (u16, u16) {
-        let screen = self.hitmap.terminal_screen;
+    fn terminal_size(&self, pane: PaneId) -> (u16, u16) {
+        let screen = self.hitmap.terminal_screen[pane];
         if screen.is_empty() { DEFAULT_SIZE } else { (screen.height, screen.width) }
     }
 }

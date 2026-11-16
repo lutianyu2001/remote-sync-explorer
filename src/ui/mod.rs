@@ -14,7 +14,7 @@ use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::widgets::Widget;
 
-use crate::app::{App, Dialog, Drag, InputPurpose};
+use crate::app::{App, Dialog, Drag, Focus, InputPurpose};
 use crate::hitmap::HitMap;
 use crate::keymap::Action;
 use text::width;
@@ -109,22 +109,25 @@ pub fn draw_buffer(buf: &mut Buffer, area: Rect, app: &App) -> (HitMap, Option<(
         queue_h = 0;
     }
     let queue_y = hints_y - queue_h;
-    let mut panes_h = queue_y - area.y;
-    // The terminal takes the bottom of the panes' room.
-    let term_h = if app.terminal.is_some() { term::height(panes_h) } else { 0 };
-    panes_h -= term_h;
+    let panes_h = queue_y - area.y;
 
+    // Each pane's terminal takes the bottom of that pane's side.
     let left_w = area.width / 2;
-    let left = Rect::new(area.x, area.y, left_w, panes_h);
-    let right = Rect::new(area.x + left_w, area.y, area.width - left_w, panes_h);
-    map.panes[0] = panes::draw(buf, left, app, 0);
-    map.panes[1] = panes::draw(buf, right, app, 1);
+    let sides = [(area.x, left_w), (area.x + left_w, area.width - left_w)];
     let mut cursor = None;
-    if term_h > 0 {
-        map.terminal = Rect::new(area.x, area.y + panes_h, area.width, term_h);
-        let (screen, at) = term::draw(buf, map.terminal, app);
-        map.terminal_screen = screen;
-        cursor = at;
+    for (pane, (x, w)) in sides.into_iter().enumerate() {
+        let full_h = if app.terminals[pane].is_some() { term::height(panes_h) } else { 0 };
+        // Without the keys it folds to its last few lines; its shell keeps the full size.
+        let focused = app.focus == Focus::Terminal && app.active == pane;
+        let term_h = if focused { full_h } else { full_h.min(term::FOLDED) };
+        let above = panes_h - term_h;
+        map.panes[pane] = panes::draw(buf, Rect::new(x, area.y, w, above), app, pane);
+        if term_h > 0 {
+            map.terminal[pane] = Rect::new(x, area.y + above, w, term_h);
+            let full = Rect::new(x, area.y + panes_h - full_h, w, full_h);
+            map.terminal_screen[pane] = Window::new().inner(full);
+            cursor = cursor.or(term::draw(buf, map.terminal[pane], app, pane));
+        }
     }
 
     map.queue = Rect::new(area.x, queue_y, area.width, queue_h);

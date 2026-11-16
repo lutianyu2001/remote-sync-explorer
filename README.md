@@ -91,9 +91,9 @@ system's own, never shipped with rse.
   copy or move.
 - **SFTP through OpenSSH**: `~/.ssh/config` (ProxyJump, certificates, hardware keys)
   applies, with one shared login per server.
-- **Terminal**: Ctrl+O opens your shell under the panes, in the pane's directory: on the
-  local disk, or on a server through the same ssh login; it follows the pane as you
-  browse.
+- **Terminal**: Ctrl+O opens your shell under the active pane, in its directory: on the
+  local disk, or on a server through the same ssh login; each pane has its own, and it
+  follows its pane as you browse.
 - **Languages**: English and Simplified Chinese, following the system locale.
 
 ## Security Audit
@@ -320,8 +320,8 @@ An encrypted rclone config needs its password before rse starts: use
 
 The screen, from the top: the address row over each pane; the panes, whose last row
 shows the filter and the whole name of the entry under the cursor, and for a few
-seconds after a refresh (Ctrl+R or ↻) when it ended and what changed; the
-[terminal](#terminal) (Ctrl+O), while it is open; Transfers; the key hints, with the
+seconds after a refresh (Ctrl+R or ↻) when it ended and what changed; each pane's
+[terminal](#terminal) under it (Ctrl+O), while open; Transfers; the key hints, with the
 engine a copy between the panes would use (`rsync` or `rclone`) in reverse video at the
 right; and the message line, where messages appear for a few seconds (errors longer;
 jobs just queued that end meanwhile say how they went) and an input method shows what it
@@ -420,7 +420,7 @@ without them.
 | F8 / Delete | Delete |
 | O | Overwrite mode on or off: copies, moves and renames replace existing files without asking (off at every start; a red row across the top shows it is on) |
 | Ctrl+T | Enter or leave the transfer queue; there x cancels, r retries, c clears finished jobs |
-| Ctrl+O | Terminal under the panes, in the pane's directory, locally or on a server reached through ssh; in the terminal, back to the panes (see [Terminal](#terminal)) |
+| Ctrl+O | Terminal under the active pane, in its directory, locally or on a server reached through ssh; in the terminal, back to the panes, folding it to five lines; `exit` in it closes it (see [Terminal](#terminal)) |
 | E | Error log (last 100) |
 | ? | Help |
 | q | Quit |
@@ -468,7 +468,9 @@ Alt+click.
 
 ### Terminal
 
-Ctrl+O opens a terminal across the bottom of the panes: your login shell on the local
+Ctrl+O opens a terminal under the active pane, across the bottom of its half of the
+screen, so each pane can have its own beside the other's; Ctrl+U (swap) takes each
+terminal along with its pane. It is your login shell on the local
 disk, or on a server reached through the system ssh (see
 [SFTP Through OpenSSH](#sftp-through-openssh)) through the master connection rse already
 holds, so there is no second login. Other remotes have no terminal. It starts in the
@@ -478,13 +480,16 @@ first input, which clears what their startup files print.
 
 While the terminal has the keys (its border is green), every key goes to the shell,
 Ctrl+C and Esc included. Ctrl+O gives the keys back to the panes, and from there to the
-terminal again; the terminal stays open meanwhile. When the pane it was opened from goes
+active pane's terminal again; the terminal stays open meanwhile, folded to the last five
+lines up to its cursor (its shell keeps the full size). A click on a terminal gives it
+the keys, unfolded, and makes its pane the active one. When the pane it was opened from goes
 to another directory there (on the same disk or server), the terminal follows: rse types
 a `cd` into the shell, after clearing a half-typed line, with a leading space that keeps
 it out of the history of most shells. While a command runs in the shell (rse asks with
 `ps`), the `cd` waits and is typed once the command ends, so it never lands in a program
-such as `vim`. A directory whose name holds a control character is not followed. `exit`
-or Ctrl+D closes the terminal; the wheel scrolls back through its output. If a program
+such as `vim`. A directory whose name holds a control character is not followed. No key
+of rse closes the terminal, since any key it took would be lost to the programs in it:
+it closes when its shell ends, with `exit`. The wheel scrolls back through its output. If a program
 you run needs Ctrl+O, bind the terminal to another key (`terminal = [...]` under
 `[keys]`). `-T` (`--no-terminal`) turns the terminal off for the session, locally and on
 servers, for when no shell should be opened from rse.

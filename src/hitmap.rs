@@ -65,9 +65,10 @@ impl PaneArea {
 pub struct HitMap {
     pub panes: [PaneArea; 2],
     pub queue: Rect,
-    /// The terminal's window, border included, and its screen inside; empty when closed.
-    pub terminal: Rect,
-    pub terminal_screen: Rect,
+    /// Each pane's terminal window, border included, and its screen inside; empty when
+    /// closed.
+    pub terminal: [Rect; 2],
+    pub terminal_screen: [Rect; 2],
     /// Screen row, job index in the queue, and the column of its cancel mark.
     pub queue_rows: Vec<(u16, usize, u16)>,
     pub hints: Vec<(Rect, Action)>,
@@ -100,8 +101,10 @@ pub enum Target {
     Scrollbar {
         pane: PaneId,
     },
-    /// The terminal under the panes.
-    Terminal,
+    /// A pane's terminal, under it.
+    Terminal {
+        pane: PaneId,
+    },
     /// A column header, which sorts the pane by its column.
     Sort {
         pane: PaneId,
@@ -139,8 +142,8 @@ impl HitMap {
             }
             return if dialog.contains(p) { Target::Dialog } else { Target::Nothing };
         }
-        if self.terminal.contains(p) {
-            return Target::Terminal;
+        if let Some(pane) = self.terminal.iter().position(|t| t.contains(p)) {
+            return Target::Terminal { pane };
         }
         for (pane, area) in self.panes.iter().enumerate() {
             if area.list.contains(p) {

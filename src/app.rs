@@ -503,7 +503,8 @@ pub enum Focus {
     /// The active pane's address bar: Enter edits it.
     Address,
     Queue,
-    /// The terminal under the panes: every key but the one leaving it goes to its shell.
+    /// The active pane's terminal, under it: every key but the one leaving it goes to its
+    /// shell.
     Terminal,
 }
 
@@ -665,8 +666,8 @@ pub struct App {
     /// The engine of copies between two endpoints, by [`pair`].
     engines: HashMap<(String, String), Engine>,
     engines_asked: HashSet<(String, String)>,
-    /// The terminal under the panes, while open.
-    pub terminal: Option<Terminal>,
+    /// Each pane's terminal, under it, while open; by pane, so a swap takes them along.
+    pub terminals: [Option<Terminal>; 2],
     /// Whether the terminal may be opened at all.
     terminal_allowed: bool,
 }
@@ -717,7 +718,7 @@ impl App {
             leave_pending: None,
             engines: HashMap::new(),
             engines_asked: HashSet::new(),
-            terminal: None,
+            terminals: [None, None],
             terminal_allowed: init.terminal,
         };
         app.navigate(0, init.left);
@@ -1153,6 +1154,7 @@ impl App {
             Action::Swap => {
                 self.terminal_swapped();
                 self.panes.swap(0, 1);
+                self.terminal_focus_check();
                 self.exec.set_wanted([self.panes[0].generation, self.panes[1].generation]);
             }
             Action::Refresh => self.refresh(pane),
@@ -2166,7 +2168,10 @@ impl App {
             // Scrolls like the wheel: the focus, the cursor and the marks stay.
             Target::Scrollbar { pane } => self.press_scrollbar(pane, at.1),
             Target::Queue => self.focus = Focus::Queue,
-            Target::Terminal => self.focus = Focus::Terminal,
+            Target::Terminal { pane } => {
+                self.active = pane;
+                self.focus = Focus::Terminal;
+            }
             Target::Hint(action) => self.action(action, now),
             Target::Button(_) | Target::DialogRow(_) | Target::Dialog | Target::Nothing => {}
         }
@@ -2363,8 +2368,9 @@ impl App {
             }
             return;
         }
-        if self.hitmap.terminal.contains(ratatui::layout::Position::new(at.0, at.1)) {
-            self.terminal_wheel(down);
+        let over = ratatui::layout::Position::new(at.0, at.1);
+        if let Some(pane) = self.hitmap.terminal.iter().position(|t| t.contains(over)) {
+            self.terminal_wheel(pane, down);
             return;
         }
         if self.hitmap.queue.contains(ratatui::layout::Position::new(at.0, at.1)) {

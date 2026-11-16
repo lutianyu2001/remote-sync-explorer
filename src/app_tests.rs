@@ -2346,14 +2346,9 @@ fn wheel_in_remote_picker_stops_at_the_last_choice() {
 
 // ----- terminal ------------------------------------------------------------------
 
-/// The terminal's screen as text.
+/// The screen of the first running terminal as text.
 fn term_text(h: &Harness) -> String {
-    match &h.app.terminal {
-        Some(crate::app::Terminal { state: crate::app::TermState::Running(s), .. }) => {
-            s.screen().contents()
-        }
-        _ => String::new(),
-    }
+    running(&h.app).map(|s| s.screen().contents()).unwrap_or_default()
 }
 
 /// Whether a line of the screen ends with `text`: a command's output, which can share its line
@@ -2372,8 +2367,13 @@ fn tick_until(h: &mut Harness, what: &str, done: impl Fn(&App) -> bool) {
     }
 }
 
+/// The first running terminal.
 fn running(app: &App) -> Option<&crate::terminal::Session> {
-    match &app.terminal {
+    (0..2).find_map(|pane| running_in(app, pane))
+}
+
+fn running_in(app: &App, pane: PaneId) -> Option<&crate::terminal::Session> {
+    match &app.terminals[pane] {
         Some(crate::app::Terminal { state: crate::app::TermState::Running(s), .. }) => Some(s),
         _ => None,
     }
@@ -2447,7 +2447,7 @@ fn the_terminal_opens_in_the_pane_directory_and_follows_it() {
     // exit closes it.
     h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
     type_in(&mut h, "exit\r");
-    tick_until(&mut h, "closed", |a| a.terminal.is_none());
+    tick_until(&mut h, "closed", |a| a.terminals.iter().all(Option::is_none));
     assert_eq!(h.app.focus, Focus::Panes);
 }
 
@@ -2474,7 +2474,71 @@ fn the_terminal_opens_on_the_local_disk() {
         running(a).is_some_and(|s| s.screen().contents().contains("\nstopped\n"))
     });
     type_in(&mut h, "exit\r");
-    tick_until(&mut h, "closed", |a| a.terminal.is_none());
+    tick_until(&mut h, "closed", |a| a.terminals.iter().all(Option::is_none));
+}
+
+/// Each pane has a terminal of its own under it, half the width; a swap takes them along.
+#[test]
+fn each_pane_has_its_own_terminal_under_it() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().to_string_lossy().into_owned();
+    let local = Location::new("/", root.trim_start_matches('/'));
+    let (backend, _) = fake_fs(&[(root.as_str(), vec![])], &[]);
+    let shell = crate::terminal::ShellTarget {
+        open: ["/bin/sh", "-c"].map(str::to_owned).to_vec(),
+        run: ["/bin/sh", "-c"].map(str::to_owned).to_vec(),
+        root: "/".to_owned(),
+        env: [("SHELL", "/bin/sh"), ("HOME", root.as_str()), ("PS1", "$ ")]
+            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+            .to_vec(),
+    };
+    let mut h = Harness::with_shell(backend, local.clone(), local, shell);
+    let ctrl_o = |h: &mut Harness| h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
+
+    // The left pane's terminal: under the left pane only, which alone gets shorter.
+    ctrl_o(&mut h);
+    tick_until(&mut h, "left shell", |a| running_in(a, 0).is_some());
+    h.settle();
+    let map = &h.app.hitmap;
+    assert_eq!((map.terminal[0].x, map.terminal[0].width), (0, 50));
+    assert!(map.terminal[1].is_empty());
+    assert_eq!(map.panes[0].frame.bottom(), map.terminal[0].y);
+    assert!(map.panes[1].frame.bottom() > map.terminal[0].y);
+
+    // Back to the panes, to the right one: its own terminal, beside the first.
+    let whole = h.app.hitmap.terminal[0].height;
+    ctrl_o(&mut h);
+    assert_eq!(h.app.hitmap.terminal[0].height, 7);
+    ctrl_o(&mut h);
+    assert_eq!(h.app.hitmap.terminal[0].height, whole);
+    ctrl_o(&mut h);
+    h.press(KeyCode::Tab);
+    ctrl_o(&mut h);
+    assert_eq!((h.app.focus, h.app.active), (Focus::Terminal, 1));
+    tick_until(&mut h, "right shell", |a| running_in(a, 1).is_some());
+    h.settle();
+    let map = &h.app.hitmap;
+    assert_eq!((map.terminal[1].x, map.terminal[1].width), (50, 50));
+    // The left one, without the keys, folds to five lines of its screen, whose shell keeps
+    // the full size; the right one, with them, is whole.
+    assert_eq!(map.terminal[0].height, 7);
+    assert!(map.terminal[1].height > 7);
+    assert_eq!(map.terminal[0].bottom(), map.terminal[1].bottom());
+    assert_eq!(map.terminal_screen[0].height, map.terminal[1].height - 2);
+    assert_eq!(map.panes[0].frame.bottom(), map.terminal[0].y);
+    let right = running_in(&h.app, 1).map(|s| s.id);
+
+    // A swap takes each terminal to the other side with its pane.
+    ctrl_o(&mut h);
+    h.press_mod(KeyCode::Char('u'), KeyModifiers::CONTROL);
+    assert_eq!(running_in(&h.app, 0).map(|s| s.id), right);
+    assert!(running_in(&h.app, 1).is_some());
+
+    // A click on a terminal gives it the keys and makes its pane the active one.
+    h.press(KeyCode::Tab);
+    let t = h.app.hitmap.terminal[0];
+    h.click(t.x + 2, t.y + 2);
+    assert_eq!((h.app.focus, h.app.active), (Focus::Terminal, 0));
 }
 
 /// `--no-terminal`: no terminal opens, and the server is not even asked how to reach it.
@@ -2484,7 +2548,7 @@ fn a_terminal_turned_off_never_opens() {
     h.app.terminal_allowed = false;
     h.press(KeyCode::Tab);
     h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
-    assert!(h.app.terminal.is_none());
+    assert!(h.app.terminals.iter().all(Option::is_none));
     assert_eq!(h.app.focus, Focus::Panes);
     assert!(h.screen.contains("turned off"), "{}", h.screen);
 }

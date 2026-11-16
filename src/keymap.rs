@@ -36,7 +36,7 @@ pub enum Action {
     /// Turn overwrite mode on or off.
     OverwriteMode,
     Queue,
-    /// Open the terminal under the panes, or focus it; in it, back to the panes.
+    /// Open the active pane's terminal under it, or focus it; in it, back to the panes.
     Terminal,
     ErrorLog,
     Help,

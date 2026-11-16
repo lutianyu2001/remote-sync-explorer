@@ -129,7 +129,7 @@ Marked entries are counted in the bottom right corner
 .RB ( "[2 marked]" ).
 .TP
 .B the terminal
-under the panes, while it is open (Ctrl+O; see
+of each pane, under it, while it is open (Ctrl+O; see
 .BR TERMINAL ).
 .TP
 .B Transfers
@@ -357,7 +357,11 @@ It is off at every start.
 Enter or leave Transfers.
 .TP
 .B Ctrl+O
-Open the terminal, or give it the keys; in the terminal, back to the panes.
+Open the active pane's terminal, or give it the keys; in the terminal, back to the
+panes, and the terminal folds to five lines.
+Only
+.B exit
+in the shell closes it.
 .TP
 .B E
 The error log (the last 100).
@@ -433,17 +437,20 @@ In
 turn the mouse on with
 .BR "set \-g mouse on" .
 .SH TERMINAL
-Ctrl+O opens a terminal across the bottom of the panes, in the directory the pane
-shows: your login shell on the local disk, or on a server reached through the system
+Ctrl+O opens a terminal under the active pane, across the bottom of its half of the
+screen, in the directory the pane shows; each pane can have its own, and a swap
+takes them along: your login shell on the local disk, or on a server reached through the system
 ssh, through the connection rse already holds.
 Other remotes have no terminal.
 While it has the keys (its border is green), every key goes to the shell, Ctrl+C and
-Esc included; Ctrl+O gives them back to the panes.
+Esc included; Ctrl+O gives them back to the panes, and the terminal folds to the last
+five lines up to its cursor.
 When the pane goes to another directory on the same disk or server, rse types a
 .B cd
 into the shell, once no command runs there.
+No key of rse closes it: only
 .B exit
-or Ctrl+D closes it.
+in its shell does.
 .SH CONFLICTS AND OVERWRITING
 When the target already has an entry of the same name, rse asks: overwrite, skip,
 overwrite all, skip all or cancel; skip is the default.
