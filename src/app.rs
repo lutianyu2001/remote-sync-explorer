@@ -341,9 +341,12 @@ pub enum InputPurpose {
     Mkdir,
     Rename(Mark),
     /// `scheme` is the protocol tag in front of the field; the text is what follows
-    /// `scheme://`. Without a tag the text is a whole address.
+    /// `scheme://`. Without a tag the text is a whole address. On a remote, `within` is
+    /// where the pane is and the text only a path on its server ([`Location::path_text`]),
+    /// so the server cannot be changed there.
     Goto {
         scheme: Option<Scheme>,
+        within: Option<Box<Location>>,
     },
     /// The password for a server opened by address.
     Login(Box<Address>),
@@ -1141,10 +1144,7 @@ impl App {
                 self.show_hidden = !self.show_hidden;
                 self.rebuild_all();
             }
-            Action::Goto => {
-                let (scheme, text) = self.panes[pane].loc.address();
-                self.dialog = Some(input(InputPurpose::Goto { scheme }, text));
-            }
+            Action::Goto => self.dialog = Some(self.goto_dialog(pane)),
             Action::Remote => {
                 self.exec.remotes();
                 self.dialog = Some(Dialog::Remotes { filter: String::new(), cursor: 0 });
@@ -1343,15 +1343,36 @@ impl App {
         }
     }
 
-    /// Whether the Go to text (behind tag `scheme`) differs from the active pane's address.
-    pub fn address_edited(&self, scheme: Option<Scheme>, text: &str) -> bool {
-        self.panes[self.active].loc.address() != (scheme, text.trim().to_owned())
+    /// Go to for `pane`: its whole address on the local disk; on a remote or a server only
+    /// the path, so that the server cannot be changed there.
+    fn goto_dialog(&self, pane: PaneId) -> Dialog {
+        let loc = &self.panes[pane].loc;
+        if loc.is_local() {
+            let (scheme, text) = loc.address();
+            input(InputPurpose::Goto { scheme, within: None }, text)
+        } else {
+            let within = Some(Box::new(loc.clone()));
+            input(InputPurpose::Goto { scheme: None, within }, loc.path_text())
+        }
+    }
+
+    /// Whether the Go to text differs from the active pane's address.
+    pub fn address_edited(&self, purpose: &InputPurpose, text: &str) -> bool {
+        let loc = &self.panes[self.active].loc;
+        match purpose {
+            InputPurpose::Goto { within: Some(_), .. } => loc.path_text() != text.trim(),
+            InputPurpose::Goto { scheme, within: None } => {
+                loc.address() != (*scheme, text.trim().to_owned())
+            }
+            _ => false,
+        }
     }
 
     /// Where the Go to text (with no tag) leads, when it names a ready location.
     pub fn input_location(&self, purpose: &InputPurpose, text: &str) -> Option<Location> {
         match purpose {
-            InputPurpose::Goto { scheme: None } => {
+            InputPurpose::Goto { within: Some(loc), .. } => Some(loc.with_path_text(text)),
+            InputPurpose::Goto { scheme: None, within: None } => {
                 match Location::parse_address(text, None, &self.home, &self.cwd).ok()? {
                     Destination::Ready(loc) => Some(loc),
                     Destination::Login(_) => None,
@@ -1365,8 +1386,9 @@ impl App {
     /// address leads to.
     pub fn input_protocol(&self, purpose: &InputPurpose, text: &str) -> Option<String> {
         match purpose {
-            InputPurpose::Goto { scheme: Some(s) } => Some(s.name().to_owned()),
-            InputPurpose::Goto { scheme: None } => {
+            InputPurpose::Goto { within: Some(loc), .. } => self.protocol(loc),
+            InputPurpose::Goto { scheme: Some(s), .. } => Some(s.name().to_owned()),
+            InputPurpose::Goto { scheme: None, .. } => {
                 match Location::parse_address(text, None, &self.home, &self.cwd).ok()? {
                     Destination::Ready(loc) => self.protocol(&loc),
                     Destination::Login(a) => Some(a.endpoint.scheme.name().to_owned()),
@@ -1398,10 +1420,13 @@ impl App {
         }
         match purpose {
             // An unchanged address reloads, like the address bar's button.
-            InputPurpose::Goto { scheme } if !self.address_edited(scheme, &text) => {
+            InputPurpose::Goto { .. } if !self.address_edited(&purpose, &text) => {
                 self.refresh(pane);
             }
-            InputPurpose::Goto { scheme } => {
+            InputPurpose::Goto { within: Some(loc), .. } => {
+                self.navigate(pane, loc.with_path_text(&text));
+            }
+            InputPurpose::Goto { scheme, within: None } => {
                 match Location::parse_address(&text, scheme, &self.home, &self.cwd) {
                     Ok(Destination::Ready(loc)) => self.navigate(pane, loc),
                     Ok(Destination::Login(address)) => self.log_in(pane, address),
@@ -2403,9 +2428,9 @@ fn input(purpose: InputPurpose, text: String) -> Dialog {
 
 /// Line editing in an input dialog. In Go to, the protocol tag comes and goes: text
 /// starting with `ftp://` turns that into the tag, Backspace at the start removes the
-/// tag and leaves the text, and Ctrl+U clears both.
+/// tag and leaves the text, and Ctrl+U clears both. A path on a remote has no tag.
 fn edit_input(purpose: &mut InputPurpose, text: &mut String, cursor: &mut usize, key: KeyEvent) {
-    if let InputPurpose::Goto { scheme } = purpose {
+    if let InputPurpose::Goto { scheme, within: None } = purpose {
         if key.code == KeyCode::Backspace && *cursor == 0 && scheme.is_some() {
             *scheme = None;
             return;

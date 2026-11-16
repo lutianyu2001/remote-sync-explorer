@@ -60,13 +60,14 @@ pub const SPINNER: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦"
 /// be focused.
 pub fn draw(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) -> PaneArea {
     let pane = &app.panes[id];
-    let edit =
-        match &app.dialog {
-            Some(Dialog::Input {
-                purpose: purpose @ InputPurpose::Goto { scheme }, text, ..
-            }) if id == app.active => Some((purpose, *scheme, text.as_str())),
-            _ => None,
-        };
+    let edit = match &app.dialog {
+        Some(Dialog::Input { purpose: purpose @ InputPurpose::Goto { .. }, text, .. })
+            if id == app.active =>
+        {
+            Some((purpose, text.as_str()))
+        }
+        _ => None,
+    };
     let editing = edit.is_some();
     let focused = id == app.active && app.focus == Focus::Panes && !editing;
     let drop = match &app.drag {
@@ -92,7 +93,7 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) -> PaneArea {
     let used = top.height + edit_h;
     let frame = Rect { y: area.y + used, height: area.height - used, ..area };
     let tag = match edit {
-        Some((purpose, _, text)) => input_tag(app, purpose, text),
+        Some((purpose, text)) => input_tag(app, purpose, text),
         None => tag_text(app, &pane.loc),
     };
     let (tag_box, bar, button) = address_row(top, tag.as_deref());
@@ -109,7 +110,7 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) -> PaneArea {
     let title =
         super::window(buf, bar, super::named(app, bar_action, &address).border_style(bar_border));
     if !button.is_empty() {
-        let go = edit.is_some_and(|(_, scheme, text)| app.address_edited(scheme, text));
+        let go = edit.is_some_and(|(purpose, text)| app.address_edited(purpose, text));
         let inner = super::window(buf, button, Window::new().border_style(bar_border));
         let bold = Style::new().add_modifier(Modifier::BOLD);
         buf.set_stringn(inner.x + 1, inner.y, if go { GO } else { REFRESH }, 1, bold);
@@ -322,7 +323,7 @@ pub fn draw_address_edit(
     text: &str,
     cursor: usize,
 ) -> (u16, u16) {
-    let InputPurpose::Goto { scheme } = purpose else { return (title.x, title.y) };
+    let InputPurpose::Goto { scheme, within } = purpose else { return (title.x, title.y) };
     buf.set_stringn(
         title.x,
         title.y,
@@ -334,7 +335,7 @@ pub fn draw_address_edit(
     let underline = Style::new().add_modifier(Modifier::UNDERLINED);
     let at = Field::new(text, cursor).style(underline).render(field, buf);
     if text.is_empty() && scheme.is_none() {
-        let hint = tr!("address-hint");
+        let hint = if within.is_some() { tr!("address-path-hint") } else { tr!("address-hint") };
         let dim = underline.add_modifier(Modifier::DIM);
         buf.set_stringn(field.x, field.y, &hint, usize::from(field.width), dim);
     }

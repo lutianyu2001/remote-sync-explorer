@@ -379,9 +379,13 @@ bar reads `[Revising]` meanwhile (in a terminal too short for that window the ba
 is edited). An address too long for the field scrolls; a highlighted `<` or `>` at
 either end says text is cut off there, as in readline and nano. The button turns into
 `>` once the address differs, and goes there (as Enter does; Enter on an unchanged
-address reloads). Esc or a click elsewhere cancels. While editing, the protocol box
-follows what you type: typing `ftp://` moves it there, Backspace at the start of the
-field takes it back, and Ctrl+U clears the field and the protocol.
+address reloads). Esc or a click elsewhere cancels. On the local disk the field holds a
+whole address, and the protocol box follows what you type: typing `ftp://` moves it
+there, Backspace at the start of the field takes it back, and Ctrl+U clears the field
+and the protocol. On a remote or a server the field holds only the path (`backup/2026`,
+`/srv`, `~/docs` for the login's home on an sftp server; empty for the remote's root),
+so editing it never leaves that server; F10 or `g` chooses another remote or the local
+disk.
 
 Marked entries are counted in the pane's bottom right corner (`[2 marked]`). Esc, or a
 click on blank space in the pane, clears the marks.

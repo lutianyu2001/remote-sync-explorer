@@ -41,6 +41,7 @@ overwrite-off = 覆写模式已关闭：覆盖已有的文件前会再次询问
 
 address-revising = [修改中]
 address-hint = 路径、remote:path 或 ftp://me@box/pub
+address-path-hint = 这台服务器上的路径；留空即其根目录
 empty-path = 路径为空
 unknown-protocol = 未知协议 { $name }://（支持：sftp、ftp、ftps、smb、webdav、webdavs）
 needs-host = { $scheme }:// 需要主机名，例如 { $scheme }://me@box

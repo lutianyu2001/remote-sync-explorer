@@ -146,6 +146,53 @@ impl Location {
         }
     }
 
+    /// The path alone, as Go to edits it on a remote, where the server cannot be changed:
+    /// `backup/2026` or `/srv`; `~` and `~/docs` for the login's home on an sftp server
+    /// opened by address, whose paths are otherwise absolute.
+    pub fn path_text(&self) -> String {
+        match &self.endpoint {
+            Some(ep) if ep.scheme == Scheme::Sftp && !self.path.starts_with('/') => {
+                if self.path.is_empty() { "~".to_owned() } else { format!("~/{}", self.path) }
+            }
+            _ => self.path.clone(),
+        }
+    }
+
+    /// This location's server at `text`, a path as [`Location::path_text`] writes it.
+    /// `.` and `..` are resolved here, never reaching above the root.
+    pub fn with_path_text(&self, text: &str) -> Self {
+        let text = text.trim();
+        let home = match &self.endpoint {
+            Some(ep) if ep.scheme == Scheme::Sftp => match text {
+                "~" => Some(""),
+                t => t.strip_prefix("~/"),
+            },
+            _ => None,
+        };
+        let (absolute, rest) = match home {
+            Some(rest) => (false, rest),
+            None => match text.strip_prefix('/') {
+                // Other servers opened by address have no absolute paths.
+                Some(rest) => {
+                    (self.endpoint.as_ref().is_none_or(|e| e.scheme == Scheme::Sftp), rest)
+                }
+                None => (false, text),
+            },
+        };
+        let mut parts: Vec<&str> = Vec::new();
+        for part in rest.split('/') {
+            match part {
+                "" | "." => {}
+                ".." => {
+                    parts.pop();
+                }
+                p => parts.push(p),
+            }
+        }
+        let path = parts.join("/");
+        self.with_path(if absolute { format!("/{path}") } else { path })
+    }
+
     pub fn is_local(&self) -> bool {
         self.fs == "/"
     }
@@ -311,6 +358,26 @@ fn lexical_clean(path: &Path) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn path_text_reads_back_on_the_same_server() {
+        let nas = Location::new("nas:", "backup/2026");
+        assert_eq!(nas.path_text(), "backup/2026");
+        assert_eq!(nas.with_path_text(" backup/./x/../y/ "), Location::new("nas:", "backup/y"));
+        assert_eq!(nas.with_path_text("/abs/../../srv"), Location::new("nas:", "/srv"));
+        // Whatever is typed, the server stays.
+        assert_eq!(nas.with_path_text("s3:bucket").fs, "nas:");
+
+        let sftp = Location::on(Endpoint::ssh("me@box"), "docs");
+        assert_eq!(sftp.path_text(), "~/docs");
+        assert_eq!(sftp.with_path_text("~").path, "");
+        assert_eq!(sftp.with_path_text("~/a/b").path, "a/b");
+        assert_eq!(sftp.with_path_text("/srv").path, "/srv");
+        assert_eq!(sftp.with_path_text("/").path, "/");
+        assert_eq!(sftp.with_path_text("/").path_text(), "/");
+        assert_eq!(Location::on(Endpoint::ssh("box"), "").path_text(), "~");
+        assert_eq!(sftp.with_path_text("x").fs, sftp.fs);
+    }
 
     #[test]
     fn only_names_of_one_entry_are_safe() {

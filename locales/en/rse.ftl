@@ -44,6 +44,7 @@ overwrite-off = overwrite mode off: existing files are asked about again
 
 address-revising = [Revising]
 address-hint = path, remote:path or ftp://me@box/pub
+address-path-hint = path on this server; empty for its root
 empty-path = empty path
 unknown-protocol = unknown protocol { $name }:// (known: sftp, ftp, ftps, smb, webdav, webdavs)
 needs-host = { $scheme }:// needs a host, e.g. { $scheme }://me@box

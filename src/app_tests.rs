@@ -294,9 +294,16 @@ fn goto(h: &mut Harness, address: &str) {
     h.press(KeyCode::Enter);
 }
 
+/// The remote picker's first choice with `filter` (Local with none).
+fn pick(h: &mut Harness, filter: &str) {
+    h.press(KeyCode::Char('g'));
+    h.type_text(filter);
+    h.press(KeyCode::Enter);
+}
+
 fn goto_field(h: &Harness) -> (Option<Scheme>, String) {
     match &h.app.dialog {
-        Some(Dialog::Input { purpose: InputPurpose::Goto { scheme }, text, .. }) => {
+        Some(Dialog::Input { purpose: InputPurpose::Goto { scheme, .. }, text, .. }) => {
             (*scheme, text.clone())
         }
         other => panic!("not in Go to: {other:?}"),
@@ -314,6 +321,9 @@ fn protocol_tags_in_titles_and_go_to() {
             ("/home/sky", vec![]),
             ("nas:backup", vec![]),
             (":sftp,host=box,user=me:/srv", vec![file("x", 1)]),
+            (":sftp,host=box,user=me:/home", vec![]),
+            (":sftp,host=box,user=me:nas:backup", vec![]),
+            (":sftp,host=box,user=me:", vec![]),
         ],
         &[],
     );
@@ -321,20 +331,12 @@ fn protocol_tags_in_titles_and_go_to() {
     assert!(h.screen.contains("│ smb:// ││ nas:backup"), "{}", h.screen);
     assert!(h.screen.contains("│ Local ││ /home/sky"), "{}", h.screen);
 
+    // On the local disk Go to takes a whole address. A protocol typed becomes the tag;
+    // Backspace at the start removes it, keeping the text.
     h.press(KeyCode::Char(':'));
     h.press_mod(KeyCode::Char('u'), KeyModifiers::CONTROL);
     h.type_text("sftp://me@box/srv");
     assert_eq!(goto_field(&h), (Some(Scheme::Sftp), "me@box/srv".to_owned()));
-    h.press(KeyCode::Enter);
-    assert_eq!(h.app.panes[0].loc.fs_string(), ":sftp,host=box,user=me:/srv");
-    assert_eq!(names(&h, 0), ["..", "x"]);
-    assert!(h.screen.contains("│ sftp:// ││ me@box/srv"), "{}", h.screen);
-
-    // Go to shows the tag again; Backspace at the start removes it, keeping the text.
-    h.press(KeyCode::Char(':'));
-    assert_eq!(goto_field(&h), (Some(Scheme::Sftp), "me@box/srv".to_owned()));
-    assert!(h.screen.contains("│ sftp:// ││ [Revising]"), "{}", h.screen);
-    assert!(h.screen.lines().nth(4).is_some_and(|l| l.starts_with("│ me@box/srv ")));
     h.press(KeyCode::Home);
     h.press(KeyCode::Backspace);
     assert_eq!(goto_field(&h), (None, "me@box/srv".to_owned()));
@@ -344,6 +346,39 @@ fn protocol_tags_in_titles_and_go_to() {
     assert_eq!(goto_field(&h), (Some(Scheme::Ftps), "me@box/srv".to_owned()));
     h.press_mod(KeyCode::Char('u'), KeyModifiers::CONTROL);
     assert_eq!(goto_field(&h), (None, String::new()));
+    h.type_text("sftp://me@box/srv");
+    h.press(KeyCode::Enter);
+    assert_eq!(h.app.panes[0].loc.fs_string(), ":sftp,host=box,user=me:/srv");
+    assert_eq!(names(&h, 0), ["..", "x"]);
+    assert!(h.screen.contains("│ sftp:// ││ me@box/srv"), "{}", h.screen);
+
+    // On a server Go to edits the path alone: the server stays, whatever is typed.
+    h.press(KeyCode::Char(':'));
+    assert_eq!(goto_field(&h), (None, "/srv".to_owned()));
+    assert!(h.screen.contains("│ sftp:// ││ [Revising]"), "{}", h.screen);
+    assert!(h.screen.lines().nth(4).is_some_and(|l| l.starts_with("│ /srv ")));
+    h.press(KeyCode::Home);
+    h.press(KeyCode::Backspace);
+    h.type_text("ftps://");
+    assert_eq!(goto_field(&h), (None, "ftps:///srv".to_owned()));
+    h.press_mod(KeyCode::Char('u'), KeyModifiers::CONTROL);
+    h.type_text("/srv/../home/");
+    assert!(h.screen.contains("│ sftp:// ││ [Revising]"), "{}", h.screen);
+    h.press(KeyCode::Enter);
+    assert_eq!(h.app.panes[0].loc.fs_string(), ":sftp,host=box,user=me:/home");
+    h.press(KeyCode::Char(':'));
+    h.press_mod(KeyCode::Char('u'), KeyModifiers::CONTROL);
+    h.type_text("nas:backup");
+    h.press(KeyCode::Enter);
+    assert_eq!(h.app.panes[0].loc.fs_string(), ":sftp,host=box,user=me:nas:backup");
+    // Home on the server is `~`.
+    h.press(KeyCode::Char(':'));
+    h.press_mod(KeyCode::Char('u'), KeyModifiers::CONTROL);
+    h.type_text("~");
+    h.press(KeyCode::Enter);
+    assert_eq!(h.app.panes[0].loc.fs_string(), ":sftp,host=box,user=me:");
+    h.press(KeyCode::Char(':'));
+    assert_eq!(goto_field(&h), (None, "~".to_owned()));
 }
 
 #[test]
@@ -364,10 +399,11 @@ fn login_asks_once_per_server_and_again_after_a_failure() {
     assert!(h.screen.contains("│ smb:// ││ me@nas/share"), "{}", h.screen);
 
     // Known now: no question. This listing fails, which forgets the password.
-    goto(&mut h, "smb://me@nas/other");
+    goto(&mut h, "other");
     assert!(h.app.dialog.is_none());
     assert_eq!(h.app.panes[0].loc.fs, ":smb,host=nas,user=me,pass=OB(pw):");
     assert!(matches!(h.app.panes[0].status, PaneStatus::Error(_)));
+    pick(&mut h, "");
     goto(&mut h, "smb://me@nas/share");
     assert!(asks_password(&h));
 
@@ -404,10 +440,10 @@ fn address_bar_is_edited_below_it_with_one_refresh_or_go_button() {
     let title = h.app.hitmap.panes[1].title;
     h.click(title.x + title.width - 6, title.y);
     assert_eq!(h.app.active, 1);
-    assert!(matches!(&h.app.dialog, Some(Dialog::Input { text, .. }) if text == "nas:backup"));
+    assert!(matches!(&h.app.dialog, Some(Dialog::Input { text, .. }) if text == "backup"));
     let line = bar_line(&h);
     assert!(line.contains("│ smb:// ││ [Revising] ") && line.ends_with("│ ↻ │"), "{}", h.screen);
-    assert!(edit_line(&h).ends_with("││ nas:backup                           │"), "{}", h.screen);
+    assert!(edit_line(&h).ends_with("││ backup                               │"), "{}", h.screen);
     // An arrow leads from the address bar down to the window that edits it.
     let lines: Vec<&str> = h.screen.lines().collect();
     assert!(lines[2].ends_with("╰─┬─────────────────────╯╰───╯"), "{}", h.screen);
@@ -421,7 +457,7 @@ fn address_bar_is_edited_below_it_with_one_refresh_or_go_button() {
     h.press(KeyCode::Char(':'));
     h.type_text("/photos");
     assert!(bar_line(&h).ends_with("│ > │"), "{}", h.screen);
-    assert!(edit_line(&h).contains("││ nas:backup/photos "), "{}", h.screen);
+    assert!(edit_line(&h).contains("││ backup/photos "), "{}", h.screen);
     let button = h.app.hitmap.buttons[0];
     h.click(button.x, button.y);
     assert_eq!(h.app.panes[1].loc, Location::new("nas:", "backup/photos"));
@@ -429,11 +465,11 @@ fn address_bar_is_edited_below_it_with_one_refresh_or_go_button() {
     // A long address scrolls, with `<` / `>` where text is cut off.
     h.press(KeyCode::Char(':'));
     h.press_mod(KeyCode::Char('u'), KeyModifiers::CONTROL);
-    h.type_text(&format!("nas:{}", "x".repeat(50)));
+    h.type_text(&"x".repeat(50));
     let end = format!("││ <{}  │", "x".repeat(34));
     assert!(edit_line(&h).ends_with(&end), "{}", h.screen);
     h.press(KeyCode::Home);
-    let start = format!("││ nas:{}> │", "x".repeat(31));
+    let start = format!("││ {}> │", "x".repeat(35));
     assert!(edit_line(&h).ends_with(&start), "{}", h.screen);
     h.press(KeyCode::Esc);
 
@@ -605,7 +641,7 @@ fn number_keys_focus_the_windows_named_in_their_corners() {
     h.press(KeyCode::Down);
     assert_eq!(h.app.panes[1].cursor, 0);
     h.press(KeyCode::Enter);
-    assert!(matches!(&h.app.dialog, Some(Dialog::Input { text, .. }) if text == "nas:backup"));
+    assert!(matches!(&h.app.dialog, Some(Dialog::Input { text, .. }) if text == "backup"));
     h.press(KeyCode::Esc);
     assert_eq!((h.app.dialog.is_none(), h.app.focus), (true, Focus::Address));
     h.press(KeyCode::Esc);
@@ -621,7 +657,7 @@ fn number_keys_focus_the_windows_named_in_their_corners() {
     let bar = h.app.hitmap.panes[1].bar;
     h.click(bar.x + 3, bar.y);
     assert_eq!(h.app.active, 1);
-    assert!(matches!(&h.app.dialog, Some(Dialog::Input { text, .. }) if text == "nas:backup"));
+    assert!(matches!(&h.app.dialog, Some(Dialog::Input { text, .. }) if text == "backup"));
 }
 
 #[test]
@@ -1003,15 +1039,15 @@ fn leaving_an_endpoint_pauses_its_jobs_until_it_is_shown_again() {
     let (backend, stopped) = stoppable_copy();
     let mut h = copy_running(backend.clone());
     h.app.active = 1;
-    goto(&mut h, "s3:");
+    pick(&mut h, "");
     assert!(matches!(h.app.dialog, Some(Dialog::Leave { .. })), "{:?}", h.app.dialog);
     h.press(KeyCode::Esc);
     assert_eq!(h.app.panes[1].loc, nas(), "Esc stays");
 
-    goto(&mut h, "s3:");
+    pick(&mut h, "");
     h.press(KeyCode::Left);
     h.press(KeyCode::Enter);
-    assert_eq!(h.app.panes[1].loc, Location::new("s3:", ""));
+    assert_eq!(h.app.panes[1].loc, home());
     h.wait_until(|a| a.queue.jobs[0].state == JobState::Queued);
     assert!(stopped.load(Ordering::SeqCst));
     assert_eq!(h.app.queue.visible().len(), 0);
