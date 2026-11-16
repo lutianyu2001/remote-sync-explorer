@@ -1,0 +1,308 @@
+$ cargo +nightly-2026-10-28 test --locked --target x86_64-unknown-linux-gnu --test addresses --test cancel --test concurrency --test rclone_ops --test resume --test rsync --test sftp_ssh --test startup -- 
+[1m[92m   Compiling[0m proc-macro2 v1.0.107
+[1m[92m   Compiling[0m unicode-ident v1.0.27
+[1m[92m   Compiling[0m quote v1.0.47
+[1m[92m   Compiling[0m libc v0.2.191
+[1m[92m   Compiling[0m cfg-if v1.0.5
+[1m[92m   Compiling[0m proc-macro-hack v0.5.20+deprecated
+[1m[92m   Compiling[0m foldhash v0.2.0
+[1m[92m   Compiling[0m equivalent v1.0.3
+[1m[92m   Compiling[0m thiserror v2.0.21
+[1m[92m   Compiling[0m allocator-api2 v0.2.21
+[1m[92m   Compiling[0m hashbrown v0.17.1
+[1m[92m   Compiling[0m syn v3.0.9
+[1m[92m   Compiling[0m syn v2.0.119
+[1m[92m   Compiling[0m bitflags v2.13.2
+[1m[92m   Compiling[0m rustversion v1.0.23
+[1m[92m   Compiling[0m heck v0.5.0
+[1m[92m   Compiling[0m unicode-width v0.2.2
+[1m[92m   Compiling[0m ident_case v1.0.1
+[1m[92m   Compiling[0m rustix v1.1.6
+[1m[92m   Compiling[0m itoa v1.0.18
+[1m[92m   Compiling[0m smallvec v1.16.3
+[1m[92m   Compiling[0m serde_core v1.0.229
+[1m[92m   Compiling[0m strsim v0.11.1
+[1m[92m   Compiling[0m errno v0.3.14
+[1m[92m   Compiling[0m unicode-segmentation v1.13.3
+[1m[92m   Compiling[0m parking_lot_core v0.9.12
+[1m[92m   Compiling[0m signal-hook v0.3.18
+[1m[92m   Compiling[0m log v0.4.34
+[1m[92m   Compiling[0m version_check v0.9.5
+[1m[92m   Compiling[0m linux-raw-sys v0.12.1
+[1m[92m   Compiling[0m either v1.19.0
+[1m[92m   Compiling[0m itertools v0.14.0
+[1m[92m   Compiling[0m darling_core v0.24.1
+[1m[92m   Compiling[0m strum_macros v0.28.0
+[1m[92m   Compiling[0m displaydoc v0.2.7
+[1m[92m   Compiling[0m thiserror-impl v2.0.21
+[1m[92m   Compiling[0m tinystr v0.8.5
+[1m[92m   Compiling[0m unic-langid-impl v0.9.6
+[1m[92m   Compiling[0m unic-langid-macros-impl v0.9.6
+[1m[92m   Compiling[0m generic-array v0.14.7
+[1m[92m   Compiling[0m convert_case v0.10.0
+[1m[92m   Compiling[0m unic-langid-macros v0.9.6
+[1m[92m   Compiling[0m castaway v0.2.4
+[1m[92m   Compiling[0m signal-hook-registry v1.4.8
+[1m[92m   Compiling[0m ryu v1.0.23
+[1m[92m   Compiling[0m static_assertions v1.1.0
+[1m[92m   Compiling[0m scopeguard v1.2.0
+[1m[92m   Compiling[0m memchr v2.8.3
+[1m[92m   Compiling[0m unicode-truncate v2.0.1
+[1m[92m   Compiling[0m lock_api v0.4.14
+[1m[92m   Compiling[0m darling_macro v0.24.1
+[1m[92m   Compiling[0m compact_str v0.9.1
+[1m[92m   Compiling[0m darling v0.24.1
+[1m[92m   Compiling[0m kasuari v0.4.13
+[1m[92m   Compiling[0m unic-langid v0.9.6
+[1m[92m   Compiling[0m derive_more-impl v2.1.1
+[1m[92m   Compiling[0m strum v0.28.0
+[1m[92m   Compiling[0m mio v1.2.4
+[1m[92m   Compiling[0m lru v0.18.5
+[1m[92m   Compiling[0m typenum v1.20.1
+[1m[92m   Compiling[0m litrs v1.0.1
+[1m[92m   Compiling[0m indoc v2.0.8
+[1m[92m   Compiling[0m derive_more v2.1.1
+[1m[92m   Compiling[0m signal-hook-mio v0.2.5
+[1m[92m   Compiling[0m ratatui-core v0.1.2
+[1m[92m   Compiling[0m instability v0.3.14
+[1m[92m   Compiling[0m document-features v0.2.12
+[1m[92m   Compiling[0m parking_lot v0.12.5
+[1m[92m   Compiling[0m utf8parse v0.2.2
+[1m[92m   Compiling[0m autocfg v1.5.1
+[1m[92m   Compiling[0m rustc-hash v2.1.3
+[1m[92m   Compiling[0m type-map v0.5.1
+[1m[92m   Compiling[0m anstyle-parse v1.0.0
+[1m[92m   Compiling[0m crossterm v0.29.0
+[1m[92m   Compiling[0m line-clipping v0.3.8
+[1m[92m   Compiling[0m num-traits v0.2.19
+[1m[92m   Compiling[0m anstyle-query v1.1.5
+[1m[92m   Compiling[0m zmij v1.0.23
+[1m[92m   Compiling[0m colorchoice v1.0.5
+[1m[92m   Compiling[0m same-file v1.0.6
+[1m[92m   Compiling[0m anstyle v1.0.14
+[1m[92m   Compiling[0m is_terminal_polyfill v1.70.2
+[1m[92m   Compiling[0m winnow v1.0.4
+[1m[92m   Compiling[0m crossbeam-utils v0.8.23
+[1m[92m   Compiling[0m toml_parser v1.1.5+spec-1.1.0
+[1m[92m   Compiling[0m ratatui-crossterm v0.1.2
+[1m[92m   Compiling[0m anstream v1.0.0
+[1m[92m   Compiling[0m walkdir v2.5.0
+[1m[92m   Compiling[0m ratatui-widgets v0.3.2
+[1m[92m   Compiling[0m intl-memoizer v0.5.3
+[1m[92m   Compiling[0m inout v0.1.4
+[1m[92m   Compiling[0m crypto-common v0.1.7
+[1m[92m   Compiling[0m serde_spanned v1.1.2
+[1m[92m   Compiling[0m toml_datetime v1.1.2+spec-1.1.0
+[1m[92m   Compiling[0m intl_pluralrules v7.0.2
+[1m[92m   Compiling[0m fluent-langneg v0.13.1
+[1m[92m   Compiling[0m fluent-syntax v0.12.0
+[1m[92m   Compiling[0m indexmap v2.14.2
+[1m[92m   Compiling[0m getrandom v0.4.3
+[1m[92m   Compiling[0m toml_writer v1.1.3+spec-1.1.0
+[1m[92m   Compiling[0m arrayvec v0.7.8
+[1m[92m   Compiling[0m unicase v2.10.0
+[1m[92m   Compiling[0m clap_lex v1.1.1
+[1m[92m   Compiling[0m anyhow v1.0.104
+[1m[92m   Compiling[0m serde_json v1.0.154
+[1m[92m   Compiling[0m serde v1.0.229
+[1m[92m   Compiling[0m self_cell v1.3.0
+[1m[92m   Compiling[0m fluent-bundle v0.16.0
+[1m[92m   Compiling[0m clap_builder v4.6.7
+[1m[92m   Compiling[0m toml v1.1.8+spec-1.1.0
+[1m[92m   Compiling[0m ratatui v0.30.2
+[1m[92m   Compiling[0m vte v0.15.0
+[1m[92m   Compiling[0m cipher v0.4.4
+[1m[92m   Compiling[0m fluent-template-macros v0.15.1
+[1m[92m   Compiling[0m serde_derive v1.0.229
+[1m[92m   Compiling[0m clap_derive v4.6.7
+[1m[92m   Compiling[0m rtoolbox v0.0.6
+[1m[92m   Compiling[0m rse v0.1.2 (.)
+[1m[92m   Compiling[0m cpufeatures v0.2.17
+[1m[92m   Compiling[0m iana-time-zone v0.1.65
+[1m[92m   Compiling[0m chrono v0.4.45
+[1m[92m   Compiling[0m clap v4.6.7
+[1m[92m   Compiling[0m aes v0.8.4
+[1m[92m   Compiling[0m rpassword v7.5.4
+[1m[92m   Compiling[0m crossbeam-channel v0.5.17
+[1m[92m   Compiling[0m fluent-templates v0.15.1
+[1m[92m   Compiling[0m layeredcfg v0.2.1
+[1m[92m   Compiling[0m vt100 v0.18.1
+[1m[92m   Compiling[0m lazyui-ratatui v0.1.0
+[1m[92m   Compiling[0m once_cell v1.21.4
+[1m[92m   Compiling[0m fastrand v2.5.0
+[1m[92m   Compiling[0m sys-locale v0.3.2
+[1m[92m   Compiling[0m tempfile v3.27.0
+[1m[92m   Compiling[0m console v0.16.6
+[1m[92m   Compiling[0m similar v2.7.0
+[1m[92m   Compiling[0m insta v1.49.0
+[1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 28.66s
+[1m[92m     Running[0m tests/addresses.rs (target/asan/x86_64-unknown-linux-gnu/debug/build/rse/e38351d217b784c2/out/addresses-e38351d217b784c2)
+
+running 1 test
+2026/11/16 02:38:55 NOTICE: Config file "~/.config/rclone/rclone.conf" not found - using defaults
+2026/11/16 02:38:55 ERROR : rc: "operations/list": error: read metadata failed: 401 Unauthorized
+test webdav_with_a_password ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+[1m[92m     Running[0m tests/cancel.rs (target/asan/x86_64-unknown-linux-gnu/debug/build/rse/96e501d97bacd048/out/cancel-96e501d97bacd048)
+
+running 2 tests
+2026/11/16 02:38:55 NOTICE: Bandwidth limit set to {8Mi 8Mi}
+2026/11/16 02:38:55 NOTICE: Bandwidth limit set to {8Mi 8Mi}
+2026/11/16 02:38:55 NOTICE: Config file "~/.config/rclone/rclone.conf" not found - using defaults
+test shutdown_stops_running_jobs ... ok
+2026/11/16 02:38:57 ERROR : inner.bin: rse: context canceled
+2026/11/16 02:38:57 ERROR : big.bin: Failed to copy: failed to update memory object: context canceled
+2026/11/16 02:38:57 ERROR : big.bin: Not deleting source as copy failed: failed to update memory object: context canceled
+2026/11/16 02:38:57 ERROR : cancel-move: error listing: directory not found
+2026/11/16 02:38:57 ERROR : rc: "operations/list": error: error in ListJSON: directory not found
+test cancelled_transfers_leave_only_partial_files ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.54s
+
+[1m[92m     Running[0m tests/concurrency.rs (target/asan/x86_64-unknown-linux-gnu/debug/build/rse/658dc309c346b7a1/out/concurrency-658dc309c346b7a1)
+
+running 2 tests
+2026/11/16 02:38:58 NOTICE: Config file "~/.config/rclone/rclone.conf" not found - using defaults
+test many_threads_get_their_own_results ... ok
+test stats_latency_is_independent_of_concurrent_listing ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.11s
+
+[1m[92m     Running[0m tests/rclone_ops.rs (target/asan/x86_64-unknown-linux-gnu/debug/build/rse/e8fcbb237e299ce8/out/rclone_ops-e8fcbb237e299ce8)
+
+running 11 tests
+2026/11/16 02:39:02 NOTICE: Config file "~/.config/rclone/rclone.conf" not found - using defaults
+test copy_file_and_directory_locally ... ok
+test copy_overwrites_an_existing_file ... ok
+test delete_file_and_purge_directory ... ok
+2026/11/16 02:39:02 ERROR : definitely/not/here/x1: error listing: directory not found
+2026/11/16 02:39:02 ERROR : rc: "operations/list": error: error in ListJSON: directory not found
+test listing_reports_errors_for_missing_directories ... ok
+2026/11/16 02:39:02 ERROR : rc: "operations/rmdir": error: stat /tmp/.tmp590sn3/d: no such file or directory
+2026/11/16 02:39:02 ERROR : rc: "operations/movefile": error: object not found
+test mkdir_and_rename_on_the_browse_workers ... ok
+test copy_to_memory_backend_and_back ... ok
+test directory_copy_merges_into_existing ... ok
+test failures_carry_rclones_error ... ok
+2026/11/16 02:39:02 ERROR : rc: "operations/rmdir": error: remove /tmp/.tmpEhqFm5/d: directory not empty
+test remove_empty_dir_refuses_a_non_empty_directory ... ok
+2026/11/16 02:39:02 ERROR : rc: "operations/rmdir": error: stat /tmp/.tmplTeFAN/d: no such file or directory
+test move_between_backends ... ok
+test move_file_and_directory_removes_the_source ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+
+[1m[92m     Running[0m tests/resume.rs (target/asan/x86_64-unknown-linux-gnu/debug/build/rse/244d3d236dba8936/out/resume-244d3d236dba8936)
+
+running 4 tests
+2026/11/16 02:39:02 NOTICE: Config file "~/.config/rclone/rclone.conf" not found - using defaults
+2026/11/16 02:39:02 NOTICE: Bandwidth limit set to {4Mi 4Mi}
+2026/11/16 02:39:03 NOTICE: Bandwidth limit reset to unlimited
+test download_to_local_resumes_after_stop ... ok
+test mismatched_partial_restarts_and_identical_files_are_skipped ... ok
+2026/11/16 02:39:03 ERROR : rc: "rse/resumable": error: didn't find section in config file ("nosuchremote")
+test resumable_answers_by_target ... ok
+2026/11/16 02:39:04 NOTICE: Bandwidth limit set to {4Mi 4Mi}
+2026/11/16 02:39:04 NOTICE: box{bImu5}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/16 02:39:06 NOTICE: Bandwidth limit reset to unlimited
+test upload_to_sftp_over_system_ssh_resumes_after_stop ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.84s
+
+[1m[92m     Running[0m tests/rsync.rs (target/asan/x86_64-unknown-linux-gnu/debug/build/rse/1619e8a07842303e/out/rsync-1619e8a07842303e)
+
+running 1 test
+2026/11/16 02:39:14 NOTICE: Config file "~/.config/rclone/rclone.conf" not found - using defaults
+2026/11/16 02:39:14 NOTICE: :sftp{XcFFK}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/16 02:39:14 NOTICE: Can't save config "shell_type" for on the fly backend ":sftp"
+2026/11/16 02:39:14 NOTICE: Can't save config "md5sum_command" for on the fly backend ":sftp"
+2026/11/16 02:39:14 NOTICE: Can't save config "sha1sum_command" for on the fly backend ":sftp"
+test rsync_through_the_master_connection ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.23s
+
+[1m[92m     Running[0m tests/sftp_ssh.rs (target/asan/x86_64-unknown-linux-gnu/debug/build/rse/eb106c570ca296c3/out/sftp_ssh-eb106c570ca296c3)
+
+running 5 tests
+test a_terminal_runs_the_login_shell_through_the_master ... ok
+2026/11/16 02:39:15 NOTICE: viassh: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/16 02:39:15 NOTICE: :sftp{Yd6Us}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/16 02:39:16 NOTICE: Can't save config "shell_type" for on the fly backend ":sftp"
+2026/11/16 02:39:16 NOTICE: Can't save config "md5sum_command" for on the fly backend ":sftp"
+2026/11/16 02:39:16 NOTICE: Can't save config "sha1sum_command" for on the fly backend ":sftp"
+2026/11/16 02:39:16 NOTICE: viassh: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/16 02:39:16 NOTICE: viassh: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/16 02:39:16 NOTICE: badkey: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/16 02:39:27 ERROR : rc: "operations/list": error: NewFs: couldn't initialise SFTP: error receiving version packet from server: server unexpectedly closed connection: unexpected EOF
+test browse_and_copy_over_openssh ... ok
+2026/11/16 02:39:28 ERROR : rc: "operations/list": error: NewFs: couldn't connect SSH: ssh: handshake failed: ssh: unable to authenticate, attempted methods [none publickey], no supported methods remain
+2026/11/16 02:39:28 NOTICE: box{ZsinB}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/16 02:39:28 NOTICE: box{ZsinB}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/16 02:39:28 NOTICE: box{ZsinB}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/16 02:39:28 NOTICE: box{ZsinB}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/16 02:39:28 NOTICE: :sftp{RD3M-}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/16 02:39:28 NOTICE: Can't save config "shell_type" for on the fly backend ":sftp"
+2026/11/16 02:39:28 NOTICE: Can't save config "md5sum_command" for on the fly backend ":sftp"
+2026/11/16 02:39:28 NOTICE: Can't save config "sha1sum_command" for on the fly backend ":sftp"
+test builtin_sftp_remotes_share_one_system_ssh_login ... ok
+2026/11/16 02:39:28 NOTICE: stored{XCJ3Q}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/16 02:39:29 NOTICE: asked{i_WvR}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/16 02:39:29 NOTICE: unobscured{XCJ3Q}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+2026/11/16 02:39:29 NOTICE: wrong{XCJ3Q}: No host key validation is being performed. Set known_hosts_file (to "none" to silence this notice) or use --sftp-pin-host-key to enable it. See: https://rclone.org/sftp/#host-key-validation
+test passphrases_come_from_rclone_conf_or_the_user ... ok
+2026/11/16 02:39:34 ERROR : rc: "operations/list": error: couldn't connect to ssh-agent: SSH agent requested but SSH_AUTH_SOCK not-specified
+test ssh_says_why_it_asks_again ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 20.27s
+
+[1m[92m     Running[0m tests/startup.rs (target/asan/x86_64-unknown-linux-gnu/debug/build/rse/1717b4b673d02e57/out/startup-1717b4b673d02e57)
+
+running 9 tests
+2026/11/16 02:39:35 ERROR : Couldn't decrypt configuration, most likely wrong password.
+2026/11/16 02:39:35 CRITICAL: Failed to load config file "/tmp/.tmpKj85NI/rclone.conf": unable to decrypt configuration and not allowed to ask for password - set RCLONE_CONFIG_PASS to your configuration password
+2026/11/16 02:39:35 ERROR : rc: job 4 panic: fatal error: Failed to load config file "/tmp/.tmpKj85NI/rclone.conf": unable to decrypt configuration and not allowed to ask for password - set RCLONE_CONFIG_PASS to your configuration password
+goroutine 17 [running, locked to thread]:
+runtime/debug.Stack()
+	runtime/debug/stack.go:26 +0x5e
+github.com/rclone/rclone/fs/rc/jobs.(*Job).run.func1()
+	github.com/rclone/rclone@v1.75.2/fs/rc/jobs/job.go:114 +0x45
+panic({0x55db51e9d6e0?, 0x1c5b1443aeb0?})
+	runtime/panic.go:860 +0x13a
+github.com/rclone/rclone/fs.panicIfRcJob({0x0, 0x0}, {0x55db4d8a5b96, 0x21}, {0x1c5b13cfb7a0, 0x2, 0x2})
+	github.com/rclone/rclone@v1.75.2/fs/log.go:241 +0x1b9
+github.com/rclone/rclone/fs.Fatalf({0x0, 0x0}, {0x55db4d8a5b96, 0x21}, {0x1c5b13cfb7a0, 0x2, 0x2})
+	github.com/rclone/rclone@v1.75.2/fs/log.go:260 +0xb0
+github.com/rclone/rclone/fs/config.LoadedData()
+	github.com/rclone/rclone@v1.75.2/fs/config/config.go:378 +0x1b3
+github.com/rclone/rclone/fs/config.GetRemotes()
+	github.com/rclone/rclone@v1.75.2/fs/config/config.go:484 +0x251
+github.com/rclone/rclone/fs/config.GetRemoteNames()
+	github.com/rclone/rclone@v1.75.2/fs/config/config.go:504 +0x1f
+github.com/rclone/rclone/fs/config.rcListRemotes({0x55db52544a01?, 0x1c5b13cfbb10?}, 0x55db4f8db353?)
+	github.com/rclone/rclone@v1.75.2/fs/config/rc.go:108 +0x17
+github.com/rclone/rclone/fs/rc/jobs.(*Job).run(0x1c5b142fecc0, {0x55db526581d8?, 0x1c5b1449d050?}, 0x55db52fe8740?, 0x55db51e9dae0?)
+	github.com/rclone/rclone@v1.75.2/fs/rc/jobs/job.go:118 +0x5f
+github.com/rclone/rclone/fs/rc/jobs.(*Jobs).NewJob(0x55db527a33a0, {0x55db52658130, 0x55db52fe8740}, 0x55db52611510, 0x1c5b1449cf90)
+	github.com/rclone/rclone@v1.75.2/fs/rc/jobs/job.go:309 +0x705
+github.com/rclone/rclone/fs/rc/jobs.NewJob(...)
+	github.com/rclone/rclone@v1.75.2/fs/rc/jobs/job.go:319
+github.com/rclone/rclone/librclone/librclone.RPC({0x1c5b145e4c60, 0x12}, {0x1c5b145e7450, 0x2})
+	github.com/rclone/rclone@v1.75.2/librclone/librclone/librclone.go:117 +0x48a
+main.RcloneRPC(0x7936a09e3330?, 0x7936a09e3390)
+	github.com/lutianyu2001/remote-sync-explorer/librse/main.go:62 +0x4f
+2026/11/16 02:39:35 ERROR : rc: "config/listremotes": error: panic received: fatal error: Failed to load config file "/tmp/.tmpKj85NI/rclone.conf": unable to decrypt configuration and not allowed to ask for password - set RCLONE_CONFIG_PASS to your configuration password
+test encrypted_config_needs_unlocking ... ok
+test env_password_unlocks_the_config ... ok
+test bad_config_file_is_an_error ... ok
+test forget_password_deletes_a_remembered_one ... ok
+test language_in_the_config_file_applies_from_the_command_line_on ... ok
+test locked_config_is_reported_before_the_interface_starts ... ok
+test rcd_flag_without_the_feature_is_explained ... ok
+test version_names_both_versions ... ok
+test command_line_help_and_errors_follow_the_language ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.60s
+
+xtask: asan: succeeded

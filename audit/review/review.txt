@@ -1,0 +1,6 @@
+src/i18n.rs	sha256:5cc60b8a91bead370f4a5b6122db7f451301e679f7f9a6031ced794e04b02daf	reviewed in audit/reviews/unsafe.md
+src/main.rs	sha256:d8472fffd9c78c026796f53be6bb34cc9e6240b469a74b8c445938d05a306476	reviewed in audit/reviews/unsafe.md
+src/rclone/ffi.rs	sha256:4d91bbe6426566e2ab6705da5bdb701cd96971a6c8c805f0f6bd35392d9bbaf9	changed since its review in audit/reviews/unsafe.md
+src/rclone/system_ssh.rs	sha256:999cf0696f65954c1238cf547e7f6e776494097db634f3c946ccc66313cda10d	reviewed in audit/reviews/unsafe.md
+src/signals.rs	sha256:e5614d52a244e3a5d8afc7111ba5268da002566d414211731bfac0c041bb8809	reviewed in audit/reviews/unsafe.md
+src/terminal.rs	sha256:d7f7d8ae7cb1df69142e73758ae5fb5dd5896074c29cd3a3a2bb83bf32dbb658	reviewed in audit/reviews/unsafe.md
