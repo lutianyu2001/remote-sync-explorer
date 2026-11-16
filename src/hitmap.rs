@@ -18,17 +18,31 @@ pub struct PaneArea {
     pub button: Rect,
     /// Where Go to edits the address: the edit window's inside, or the title.
     pub edit: Rect,
-    /// The rows of entries, below the column headers.
+    /// The rows of entries, below the column headers, left of the scrollbar's column.
     pub list: Rect,
     /// The pane's own line under the entries (the filter, the name under the cursor);
     /// empty when the pane is too short for it.
     pub footer: Rect,
     /// The column headers that sort by name, size and time; empty when not shown.
     pub columns: [Rect; 3],
+    /// The scrollbar right of the entries; empty when they all fit.
+    pub scrollbar: ScrollbarArea,
     /// First visible row of the pane's view.
     pub offset: usize,
     /// Number of rows in the pane's view.
     pub rows: usize,
+}
+
+/// A pane's scrollbar: a column inside the right border, as high as the entries, with an
+/// arrow at each end.
+#[derive(Debug, Clone, Default)]
+pub struct ScrollbarArea {
+    /// The whole column, the arrows included: the top cell scrolls up, the bottom one down.
+    pub bar: Rect,
+    /// The cells between the arrows, where the thumb moves.
+    pub track: Rect,
+    /// Where the visible rows are on the track.
+    pub thumb: Rect,
 }
 
 impl PaneArea {
@@ -82,6 +96,10 @@ pub enum Target {
     Title {
         pane: PaneId,
     },
+    /// A pane's scrollbar: an arrow, the thumb or the track.
+    Scrollbar {
+        pane: PaneId,
+    },
     /// The terminal under the panes.
     Terminal,
     /// A column header, which sorts the pane by its column.
@@ -133,6 +151,9 @@ impl HitMap {
                     Target::Blank { pane }
                 };
             }
+            if area.scrollbar.bar.contains(p) {
+                return Target::Scrollbar { pane };
+            }
             if let Some(key) = area.column_at(p) {
                 return Target::Sort { pane, key };
             }
@@ -183,6 +204,7 @@ mod tests {
             list: Rect::new(0, 1, 10, 5),
             footer: Rect::default(),
             columns: [Rect::new(0, 6, 4, 1), Rect::new(4, 6, 3, 1), Rect::default()],
+            scrollbar: ScrollbarArea::default(),
             offset: 10,
             rows: 12,
         };
@@ -200,6 +222,25 @@ mod tests {
         assert_eq!(m.hit(2, 2), Target::Item { pane: 0, row: 11 });
         assert_eq!(m.hit(2, 3), Target::Blank { pane: 0 });
         assert_eq!(m.hit(12, 1), Target::Blank { pane: 1 });
+    }
+
+    #[test]
+    fn the_scrollbar_is_the_column_right_of_the_entries() {
+        let mut m = map();
+        m.panes[0].scrollbar = ScrollbarArea {
+            bar: Rect::new(10, 1, 1, 5),
+            track: Rect::new(10, 2, 1, 3),
+            thumb: Rect::new(10, 3, 1, 1),
+        };
+        // The arrows and the track alike.
+        for row in 1..=5 {
+            assert_eq!(m.hit(10, row), Target::Scrollbar { pane: 0 });
+        }
+        assert_eq!(m.hit(9, 2), Target::Item { pane: 0, row: 11 });
+        assert_eq!(m.hit(10, 6), Target::Nothing);
+        // Without a scrollbar, the column is blank space.
+        m.panes[0].scrollbar = ScrollbarArea::default();
+        assert_eq!(m.hit(10, 1), Target::Nothing);
     }
 
     #[test]

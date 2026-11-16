@@ -11,7 +11,7 @@ use crate::config::{DropAction, MultiSelectModifier, UiConfig};
 use crate::endpoint::{Address, Endpoint, Scheme};
 use crate::event::{BrowseOp, Entry, Event, JobId, JobSnapshot, Mark, PaneId, ReqId};
 use crate::exec::Exec;
-use crate::hitmap::{HitMap, Target};
+use crate::hitmap::{HitMap, ScrollbarArea, Target};
 use crate::jobs::{Effect, Engine, JobState, OpKind, Queue, Transfer, same_name};
 use crate::keymap::{Action, Keymap};
 use crate::location::{Destination, Location, endpoint_key, safe_name};
@@ -530,6 +530,14 @@ pub enum Drag {
         items: Vec<Entry>,
         at: (u16, u16),
         target: Option<DropTarget>,
+    },
+    /// Left button down on a pane's scrollbar thumb, or on its track, which put the thumb
+    /// there: moving the pointer moves the thumb, wherever the pointer is on the screen,
+    /// until the button is released. `grab` is how many rows below the thumb's top the
+    /// pointer holds it.
+    Scrollbar {
+        pane: PaneId,
+        grab: u16,
     },
 }
 
@@ -2130,6 +2138,8 @@ impl App {
                 self.focus = Focus::Panes;
                 self.action(action, now);
             }
+            // Scrolls like the wheel: the focus, the cursor and the marks stay.
+            Target::Scrollbar { pane } => self.press_scrollbar(pane, at.1),
             Target::Queue => self.focus = Focus::Queue,
             Target::Terminal => self.focus = Focus::Terminal,
             Target::Hint(action) => self.action(action, now),
@@ -2174,8 +2184,48 @@ impl App {
                 self.autoscroll(at);
                 self.update_drop_target(at);
             }
+            Drag::Scrollbar { pane, grab } => {
+                let (pane, grab) = (*pane, *grab);
+                self.drag_thumb(pane, at.1, grab);
+            }
             Drag::Idle => {}
         }
+    }
+
+    /// An arrow scrolls a row. On the thumb, holds it where the pointer is; on the track
+    /// outside it, puts the thumb's middle under the pointer, which goes on holding it.
+    fn press_scrollbar(&mut self, pane: PaneId, row: u16) {
+        let ScrollbarArea { track, thumb, .. } = self.hitmap.panes[pane].scrollbar;
+        let (above, below) = (row < track.top(), row >= track.bottom());
+        if above || below {
+            self.scroll_pane(pane, below, 1);
+            return;
+        }
+        let held = row.checked_sub(thumb.y).filter(|&below| below < thumb.height);
+        let grab = held.unwrap_or(thumb.height / 2);
+        self.drag = Drag::Scrollbar { pane, grab };
+        if held.is_none() {
+            self.drag_thumb(pane, row, grab);
+        }
+    }
+
+    /// Scrolls `pane` to where the thumb, held `grab` rows below its top, is with the pointer
+    /// on screen row `row`: the thumb's travel along the track maps to the view's scroll
+    /// range. The view moves, not the cursor, as with the wheel.
+    fn drag_thumb(&mut self, pane: PaneId, row: u16, grab: u16) {
+        let area = &self.hitmap.panes[pane];
+        let ScrollbarArea { track, thumb, .. } = area.scrollbar;
+        let travel = usize::from(track.height.saturating_sub(thumb.height));
+        if travel == 0 {
+            return;
+        }
+        let top = usize::from(row.saturating_sub(grab).saturating_sub(track.y));
+        let top = top.min(travel);
+        let max = area.rows.saturating_sub(usize::from(area.list.height));
+        let p = &mut self.panes[pane];
+        p.offset = (top * max + travel / 2) / travel;
+        p.detached = true;
+        self.hitmap.panes[pane].offset = p.offset;
     }
 
     fn update_drop_target(&mut self, at: (u16, u16)) {
@@ -2198,6 +2248,7 @@ impl App {
             }
             Target::Blank { pane }
             | Target::Title { pane }
+            | Target::Scrollbar { pane }
             | Target::Sort { pane, .. }
             | Target::PaneButton { pane, .. } => Some((pane, None, self.panes[pane].loc.clone())),
             _ => None,
@@ -2260,7 +2311,7 @@ impl App {
                     DropAction::Ask => self.dialog = Some(Dialog::Drop { plan, focus: 0, at }),
                 }
             }
-            Drag::Idle => {}
+            Drag::Scrollbar { .. } | Drag::Idle => {}
         }
     }
 
@@ -2301,14 +2352,15 @@ impl App {
             return;
         }
         let Some(pane) = self.hitmap.pane_at(at.0, at.1) else { return };
+        self.scroll_pane(pane, down, WHEEL_STEP);
+    }
+
+    /// Scrolls `pane`'s view by `step` rows.
+    fn scroll_pane(&mut self, pane: PaneId, down: bool, step: usize) {
         let height = usize::from(self.hitmap.panes[pane].list.height).max(1);
         let p = &mut self.panes[pane];
         let max = p.view.len().saturating_sub(height);
-        p.offset = if down {
-            (p.offset + WHEEL_STEP).min(max)
-        } else {
-            p.offset.saturating_sub(WHEEL_STEP)
-        };
+        p.offset = if down { (p.offset + step).min(max) } else { p.offset.saturating_sub(step) };
         // Scrolling moves the view, not the cursor, which stays on its entry out of view.
         p.detached = true;
         self.hitmap.panes[pane].offset = p.offset;

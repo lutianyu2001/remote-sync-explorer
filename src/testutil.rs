@@ -244,6 +244,11 @@ impl Harness {
         &self.screen
     }
 
+    /// The text of a cell on the last drawn screen.
+    pub fn symbol(&self, x: u16, y: u16) -> &str {
+        self.frame[(x, y)].symbol()
+    }
+
     /// The foreground color of a cell on the last drawn screen.
     pub fn fg(&self, x: u16, y: u16) -> ratatui::style::Color {
         self.frame[(x, y)].fg

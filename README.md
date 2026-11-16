@@ -87,8 +87,8 @@ system's own, never shipped with rse.
   (the one it deletes in, for a delete); opening another place in a pane pauses it, and
   coming back goes on. Unfinished jobs are kept for the next start. Leaving or quitting
   while a transfer that cannot resume runs names the files that would start over first.
-- **Mouse**: click, double click, wheel, Ctrl+click or right click to mark, drag to copy
-  or move.
+- **Mouse**: click, double click, wheel, scrollbar, Ctrl+click or right click to mark, drag to
+  copy or move.
 - **SFTP through OpenSSH**: `~/.ssh/config` (ProxyJump, certificates, hardware keys)
   applies, with one shared login per server.
 - **Terminal**: Ctrl+O opens your shell under the panes, in the pane's directory: on the
@@ -437,6 +437,8 @@ Mouse support is on by default (`[ui] mouse = true`). Every mouse action also ha
 | Ctrl+click or right click | Mark or unmark, keep the other marks |
 | Double click | Open a directory; on `..` go up |
 | Wheel | Scroll the pane under the pointer (focus and cursor do not move) |
+| Drag the scrollbar's thumb / click its track | Scroll that pane: the thumb follows the pointer / jumps there (focus, cursor and marks do not change) |
+| Click ▴ / ▾ at the scrollbar's ends | Scroll that pane up / down one row |
 | Click a column header (Name, Size, Modified) | Sort by it; again, the other way round |
 | Click blank space in a pane | Clear marks, focus that pane |
 | Click the address bar | Edit the address |
@@ -445,6 +447,8 @@ Mouse support is on by default (`[ui] mouse = true`). Every mouse action also ha
 | Click a queue row / its ✕ | Select the job / cancel it |
 | Click a key hint at the bottom | Run it |
 | Click the terminal / wheel over it | Give it the keys / scroll back through its output |
+
+A pane whose entries do not all fit has a scrollbar, in the column inside its right border.
 
 Dragging: press on an entry and move. If that entry is marked, all marked entries are
 dragged, otherwise only it. Drop on a directory to put the entries inside it, anywhere

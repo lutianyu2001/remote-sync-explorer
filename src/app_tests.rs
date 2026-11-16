@@ -1576,6 +1576,353 @@ fn wheel_leaves_the_cursor_on_its_entry() {
     assert_eq!(h.app.panes[1].offset, 2, "back to the cursor");
 }
 
+/// The right pane holds `count` entries, more than it shows; the left one has two.
+fn right_with(count: usize) -> Harness {
+    let entries: Vec<Value> = (0..count).map(|i| file(&format!("f{i:03}"), 1)).collect();
+    let (backend, _) =
+        fake_fs(&[("/home/sky", vec![file("x", 1), file("y", 1)]), ("nas:backup", entries)], &[]);
+    Harness::new(backend, home(), nas())
+}
+
+fn long_right() -> Harness {
+    right_with(100)
+}
+
+/// The most the right pane's view can scroll.
+fn max_offset(h: &Harness) -> usize {
+    h.app.panes[1].view.len() - usize::from(h.app.hitmap.panes[1].list.height)
+}
+
+/// Marks an entry of the right pane and goes back to the left one; returns the marks
+/// and where the right pane's cursor is.
+fn mark_in_right(h: &mut Harness) -> (BTreeSet<Mark>, usize) {
+    h.press(KeyCode::Tab);
+    h.press(KeyCode::Down);
+    h.press(KeyCode::Char(' '));
+    h.press(KeyCode::Tab);
+    assert_eq!(h.app.panes[1].marks.len(), 1);
+    (h.app.panes[1].marks.clone(), h.app.panes[1].cursor)
+}
+
+fn mouse(h: &mut Harness, kind: MouseEventKind, at: (u16, u16)) {
+    h.mouse_at(kind, at.0, at.1, KeyModifiers::NONE, Instant::now());
+}
+
+#[test]
+fn the_scrollbar_is_a_column_inside_the_border_while_the_entries_do_not_fit() {
+    let h = long_right();
+    let ScrollbarArea { bar, track, thumb } = h.app.hitmap.panes[1].scrollbar.clone();
+    let (list, frame) = (h.app.hitmap.panes[1].list, h.app.hitmap.panes[1].frame);
+    assert_eq!(bar.x, list.right() + 1, "right of the entries, a blank column between");
+    assert!((list.y..list.bottom()).all(|y| h.symbol(list.right(), y) == " "));
+    assert_eq!(bar.x + 2, frame.right(), "with the border after it");
+    assert_eq!((bar.y, bar.height), (list.y, list.height));
+    assert_eq!((track.y, track.height), (bar.y + 1, bar.height - 2), "between the arrows");
+    assert_eq!(thumb.y, track.y, "at the top, as the view is");
+    assert!(thumb.height >= 1 && thumb.height < track.height);
+    assert_eq!(h.symbol(bar.x, bar.y), "▴");
+    assert_eq!(h.symbol(bar.x, bar.bottom() - 1), "▾");
+    for y in track.top()..track.bottom() {
+        let on_thumb = y >= thumb.top() && y < thumb.bottom();
+        let want = if on_thumb { "█" } else { "│" };
+        assert_eq!(h.symbol(track.x, y), want, "row {y}:\n{}", h.screen);
+    }
+    // All of it quiet, and the border is a border still.
+    for y in bar.top()..bar.bottom() {
+        assert!(h.cell_modifiers(bar.x, y).contains(ratatui::style::Modifier::DIM), "row {y}");
+        assert_eq!(h.symbol(bar.x + 1, y), "│");
+    }
+}
+
+#[test]
+fn the_scrollbar_takes_a_column_only_while_shown_and_no_other_column_goes() {
+    // 100 columns: panes just wide enough for the time column.
+    let entries: Vec<Value> = (0..100).map(|i| file(&format!("f{i:03}"), 1)).collect();
+    let (backend, _) = fake_fs(&[("/home/sky", vec![file("x", 1)]), ("nas:backup", entries)], &[]);
+    let h = Harness::with(backend, home(), nas(), UiConfig::default(), 100, 24);
+    let (left, right) = (&h.app.hitmap.panes[0], &h.app.hitmap.panes[1]);
+    // The entries of the left pane fit: nothing is drawn, and the list reaches the border.
+    assert!(left.scrollbar.bar.is_empty() && left.scrollbar.thumb.is_empty());
+    assert_eq!(left.list.right() + 1, left.frame.right());
+    // The right one gives the scrollbar the last column and a blank one before it, and
+    // the name column the two cells.
+    assert_eq!(right.scrollbar.bar.x, right.list.right() + 1);
+    assert_eq!(right.list.width + 2, left.list.width);
+    // The size and time columns are there in both, the time one at the width it needs.
+    assert!(left.columns.iter().chain(&right.columns).all(|c| !c.is_empty()));
+    assert!(h.screen.contains("2026-10-20 08:15"), "{}", h.screen);
+}
+
+#[test]
+fn the_thumb_follows_the_view_to_the_end() {
+    let mut h = long_right();
+    for _ in 0..60 {
+        mouse(&mut h, MouseEventKind::ScrollDown, (60, 5));
+    }
+    h.settle();
+    let (track, thumb) =
+        (h.app.hitmap.panes[1].scrollbar.track, h.app.hitmap.panes[1].scrollbar.thumb);
+    assert_eq!(h.app.panes[1].offset, max_offset(&h));
+    assert_eq!(thumb.bottom(), track.bottom(), "at the bottom, as the view is");
+}
+
+#[test]
+fn dragging_the_thumb_scrolls_the_pane_wherever_the_pointer_goes() {
+    let mut h = long_right();
+    let (track, thumb) =
+        (h.app.hitmap.panes[1].scrollbar.track, h.app.hitmap.panes[1].scrollbar.thumb);
+    let travel = track.height - thumb.height;
+    mouse(&mut h, MouseEventKind::Down(MouseButton::Left), (track.x, thumb.y));
+    assert_eq!(h.app.drag, Drag::Scrollbar { pane: 1, grab: 0 });
+    assert_eq!(h.app.panes[1].offset, 0, "pressing on the thumb does not move it");
+    // Half the way down, and well out of the one-column strip.
+    mouse(&mut h, MouseEventKind::Drag(MouseButton::Left), (track.x - 25, thumb.y + travel / 2));
+    h.render();
+    let half = h.app.panes[1].offset;
+    assert!(half.abs_diff(max_offset(&h) / 2) <= max_offset(&h) / usize::from(travel), "{half}");
+    assert_eq!(
+        h.app.hitmap.panes[1].scrollbar.thumb.y,
+        thumb.y + travel / 2,
+        "the thumb is under the pointer"
+    );
+    assert!(h.screen.contains(&format!("f{half:03}")), "{}", h.screen);
+    // Past the end of the track: the end of the list.
+    mouse(&mut h, MouseEventKind::Drag(MouseButton::Left), (3, track.bottom() + 5));
+    assert_eq!(h.app.panes[1].offset, max_offset(&h));
+    // And back up past the start.
+    mouse(&mut h, MouseEventKind::Drag(MouseButton::Left), (track.x, 0));
+    assert_eq!(h.app.panes[1].offset, 0);
+    mouse(&mut h, MouseEventKind::Drag(MouseButton::Left), (track.x, thumb.y + travel / 2));
+    mouse(&mut h, MouseEventKind::Up(MouseButton::Left), (track.x, thumb.y + travel / 2));
+    assert_eq!(h.app.drag, Drag::Idle);
+    // Released: moving on does nothing more.
+    let kept = h.app.panes[1].offset;
+    mouse(&mut h, MouseEventKind::Drag(MouseButton::Left), (track.x, track.bottom()));
+    assert_eq!(h.app.panes[1].offset, kept);
+}
+
+#[test]
+fn dragging_the_thumb_keeps_the_hold_on_it() {
+    let mut h = right_with(20);
+    let (track, thumb) =
+        (h.app.hitmap.panes[1].scrollbar.track, h.app.hitmap.panes[1].scrollbar.thumb);
+    assert!(thumb.height >= 2, "{thumb:?}");
+    // Held by its last row: that row stays under the pointer.
+    let held = thumb.bottom() - 1;
+    mouse(&mut h, MouseEventKind::Down(MouseButton::Left), (track.x, held));
+    assert_eq!(h.app.drag, Drag::Scrollbar { pane: 1, grab: thumb.height - 1 });
+    mouse(&mut h, MouseEventKind::Drag(MouseButton::Left), (track.x, held + 4));
+    h.render();
+    assert_eq!(h.app.hitmap.panes[1].scrollbar.thumb.bottom() - 1, held + 4, "{}", h.screen);
+}
+
+#[test]
+fn dragging_the_thumb_moves_the_view_not_the_cursor() {
+    let mut h = long_right();
+    h.press(KeyCode::Tab);
+    h.press(KeyCode::Down);
+    h.press(KeyCode::Tab);
+    let (track, thumb) =
+        (h.app.hitmap.panes[1].scrollbar.track, h.app.hitmap.panes[1].scrollbar.thumb);
+    mouse(&mut h, MouseEventKind::Down(MouseButton::Left), (track.x, thumb.y));
+    mouse(&mut h, MouseEventKind::Drag(MouseButton::Left), (track.x, track.bottom() - 1));
+    mouse(&mut h, MouseEventKind::Up(MouseButton::Left), (track.x, track.bottom() - 1));
+    h.settle();
+    assert_eq!(h.app.panes[1].offset, max_offset(&h), "the view stays where it was scrolled to");
+    assert_eq!(h.app.panes[1].cursor, 1);
+    assert_eq!(h.app.active, 0, "the focus stays");
+    h.press(KeyCode::Tab);
+    h.press(KeyCode::Down);
+    assert_eq!(h.app.panes[1].current().unwrap().name, "f001");
+    assert_eq!(h.app.panes[1].offset, 2, "back to the cursor");
+}
+
+#[test]
+fn clicking_the_track_puts_the_thumb_there() {
+    let mut h = long_right();
+    let track = h.app.hitmap.panes[1].scrollbar.track;
+    let len = h.app.hitmap.panes[1].scrollbar.thumb.height;
+    // Below the thumb: its middle goes to the click.
+    let y = track.y + track.height / 2;
+    h.click(track.x, y);
+    let thumb = h.app.hitmap.panes[1].scrollbar.thumb;
+    assert!(h.app.panes[1].offset > 0);
+    assert!(
+        (thumb.y + thumb.height / 2).abs_diff(y) <= 1 && thumb.height == len,
+        "{thumb:?} for a click on {y}"
+    );
+    assert_eq!(h.app.drag, Drag::Idle);
+    // The bottom of the track is the end of the list, the top its start.
+    h.click(track.x, track.bottom() - 1);
+    assert_eq!(h.app.panes[1].offset, max_offset(&h));
+    h.click(track.x, track.y);
+    assert_eq!(h.app.panes[1].offset, 0);
+    // Not a click on an entry or on the border: the cursor, the marks and the focus stay.
+    assert_eq!((h.app.active, h.app.panes[1].cursor), (0, 0));
+    assert!(h.app.panes[1].marks.is_empty() && h.app.dialog.is_none());
+}
+
+#[test]
+fn a_click_on_the_track_goes_on_as_a_drag() {
+    let mut h = long_right();
+    let track = h.app.hitmap.panes[1].scrollbar.track;
+    let y = track.y + track.height / 2;
+    mouse(&mut h, MouseEventKind::Down(MouseButton::Left), (track.x, y));
+    let jumped = h.app.panes[1].offset;
+    assert!(jumped > 0);
+    mouse(&mut h, MouseEventKind::Drag(MouseButton::Left), (track.x + 5, y + 2));
+    assert!(h.app.panes[1].offset > jumped);
+    mouse(&mut h, MouseEventKind::Up(MouseButton::Left), (track.x, y + 2));
+    assert_eq!(h.app.drag, Drag::Idle);
+}
+
+#[test]
+fn pressing_the_scrollbar_does_not_start_a_file_drag() {
+    let mut h = long_right();
+    let (marked, cursor) = mark_in_right(&mut h);
+    let (track, thumb) =
+        (h.app.hitmap.panes[1].scrollbar.track, h.app.hitmap.panes[1].scrollbar.thumb);
+    mouse(&mut h, MouseEventKind::Down(MouseButton::Left), (track.x, thumb.y));
+    // Over the other pane, where a file drag would offer a drop.
+    mouse(&mut h, MouseEventKind::Drag(MouseButton::Left), (5, 8));
+    assert!(matches!(h.app.drag, Drag::Scrollbar { pane: 1, .. }), "{:?}", h.app.drag);
+    h.render();
+    assert!(h.app.panes[1].offset > 0);
+    assert_eq!(h.app.panes[0].offset, 0, "only the pane whose scrollbar it is scrolls");
+    mouse(&mut h, MouseEventKind::Up(MouseButton::Left), (5, 8));
+    h.settle();
+    assert_eq!(h.app.dialog, None, "no drop menu");
+    assert!(h.calls("rse/copy").is_empty() && h.app.queue.jobs.is_empty());
+    assert_eq!(h.app.panes[1].marks, marked, "the marks stay");
+    assert_eq!((h.app.active, h.app.panes[1].cursor), (0, cursor));
+}
+
+#[test]
+fn a_click_on_the_scrollbar_keeps_the_marks_and_the_cursor() {
+    let mut h = long_right();
+    let (marked, cursor) = mark_in_right(&mut h);
+    let track = h.app.hitmap.panes[1].scrollbar.track;
+    h.click(track.x, track.y + 3);
+    assert_eq!(h.app.panes[1].marks, marked);
+    assert_eq!((h.app.active, h.app.panes[1].cursor), (0, cursor));
+}
+
+#[test]
+fn the_arrows_scroll_a_row_like_the_wheel() {
+    let mut h = long_right();
+    let bar = h.app.hitmap.panes[1].scrollbar.bar;
+    let (up, down) = (bar.y, bar.bottom() - 1);
+    let (marked, cursor) = mark_in_right(&mut h);
+    h.click(bar.x, down);
+    assert_eq!(h.app.panes[1].offset, 1);
+    h.click(bar.x, down);
+    h.click(bar.x, down);
+    assert_eq!(h.app.panes[1].offset, 3);
+    h.click(bar.x, up);
+    assert_eq!(h.app.panes[1].offset, 2);
+    // The view moves: the cursor, the marks and the focus stay.
+    assert!(h.app.panes[1].detached);
+    assert_eq!(h.app.panes[1].marks, marked);
+    assert_eq!((h.app.active, h.app.panes[1].cursor), (0, cursor));
+    assert_eq!(h.app.dialog, None);
+    // At the start the up arrow does nothing more, nor does the down arrow at the end.
+    h.click(bar.x, up);
+    h.click(bar.x, up);
+    h.click(bar.x, up);
+    assert_eq!(h.app.panes[1].offset, 0);
+    for _ in 0..60 {
+        mouse(&mut h, MouseEventKind::ScrollDown, (60, 5));
+    }
+    h.settle();
+    h.click(bar.x, down);
+    assert_eq!(h.app.panes[1].offset, max_offset(&h));
+}
+
+#[test]
+fn pressing_an_arrow_starts_no_drag() {
+    let mut h = long_right();
+    let bar = h.app.hitmap.panes[1].scrollbar.bar;
+    let down = (bar.x, bar.bottom() - 1);
+    mouse(&mut h, MouseEventKind::Down(MouseButton::Left), down);
+    assert_eq!(h.app.drag, Drag::Idle);
+    // Neither a file drag nor a scrollbar one follows the pointer away.
+    mouse(&mut h, MouseEventKind::Drag(MouseButton::Left), (5, 8));
+    mouse(&mut h, MouseEventKind::Drag(MouseButton::Left), (bar.x, bar.y + 4));
+    mouse(&mut h, MouseEventKind::Up(MouseButton::Left), (bar.x, bar.y + 4));
+    h.settle();
+    assert_eq!(h.app.panes[1].offset, 1);
+    assert_eq!(h.app.dialog, None);
+    assert_eq!(h.app.queue.jobs.len(), 0);
+}
+
+#[test]
+fn the_arrows_are_not_the_track() {
+    let mut h = long_right();
+    let ScrollbarArea { bar, track, .. } = h.app.hitmap.panes[1].scrollbar.clone();
+    // The first and last track cells jump to the ends; the arrows beside them go a row.
+    h.click(track.x, track.top());
+    assert_eq!(h.app.panes[1].offset, 0);
+    h.click(track.x, track.bottom() - 1);
+    assert_eq!(h.app.panes[1].offset, max_offset(&h));
+    h.click(bar.x, bar.y);
+    assert_eq!(h.app.panes[1].offset, max_offset(&h) - 1);
+    h.click(bar.x, bar.bottom() - 1);
+    assert_eq!(h.app.panes[1].offset, max_offset(&h));
+}
+
+#[test]
+fn the_right_border_is_just_a_border() {
+    let mut h = long_right();
+    let (_, cursor) = mark_in_right(&mut h);
+    let bar = h.app.hitmap.panes[1].scrollbar.bar;
+    h.click(bar.x + 1, bar.y + 4);
+    assert_eq!(h.app.panes[1].offset, 0, "nothing scrolls");
+    // As anywhere on the pane that is not an entry: the focus comes, the marks go.
+    assert!(h.app.panes[1].marks.is_empty());
+    assert_eq!((h.app.active, h.app.panes[1].cursor), (1, cursor));
+}
+
+#[test]
+fn esc_ends_a_scrollbar_drag() {
+    let mut h = long_right();
+    let (track, thumb) =
+        (h.app.hitmap.panes[1].scrollbar.track, h.app.hitmap.panes[1].scrollbar.thumb);
+    mouse(&mut h, MouseEventKind::Down(MouseButton::Left), (track.x, thumb.y));
+    h.press(KeyCode::Esc);
+    assert_eq!(h.app.drag, Drag::Idle);
+    mouse(&mut h, MouseEventKind::Drag(MouseButton::Left), (track.x, track.bottom() - 1));
+    assert_eq!(h.app.panes[1].offset, 0);
+}
+
+#[test]
+fn a_file_dropped_on_the_scrollbar_goes_to_that_pane() {
+    let mut h = long_right();
+    let from = h.find(" x ");
+    let track = h.app.hitmap.panes[1].scrollbar.track;
+    drag(&mut h, from, (track.x, track.y + 2));
+    assert!(matches!(&h.app.dialog, Some(Dialog::Drop { plan, .. })
+        if plan.dst_dir == Some(nas())));
+}
+
+#[test]
+fn the_wheel_over_the_scrollbar_scrolls_like_anywhere_in_the_pane() {
+    let mut h = long_right();
+    let track = h.app.hitmap.panes[1].scrollbar.track;
+    mouse(&mut h, MouseEventKind::ScrollDown, (track.x, track.y + 1));
+    assert_eq!(h.app.panes[1].offset, 3);
+}
+
+#[test]
+fn nothing_to_scroll_means_a_click_on_the_border_is_an_ordinary_one() {
+    let mut h = standard();
+    h.press(KeyCode::Down);
+    h.press(KeyCode::Char(' '));
+    assert_eq!(h.app.panes[0].marks.len(), 1);
+    let frame = h.app.hitmap.panes[0].frame;
+    h.click(frame.x + frame.width - 1, frame.y + 4);
+    assert!(h.app.panes[0].marks.is_empty(), "a blank click clears the marks");
+}
+
 #[test]
 fn clicking_a_column_header_sorts_by_it_and_again_the_other_way() {
     let mut h = standard();

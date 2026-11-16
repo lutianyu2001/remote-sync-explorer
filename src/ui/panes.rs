@@ -5,6 +5,8 @@ use std::fmt::Write as _;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
+use ratatui::symbols::{line, scrollbar};
+use ratatui::widgets::{Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget as _};
 
 use lazyui_ratatui::{Field, Window};
 use unicode_segmentation::UnicodeSegmentation as _;
@@ -14,7 +16,7 @@ use super::text::{
 };
 use crate::app::{App, Dialog, Drag, Focus, InputPurpose, Pane, PaneStatus, Refresh, Row, SortKey};
 use crate::event::PaneId;
-use crate::hitmap::PaneArea;
+use crate::hitmap::{PaneArea, ScrollbarArea};
 use crate::keymap::Action;
 use crate::location::Location;
 
@@ -33,6 +35,17 @@ const BAR_MIN: u16 = 20;
 /// The arrow after the header of the column the pane is sorted by.
 const ASCENDING: &str = "▲";
 const DESCENDING: &str = "▼";
+
+/// The scrollbar's symbols: arrows at the ends of a track of thin lines, a block for the
+/// thumb. The arrows are the small triangles, of narrow width: the big ones are of
+/// ambiguous width, and fonts often draw them wider than the cell.
+const SCROLLBAR: scrollbar::Set<'static> =
+    scrollbar::Set {
+        track: line::VERTICAL, begin: "▴", end: "▾", ..scrollbar::DOUBLE_VERTICAL
+    };
+/// The fewest rows of entries that have a scrollbar: an arrow at each end, and a cell of
+/// track between them.
+const SCROLLBAR_MIN: usize = 3;
 
 /// The protocol box's text.
 const TAG: Style = Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD);
@@ -116,20 +129,25 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) -> PaneArea {
     };
     let marked =
         if pane.marks.is_empty() { String::new() } else { tr!("marked", count = pane.marks.len()) };
-    let list = super::window(
+    let inner = super::window(
         buf,
         frame,
         super::named(app, action, &name).note(&marked).border_style(border),
     );
+    PaneArea { frame, bar, title, button, edit, ..draw_entries(buf, inner, app, id) }
+}
 
-    let columns = Columns::new(list.width);
+/// What the pane's window `inner` holds: the column headers, the entries under them, the
+/// pane's own line under those, and when the entries do not all fit, the scrollbar in the
+/// last column beside the headers and the entries. Returns the parts of the pane's area
+/// made here.
+fn draw_entries(buf: &mut Buffer, inner: Rect, app: &App, id: PaneId) -> PaneArea {
+    let pane = &app.panes[id];
     // The headers take the first row when one is left for the entries.
-    let (columns_at, list) = if list.height >= 2 {
-        let header = Rect { height: 1, ..list };
-        let rects = draw_header(buf, header, pane, columns);
-        (rects, Rect { y: list.y + 1, height: list.height - 1, ..list })
+    let (header, list) = if inner.height >= 2 {
+        (Rect { height: 1, ..inner }, Rect { y: inner.y + 1, height: inner.height - 1, ..inner })
     } else {
-        (<[Rect; 3]>::default(), list)
+        (Rect::default(), inner)
     };
     // The last row is the pane's own line, when one is left for the entries: the filter,
     // or the whole name of the entry under the cursor. Nothing covers an entry.
@@ -139,26 +157,40 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) -> PaneArea {
     } else {
         (list, Rect::default())
     };
+    let rows = pane.view.len();
+    let bar_w =
+        u16::from(usize::from(list.height) >= SCROLLBAR_MIN && rows > usize::from(list.height));
+    // The scrollbar takes its column and a blank one before it, so the entries do not run
+    // into it. Which columns there are does not depend on the scrollbar, so none comes or
+    // goes with it: only the name gives up the cells.
+    let taken = 2 * bar_w;
+    let columns = Columns::new(list.width, taken);
+    let narrow = |r: Rect| Rect { width: r.width.saturating_sub(taken), ..r };
+    let (header, list) = (narrow(header), narrow(list));
+    let bar = Rect { x: list.right() + bar_w, width: bar_w, ..list };
     let offset = pane.first_shown(usize::from(list.height));
+    let columns_at = if header.is_empty() {
+        <[Rect; 3]>::default()
+    } else {
+        draw_header(buf, header, pane, columns)
+    };
     draw_list(buf, list, app, id, offset, columns);
     draw_footer(buf, footer, app, id);
 
     PaneArea {
-        frame,
-        bar,
-        title,
-        button,
-        edit,
         list,
         footer,
         columns: columns_at,
+        scrollbar: draw_scrollbar(buf, bar, (offset, rows)),
         offset,
-        rows: pane.view.len(),
+        rows,
+        ..PaneArea::default()
     }
 }
 
 /// The widths of the list's columns: a mark, the name, and the size and time when the
-/// pane is wide enough for them.
+/// pane is wide enough for them. The scrollbar takes `scrollbar` cells of the width, from
+/// the name's: its column and the blank one before it.
 #[derive(Clone, Copy)]
 struct Columns {
     name: usize,
@@ -167,12 +199,12 @@ struct Columns {
 }
 
 impl Columns {
-    fn new(width: u16) -> Self {
+    fn new(width: u16, scrollbar: u16) -> Self {
         let w = usize::from(width);
         let time = width >= TIME_MIN_PANE;
         let size = w >= 1 + NAME_MIN + 1 + SIZE_W;
         let fixed = 1 + if size { 1 + SIZE_W } else { 0 } + if time { 1 + TIME_W } else { 0 };
-        Self { name: w.saturating_sub(fixed).max(1), size, time }
+        Self { name: w.saturating_sub(fixed + usize::from(scrollbar)).max(1), size, time }
     }
 }
 
@@ -432,6 +464,36 @@ fn draw_list(buf: &mut Buffer, area: Rect, app: &App, id: PaneId, offset: usize,
             buf.set_stringn(area.x + 1, y, msg, w - 1, dim);
         }
     }
+}
+
+/// The scrollbar in the column `bar`, as high as the entries: an arrow at each end, and
+/// between them a track with a thumb that marks the visible rows, `(first, count)` of the
+/// `count` rows. Nothing is drawn in an empty `bar`, when the entries all fit. Returns
+/// where the column, the track and the thumb are for the mouse; the thumb is read back
+/// from what the widget drew, so a click lands on what is shown. All of it is dim, so it
+/// stays quiet.
+fn draw_scrollbar(buf: &mut Buffer, bar: Rect, (first, count): (usize, usize)) -> ScrollbarArea {
+    if bar.is_empty() {
+        return ScrollbarArea::default();
+    }
+    let height = usize::from(bar.height);
+    let track = Rect { y: bar.y + 1, height: bar.height.saturating_sub(2), ..bar };
+    // One position for each way to scroll, so the thumb is at the end when the view is.
+    let mut state = ScrollbarState::new(count.saturating_sub(height) + 1)
+        .position(first)
+        .viewport_content_length(height);
+    Scrollbar::new(ScrollbarOrientation::VerticalRight)
+        .symbols(SCROLLBAR)
+        .style(Style::new().add_modifier(Modifier::DIM))
+        .render(bar, buf, &mut state);
+    let mut rows =
+        (track.top()..track.bottom()).filter(|&y| buf[(track.x, y)].symbol() == SCROLLBAR.thumb);
+    let thumb = rows.next().map_or_else(Rect::default, |top| Rect {
+        y: top,
+        height: 1 + u16::try_from(rows.count()).unwrap_or(0),
+        ..track
+    });
+    ScrollbarArea { bar, track, thumb }
 }
 
 /// The pane's last row. While the filter is typed it is drawn over this, by `ui::draw`;

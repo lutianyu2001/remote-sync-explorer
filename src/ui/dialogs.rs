@@ -282,6 +282,8 @@ fn help_text(app: &App) -> Vec<(String, Style)> {
         (tr!("mouse-mark", modifier = modifier), tr!("mouse-mark-does")),
         (tr!("mouse-double"), tr!("mouse-double-does")),
         (tr!("mouse-wheel"), tr!("mouse-wheel-does")),
+        (tr!("mouse-scrollbar"), tr!("mouse-scrollbar-does")),
+        (tr!("mouse-arrows"), tr!("mouse-arrows-does")),
         (tr!("mouse-address"), tr!("mouse-address-does")),
         (tr!("mouse-button"), tr!("mouse-button-does")),
         (tr!("mouse-drag"), tr!("mouse-drag-does")),
