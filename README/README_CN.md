@@ -403,8 +403,6 @@ move = ["F6", "m"]
 
 界面打开期间，rclone 自己的日志写入 `~/.cache/rse/rclone.log`（macOS 上是 `~/Library/Caches/rse/`）。没完成的任务保存在 `~/.local/state/rse/queue.json`（或 `$XDG_STATE_HOME/rse/queue.json`），只有你自己能读；按地址打开的服务器保存时不带密码，重新打开这台服务器时任务会拿回密码。
 
-rse 以前叫 rclone-explorer-tui（命令为 `rext`）。第一次启动时，如果新名字下还没有东西，它会把 `~/.config/rext/`、`~/.cache/rext/` 和 `~/.ssh/rext-passwords` 挪到新名字下。
-
 ## 语言
 
 rse 支持英文和简体中文：`[ui]` 里的 `language` 选择其一，`auto`（默认）像 gettext 一样跟随系统语言（`LANGUAGE`、`LC_ALL`、`LC_MESSAGES`、`LANG`），macOS 上也一样；这几个变量都没有设置时，使用系统的语言（macOS 上是系统设置里的语言）。范围包括界面、`rse --help` 及其报错，以及启动时的报错和提示；配置里的设置对 `--help` 同样生效。glibc 有对应翻译时（Linux），"No such file or directory" 这类系统错误也会跟随。rclone、ssh 和读取配置的部分输出的内容保持英文，日志文件也是。

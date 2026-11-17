@@ -331,7 +331,6 @@ fn make_backend(cli: &Cli) -> Result<Arc<dyn Backend>> {
 }
 
 fn run(cli: &Cli) -> Result<()> {
-    let migrated = rse::config::migrate_from_rext();
     let config_path = cli.config.clone().or_else(Config::default_path);
     let config = Config::load(config_path.as_deref(), &cli.set)?;
     set_language(config.ui.language);
@@ -418,9 +417,6 @@ fn run(cli: &Cli) -> Result<()> {
 
     // rclone logs to stderr, which would draw over the screen: send it to a file.
     redirect_stderr(log_path().as_deref());
-    for (from, to) in &migrated {
-        eprintln!("rse: moved {} to {}", from.display(), to.display());
-    }
     let result = run_tui(&mut app, &rx, &tx, config.ui.mouse);
 
     let workers_done = app.into_exec().shutdown_timeout(Duration::from_secs(2));

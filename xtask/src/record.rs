@@ -233,8 +233,8 @@ fn scrub(dir: &Path, root: &Path) -> Result<(), String> {
 }
 
 /// `text` with `from` replaced by `to` where it is a whole path or begins one: not where
-/// it begins a longer name, as `/home/me/rext` begins `/home/me/rext-old` and `.old` makes
-/// `/home/me/rext.old`, nor where it is the end of one, as in `/mnt/home/me/rext`. A `.` with
+/// it begins a longer name, as `/home/me/proj` begins `/home/me/proj-old` and `.old` makes
+/// `/home/me/proj.old`, nor where it is the end of one, as in `/mnt/home/me/proj`. A `.` with
 /// no more of a name after it ends a sentence, not the name.
 fn replace_path(text: &[u8], from: &[u8], to: &[u8]) -> Vec<u8> {
     if from.len() < 2 {
@@ -547,19 +547,19 @@ mod tests {
 
     #[test]
     fn paths_are_replaced_only_where_whole() {
-        let text = b"/home/me/rext/src/a.rs /home/me/rext-old /home/me/rext: /home/me/rext";
+        let text = b"/home/me/proj/src/a.rs /home/me/proj-old /home/me/proj: /home/me/proj";
         assert_eq!(
-            replace_path(text, b"/home/me/rext", b"."),
-            b"./src/a.rs /home/me/rext-old .: .".to_vec()
+            replace_path(text, b"/home/me/proj", b"."),
+            b"./src/a.rs /home/me/proj-old .: .".to_vec()
         );
     }
 
     #[test]
     fn a_full_stop_ends_a_path_and_a_longer_path_is_left_alone() {
-        let text = b"see /home/me/rext. /home/me/rext.old /mnt/home/me/rext x=/home/me/rext";
+        let text = b"see /home/me/proj. /home/me/proj.old /mnt/home/me/proj x=/home/me/proj";
         assert_eq!(
-            replace_path(text, b"/home/me/rext", b"."),
-            b"see .. /home/me/rext.old /mnt/home/me/rext x=.".to_vec()
+            replace_path(text, b"/home/me/proj", b"."),
+            b"see .. /home/me/proj.old /mnt/home/me/proj x=.".to_vec()
         );
     }
 

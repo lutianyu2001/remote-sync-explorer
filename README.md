@@ -599,10 +599,6 @@ macOS) while the interface is open. Unfinished jobs are saved in
 alone; a server opened by address is saved without its password, which it gets back
 when you open the server again.
 
-rse was called rclone-explorer-tui (`rext`) before. At its first start it moves
-`~/.config/rext/`, `~/.cache/rext/` and `~/.ssh/rext-passwords` to the new names, where
-nothing of the new name is there yet.
-
 ## Languages
 
 rse speaks English or Simplified Chinese: `language` in `[ui]` picks one, and `auto`
