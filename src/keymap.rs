@@ -104,7 +104,7 @@ const BINDINGS: &[Binding] = &[
         scope: Scope::Panes,
     },
     Binding { action: Action::Goto, name: "goto", keys: &[":"], scope: Scope::Panes },
-    Binding { action: Action::Remote, name: "remote", keys: &["F10", "g"], scope: Scope::Panes },
+    Binding { action: Action::Remote, name: "remote", keys: &["F9", "g"], scope: Scope::Panes },
     Binding { action: Action::Swap, name: "swap", keys: &["Ctrl+U"], scope: Scope::Panes },
     Binding { action: Action::Refresh, name: "refresh", keys: &["Ctrl+R"], scope: Scope::Panes },
     Binding { action: Action::Copy, name: "copy", keys: &["F5", "c"], scope: Scope::Panes },
@@ -142,7 +142,7 @@ const BINDINGS: &[Binding] = &[
     Binding { action: Action::FocusQueue, name: "focus_queue", keys: &["5"], scope: Scope::Both },
     Binding { action: Action::ErrorLog, name: "error_log", keys: &["E"], scope: Scope::Both },
     Binding { action: Action::Help, name: "help", keys: &["?"], scope: Scope::Both },
-    Binding { action: Action::Quit, name: "quit", keys: &["q"], scope: Scope::Both },
+    Binding { action: Action::Quit, name: "quit", keys: &["F10", "q"], scope: Scope::Both },
     Binding {
         action: Action::QueueCancel,
         name: "queue_cancel",
@@ -474,17 +474,21 @@ mod tests {
         );
         assert_eq!(k.pane_action(&ev(KeyCode::Char('o'), KeyModifiers::NONE)), None);
         assert_eq!(k.label(Action::Copy), "F5");
+        // F10 quits and F9 chooses a remote, as F10 quits and F9 opens the menu in mc.
+        assert_eq!(k.pane_action(&ev(KeyCode::F(10), KeyModifiers::NONE)), Some(Action::Quit));
+        assert_eq!(k.queue_action(&ev(KeyCode::F(10), KeyModifiers::NONE)), Some(Action::Quit));
+        assert_eq!(k.pane_action(&ev(KeyCode::F(9), KeyModifiers::NONE)), Some(Action::Remote));
     }
 
     #[test]
     fn overrides_replace_defaults() {
         let mut o = BTreeMap::new();
-        o.insert("copy".to_owned(), vec!["F9".to_owned(), "Alt+c".to_owned()]);
+        o.insert("copy".to_owned(), vec!["F12".to_owned(), "Alt+c".to_owned()]);
         let k = Keymap::new(&o).unwrap();
-        assert_eq!(k.pane_action(&ev(KeyCode::F(9), KeyModifiers::NONE)), Some(Action::Copy));
+        assert_eq!(k.pane_action(&ev(KeyCode::F(12), KeyModifiers::NONE)), Some(Action::Copy));
         assert_eq!(k.pane_action(&ev(KeyCode::Char('c'), KeyModifiers::ALT)), Some(Action::Copy));
         assert_eq!(k.pane_action(&ev(KeyCode::F(5), KeyModifiers::NONE)), None);
-        assert_eq!(k.label(Action::Copy), "F9");
+        assert_eq!(k.label(Action::Copy), "F12");
     }
 
     #[test]

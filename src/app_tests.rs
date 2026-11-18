@@ -693,7 +693,7 @@ fn remote_picker_filters_and_switches() {
     h.type_text("s3");
     h.press(KeyCode::Enter);
     assert_eq!(h.app.panes[0].loc, Location::new("s3:", ""));
-    h.press(KeyCode::F(10));
+    h.press(KeyCode::F(9));
     h.press(KeyCode::Enter);
     assert_eq!(h.app.panes[0].loc, home());
 }
@@ -1013,7 +1013,7 @@ fn quit_with_a_job_that_cannot_resume_asks_and_q_again_pauses_it() {
     h.press(KeyCode::Enter); // "Back" is the default
     assert_eq!(h.app.quit, QuitState::Running);
 
-    h.press(KeyCode::Char('q'));
+    h.press(KeyCode::F(10));
     h.press(KeyCode::Char('q'));
     h.wait_until(|a| a.quit == QuitState::Done);
     assert!(stopped.load(Ordering::SeqCst));

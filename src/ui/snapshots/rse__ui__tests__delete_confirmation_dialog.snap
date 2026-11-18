@@ -24,4 +24,4 @@ expression: h.render()
 ╭────────────────────────────────────────────────────────────────[5] Transfers─╮
 │ idle                                                                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
- F2 Rename  F5 Copy  F6 Move  F8 Delete  F10 Remote  / Filter  ? Help    rclone
+ F2 Rename  F5 Copy  F6 Move  F8 Delete  F9 Remote  / Filter  ? Help     rclone

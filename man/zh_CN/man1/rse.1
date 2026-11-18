@@ -1,7 +1,10 @@
-.\" -*- coding: UTF-8 -*-
+'\" t -*- coding: UTF-8 -*-
 .\" remote-sync-explorer 的中文手册，译自 man/man1/rse.1，两份一起改。
 .\" `rse --man` 按界面语言输出其中一份。
 .\" 中文不两端对齐（groff 的 man 宏在每节开头按 AD 重设对齐），也不断字。
+.\" 汉字之间能换行靠 groff 的中文规则 zh.tmac：man 只在页面装在 zh_CN 目录下时才加载它，
+.\" 从管道读（rse --man | man -l -）时不加载，所以这里自己加载。别的 man 实现不认识 .do，会跳过。
+.do mso zh.tmac
 .ds AD l
 .TH RSE 1 "2026 年 11 月" "rse 0.1.2" "用户命令"
 .nh
@@ -17,17 +20,19 @@ rse \- remote-sync-explorer，本地磁盘、服务器与 rclone 远程的双栏
 \fBrse\fR 并排显示两个目录，各自可以在本地磁盘、服务器或任意 \fBrclone\fR(1) 远程上，并在两者之间复制、移动、删除和重命名。复制和移动进入传输队列，队列显示它们的进度。在本地磁盘和装有 \fBrsync\fR(1) 的 sftp 服务器之间，rse 用 rsync 传输，改过的文件只传改动的部分；其余都经由 rse 内置的 rclone。停下的传输在目标允许时从停下的地方接着传。
 .PP
 远程就是你的 \fIrclone.conf\fR 里的远程，照常用 \fBrclone config\fR 管理；服务器也可以不加远程、直接按地址打开。
+.PP
+两个窗格、底部一排 F 键，以及不少按键本身（Tab、F5 到 F8、Ctrl+U、Ctrl+O、F10），用过 \fBmc\fR(1)，即 Midnight Commander 的人都会觉得眼熟。但 rse 并不是照着它做的：最开始设计 rse 的时候，我们压根不知道还有 mc 的存在，后来才偶然得知，果然好的设计心有灵犀。不过按键并不全都一样，“按键”一节列出了 rse 的按键，并把 mc 的放在旁边。
 .SH 入门
 .IP 1. 4
 运行 \fBrse\fR。左侧窗格显示你的主目录；给出一两个位置就从别处开始：\fBrse \(ti/work sftp://me@box/srv\fR 同时打开这两处。
 .IP 2. 4
 用方向键（或 \fBj\fR 和 \fBk\fR）移动，Enter 打开目录，Backspace 回到上级目录。Tab 在两个窗格之间切换。
 .IP 3. 4
-要在窗格里打开服务器，按 \fB:\fR 输入它的地址，例如 \fBsftp://me@box/srv\fR；要打开 rclone 里的远程，按 \fBF10\fR（或 \fBg\fR），从列表里选，列表里也有本地磁盘。
+要在窗格里打开服务器，按 \fB:\fR 输入它的地址，例如 \fBsftp://me@box/srv\fR；要打开 rclone 里的远程，按 \fBF9\fR（或 \fBg\fR），从列表里选，列表里也有本地磁盘。
 .IP 4. 4
 用 Space 选中条目（或按住 Ctrl 点击），按 \fBF5\fR 把它们复制到另一个窗格显示的目录，按 \fBF6\fR 移动过去。没有选中任何条目时，复制的是光标所在的条目。“传输”窗口显示每个任务；按 Ctrl+T 进入，可以取消或重试任务。
 .IP 5. 4
-\fB?\fR 在屏幕上列出所有按键；\fBq\fR 退出。
+\fB?\fR 在屏幕上列出所有按键；\fBF10\fR（或 \fBq\fR）退出。
 .PP
 开着中文或日文输入法时，标点键照样可用：\fB？\fR、\fB：\fR、\fB／\fR（或\fB、\fR）和\fB。\fR分别当作 \fB?\fR、\fB:\fR、\fB/\fR 和 \fB.\fR 使用。
 .SH 界面
@@ -114,86 +119,204 @@ SMB；第一级名称是共享名。
 .PP
 显示不出来的名称（例如含控制字符的）里，该字符显示为 \fB�\fR。服务器列出的名称如果可能跳出当前目录（\fB..\fR 或含 \fB/\fR 的名称），这样的条目不显示，消息行会说明有几个。
 .SH 按键
-所有按键都可以在配置文件里修改（\fB[keys]\fR）。F 键都有字母键的替代，供没有 F 键的键盘使用。
+所有按键都可以在配置文件里修改（\fB[keys]\fR）。F 键都有字母键的替代，供没有 F 键的键盘使用。mc 一列是 Midnight Commander 里做同一件事的按键，供熟悉它的人参考；两者相同的按键横跨两列。
 .SS 窗格
-.TP
-\fBTab\fR
+.ad l
+.TS
+allbox tab(	);
+lb lbw(16n) lbw(14n)
+lx lw(16n) s
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) s
+lx lw(16n) s
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) s
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n).
+用途	rse	mc
+T{
 在两个窗格之间切换。
-.TP
-\fB1\fR、\fB2\fR、\fB3\fR、\fB4\fR、\fB5\fR
+T}	T{
+\fBTab\fR
+T}
+T{
 切换焦点：左侧地址栏、左侧窗格、右侧地址栏、右侧窗格、传输。每个窗口的右上角显示它的按键。
-.TP
-\fBUp\fR、\fBDown\fR、\fBk\fR、\fBj\fR、\fBPgUp\fR、\fBPgDn\fR、\fBHome\fR、\fBEnd\fR
+T}	T{
+\fB1\fR、\:\fB2\fR、\:\fB3\fR、\:\fB4\fR、\:\fB5\fR
+T}	\(em
+T{
 移动光标。
-.TP
-\fBEnter\fR、\fBl\fR
+T}	T{
+\fBUp\ Down\fR、\:\fBj\ k\fR、\:\fBPgUp\ PgDn\fR、\:\fBHome\ End\fR
+T}	T{
+\fBUp\ Down\fR、\:\fBPgUp\ PgDn\fR、\:\fBHome\ End\fR
+T}
+T{
 打开目录。
-.TP
-\fBBackspace\fR、\fBh\fR
+T}	T{
+\fBEnter\fR、\:\fBl\fR
+T}	T{
+\fBEnter\fR
+T}
+T{
 上级目录；光标落在刚离开的目录上。
-.TP
-\fBSpace\fR、\fBInsert\fR
+T}	T{
+\fBBackspace\fR、\:\fBh\fR
+T}	T{
+\fBCtrl+PgUp\fR
+T}
+T{
 选中或取消选中条目，并下移。
-.TP
-\fBa\fR
-全选或全不选。
-.TP
-\fBEsc\fR
+T}	T{
+\fBSpace\fR、\:\fBInsert\fR
+T}	T{
+\fBInsert\fR、\:\fBCtrl+T\fR
+T}
+T{
 清除选中；在地址栏里则回到条目。
-.TP
-\fB/\fR
+T}	T{
+\fBEsc\fR
+T}	\(em
+T{
+全选或全不选。
+T}	T{
+\fBa\fR
+T}	\(em
+T{
 按名称过滤，在窗格自己的那一行里：输入以缩小范围，Enter 保留过滤，Esc 清除过滤。方向键、PgUp、PgDn、Home、End 和滚轮仍然可以浏览条目。
-.TP
-\fBs\fR、\fBS\fR
-依次按名称、大小、时间排序；反转排序顺序。
-.TP
-\fB.\fR
+T}	T{
+\fB/\fR
+T}	\(em
+T{
+依次按名称、大小、时间排序。
+T}	T{
+\fBs\fR
+T}	\(em
+T{
+反转排序顺序。
+T}	T{
+\fBS\fR
+T}	\(em
+T{
 显示或隐藏点文件。
-.TP
-\fB:\fR
+T}	T{
+\fB\&.\fR
+T}	T{
+\fBAlt+.\fR
+T}
+T{
 前往路径、远程或地址，例如 \fBnas:backup\fR 或 \fBftp://me@box/pub\fR。
-.TP
-\fBF10\fR、\fBg\fR
+T}	T{
+\fB:\fR
+T}	T{
+\fBAlt+C\fR
+T}
+T{
 从本地磁盘和 \fIrclone.conf\fR 里的远程组成的列表中，选择窗格要显示的内容：输入以缩小列表，Enter 在所选项的顶层打开。没有远程时，列表会说明怎样添加。
-.TP
-\fBCtrl+U\fR
+T}	T{
+\fBF9\fR、\:\fBg\fR
+T}	\(em
+T{
 交换两个窗格。
-.TP
-\fBCtrl+R\fR
+T}	T{
+\fBCtrl+U\fR
+T}
+T{
 刷新窗格。
-.TP
-\fBF5\fR、\fBc\fR
+T}	T{
+\fBCtrl+R\fR
+T}
+T{
 把选中的条目（没有选中时为光标所在的条目）复制到另一个窗格的目录。
-.TP
-\fBF6\fR、\fBm\fR
+T}	T{
+\fBF5\fR、\:\fBc\fR
+T}	T{
+\fBF5\fR
+T}
+T{
 把它们移动过去。
-.TP
-\fBF2\fR、\fBr\fR
+T}	T{
+\fBF6\fR、\:\fBm\fR
+T}	T{
+\fBF6\fR
+T}
+T{
 重命名光标所在的条目。
-.TP
-\fBF7\fR、\fBn\fR
+T}	T{
+\fBF2\fR、\:\fBr\fR
+T}	T{
+\fBShift+F6\fR
+T}
+T{
 新建目录。
-.TP
-\fBF8\fR、\fBDelete\fR
+T}	T{
+\fBF7\fR、\:\fBn\fR
+T}	T{
+\fBF7\fR
+T}
+T{
 删除。
-.TP
-\fBO\fR
+T}	T{
+\fBF8\fR、\:\fBDelete\fR
+T}	T{
+\fBF8\fR
+T}
+T{
 开关覆写模式：复制、移动和重命名不经询问直接替换已有文件。每次启动时都是关闭的。
-.TP
-\fBCtrl+T\fR
+T}	T{
+\fBO\fR
+T}	\(em
+T{
 进入或离开“传输”。
-.TP
-\fBCtrl+O\fR
+T}	T{
+\fBCtrl+T\fR
+T}	T{
+\fBCtrl+X\ J\fR
+T}
+T{
 打开终端，或把按键交给终端；在终端里则回到窗格。
-.TP
-\fBE\fR
+T}	T{
+\fBCtrl+O\fR
+T}
+T{
 错误日志（最近 100 条）。
-.TP
-\fB?\fR
+T}	T{
+\fBE\fR
+T}	\(em
+T{
 帮助：按当前配置列出所有按键。
-.TP
-\fBq\fR
+T}	T{
+\fB?\fR
+T}	T{
+\fBF1\fR
+T}
+T{
 退出；会中断传输时先询问。
+T}	T{
+\fBF10\fR、\:\fBq\fR
+T}	T{
+\fBF10\fR
+T}
+.TE
 .SS 传输
 .TP
 \fBUp\fR、\fBDown\fR、\fBk\fR、\fBj\fR

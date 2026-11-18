@@ -1,4 +1,4 @@
-.\" -*- coding: UTF-8 -*-
+'\" t -*- coding: UTF-8 -*-
 .\" The manual of remote-sync-explorer. Its Chinese translation is man/zh_CN/man1/rse.1;
 .\" change both together. `rse --man` prints the one in the interface language.
 .TH RSE 1 "November 2026" "rse 0.1.2" "User Commands"
@@ -40,6 +40,15 @@ Remotes are those of your
 managed with
 .B rclone config
 as usual; a server can also be opened by its address, without a remote.
+.PP
+The two panes, the F keys along the bottom and many of the keys themselves (Tab, F5 to
+F8, Ctrl+U, Ctrl+O, F10) will look familiar to users of
+.BR mc (1),
+Midnight Commander.
+rse was not modelled on it: when we first designed rse we did not know mc existed, and
+came across it only later, by chance.
+Good designs, it seems, think alike.
+Not every key is the same, though: KEYS lists rse's keys with mc's beside them.
 .SH GETTING STARTED
 .IP 1. 4
 Start
@@ -61,7 +70,7 @@ To open a server in a pane, press
 and type its address, such as
 .BR sftp://me@box/srv ;
 to open one of your rclone remotes, press
-.B F10
+.B F9
 (or
 .BR g )
 and pick it from the list, which also has the local disk.
@@ -76,7 +85,9 @@ The Transfers window shows each job; Ctrl+T enters it, to cancel or retry one.
 .IP 5. 4
 .B ?
 shows every key on the screen;
-.B q
+.B F10
+(or
+.BR q )
 quits.
 .PP
 With a Chinese or Japanese input method on, the punctuation keys still work:
@@ -275,102 +286,205 @@ in it) is left out, and the message line says how many were.
 All keys can be changed in the config file
 .RB ( [keys] ).
 The F keys have letter aliases for keyboards without them.
+The mc column gives the key Midnight Commander uses for the same action, for those who
+know it; a key the two share spans both columns.
 .SS The panes
-.TP
-.B Tab
+.ad l
+.TS
+allbox tab(	);
+lb lbw(16n) lbw(14n)
+lx lw(16n) s
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) s
+lx lw(16n) s
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) s
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n)
+lx lw(16n) lw(14n).
+Action	rse	mc
+T{
 Switch between the panes.
-.TP
-.BR 1 ", " 2 ", " 3 ", " 4 ", " 5
-Focus a window: the left address bar, the left pane, the right address bar, the right
-pane, Transfers.
-The key is shown in each window's top right corner.
-.TP
-.BR Up ", " Down ", " k ", " j ", " PgUp ", " PgDn ", " Home ", " End
+T}	T{
+\fBTab\fR
+T}
+T{
+Focus a window: the left address bar, the left pane, the right address bar, the right pane, Transfers. The key is shown in each window's top right corner.
+T}	T{
+\fB1\fR, \fB2\fR, \fB3\fR, \fB4\fR, \fB5\fR
+T}	\(em
+T{
 Move the cursor.
-.TP
-.BR Enter ", " l
+T}	T{
+\fBUp\ Down\fR, \fBj\ k\fR, \fBPgUp\ PgDn\fR, \fBHome\ End\fR
+T}	T{
+\fBUp\ Down\fR, \fBPgUp\ PgDn\fR, \fBHome\ End\fR
+T}
+T{
 Open the directory.
-.TP
-.BR Backspace ", " h
+T}	T{
+\fBEnter\fR, \fBl\fR
+T}	T{
+\fBEnter\fR
+T}
+T{
 The parent directory; the cursor lands on the directory you left.
-.TP
-.BR Space ", " Insert
+T}	T{
+\fBBackspace\fR, \fBh\fR
+T}	T{
+\fBCtrl+PgUp\fR
+T}
+T{
 Mark or unmark the entry, and move down.
-.TP
-.B a
-Mark all, or unmark all.
-.TP
-.B Esc
+T}	T{
+\fBSpace\fR, \fBInsert\fR
+T}	T{
+\fBInsert\fR, \fBCtrl+T\fR
+T}
+T{
 Clear the marks; in the address bar, back to the entries.
-.TP
-.B /
-Filter by name, on the pane's own line: type to narrow the entries, Enter keeps the
-filter, Esc clears it.
-The cursor keys, PgUp, PgDn, Home, End and the wheel still move through the entries.
-.TP
-.BR s ", " S
-Sort by name, size or time, in turn; the other way round.
-.TP
-.B .
+T}	T{
+\fBEsc\fR
+T}	\(em
+T{
+Mark all, or unmark all.
+T}	T{
+\fBa\fR
+T}	\(em
+T{
+Filter by name, on the pane's own line: type to narrow the entries, Enter keeps the filter, Esc clears it. The cursor keys, PgUp, PgDn, Home, End and the wheel still move through the entries.
+T}	T{
+\fB/\fR
+T}	\(em
+T{
+Sort by name, size or time, in turn.
+T}	T{
+\fBs\fR
+T}	\(em
+T{
+Reverse the sort order.
+T}	T{
+\fBS\fR
+T}	\(em
+T{
 Show or hide dot files.
-.TP
-.B :
-Go to a path, a remote or an address, such as
-.B nas:backup
-or
-.BR ftp://me@box/pub ;
-on a remote or a server, to a path on it.
-.TP
-.BR F10 ", " g
-Choose what the pane shows from a list of the local disk and the remotes in
-.IR rclone.conf :
-type to narrow the list, Enter opens the chosen one at its top.
-With no remotes, the list says how to add one.
-.TP
-.B Ctrl+U
+T}	T{
+\fB\&.\fR
+T}	T{
+\fBAlt+.\fR
+T}
+T{
+Go to a path, a remote or an address, such as \fBnas:backup\fR or \fBftp://me@box/pub\fR; on a remote or a server, to a path on it.
+T}	T{
+\fB:\fR
+T}	T{
+\fBAlt+C\fR
+T}
+T{
+Choose what the pane shows from a list of the local disk and the remotes in \fIrclone.conf\fR: type to narrow the list, Enter opens the chosen one at its top. With no remotes, the list says how to add one.
+T}	T{
+\fBF9\fR, \fBg\fR
+T}	\(em
+T{
 Swap the panes.
-.TP
-.B Ctrl+R
+T}	T{
+\fBCtrl+U\fR
+T}
+T{
 Reload the pane.
-.TP
-.BR F5 ", " c
+T}	T{
+\fBCtrl+R\fR
+T}
+T{
 Copy the marked entries, or the one under the cursor, to the other pane's directory.
-.TP
-.BR F6 ", " m
+T}	T{
+\fBF5\fR, \fBc\fR
+T}	T{
+\fBF5\fR
+T}
+T{
 Move them there.
-.TP
-.BR F2 ", " r
+T}	T{
+\fBF6\fR, \fBm\fR
+T}	T{
+\fBF6\fR
+T}
+T{
 Rename the entry under the cursor.
-.TP
-.BR F7 ", " n
+T}	T{
+\fBF2\fR, \fBr\fR
+T}	T{
+\fBShift+F6\fR
+T}
+T{
 New directory.
-.TP
-.BR F8 ", " Delete
+T}	T{
+\fBF7\fR, \fBn\fR
+T}	T{
+\fBF7\fR
+T}
+T{
 Delete.
-.TP
-.B O
-Overwrite mode, on or off: copies, moves and renames replace existing files without
-asking.
-It is off at every start.
-.TP
-.B Ctrl+T
+T}	T{
+\fBF8\fR, \fBDelete\fR
+T}	T{
+\fBF8\fR
+T}
+T{
+Overwrite mode, on or off: copies, moves and renames replace existing files without asking. It is off at every start.
+T}	T{
+\fBO\fR
+T}	\(em
+T{
 Enter or leave Transfers.
-.TP
-.B Ctrl+O
-Open the active pane's terminal, or give it the keys; in the terminal, back to the
-panes, and the terminal folds to five lines.
-Only
-.B exit
-in the shell closes it.
-.TP
-.B E
+T}	T{
+\fBCtrl+T\fR
+T}	T{
+\fBCtrl+X\ J\fR
+T}
+T{
+Open the active pane's terminal, or give it the keys; in the terminal, back to the panes, and the terminal folds to five lines. Only \fBexit\fR in the shell closes it.
+T}	T{
+\fBCtrl+O\fR
+T}
+T{
 The error log (the last 100).
-.TP
-.B ?
+T}	T{
+\fBE\fR
+T}	\(em
+T{
 Help: every key, as configured.
-.TP
-.B q
+T}	T{
+\fB?\fR
+T}	T{
+\fBF1\fR
+T}
+T{
 Quit; rse asks first when that would stop transfers.
+T}	T{
+\fBF10\fR, \fBq\fR
+T}	T{
+\fBF10\fR
+T}
+.TE
 .SS Transfers
 .TP
 .BR Up ", " Down ", " k ", " j

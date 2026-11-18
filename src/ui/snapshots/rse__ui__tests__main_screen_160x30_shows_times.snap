@@ -30,4 +30,4 @@ expression: screen
 │   copy report-final-v3.pdf → nas:backup/2026                                                                                                         queued ✕│
 │                                                                                                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
- F2 Rename  F5 Copy  F6 Move  F7 Mkdir  F8 Delete  F10 Remote  / Filter  ? Help  q Quit                                                                  rclone
+ F2 Rename  F5 Copy  F6 Move  F7 Mkdir  F8 Delete  F9 Remote  / Filter  ? Help  F10 Quit                                                                 rclone

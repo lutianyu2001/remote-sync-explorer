@@ -54,9 +54,11 @@ remote-sync-explorer（命令为 `rse`）是一个双栏终端文件管理器，
 │   copy huge.bin → nas:backup/2026       ██████░░░░░░  48%    52 MB/s   0:16 ✕│
 │   copy report-final-v3.pdf → nas:backup/2026                         queued ✕│
 ╰──────────────────────────────────────────────────────────────────────────────╯
- F2 Rename  F5 Copy  F6 Move  F8 Delete  F10 Remote  / Filter  ? Help    rclone
+ F2 Rename  F5 Copy  F6 Move  F8 Delete  F9 Remote  / Filter  ? Help     rclone
  copy 2 items queued
 ```
+
+两个窗格、底部一排 F 键，以及不少按键本身（Tab、F5 到 F8、Ctrl+U、Ctrl+O、F10），用过 [Midnight Commander](https://midnight-commander.org)（mc）的人都会觉得眼熟。但 rse 并不是照着它做的：最开始设计 rse 的时候，我们压根不知道还有 mc 的存在，后来才偶然得知，果然好的设计心有灵犀。不过按键并不全都一样，[按键](#按键)一节列出了 rse 的按键，并把 mc 的放在旁边。
 
 ## 功能特性
 
@@ -231,9 +233,9 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
 
 1. 运行 `rse`。左窗格显示你的主目录，右窗格显示你的第一个 rclone 远程（没有远程时也是主目录）；`rse ~/work sftp://me@box/srv` 则从这两处开始。
 2. 用方向键（或 `j` 和 `k`）移动，Enter 打开目录，Backspace 回到上级目录。Tab 在两个窗格之间切换。
-3. 要打开服务器，按 `:` 输入它的地址，例如 `sftp://me@box/srv`（见[位置与地址](#位置与地址)）。要打开 rclone 里的远程，按 F10（或 `g`）：会打开一个列表，里面有本地磁盘和 `rclone.conf` 里的远程；输入文字缩小范围，Enter 打开选中的那个。远程用 `rclone config` 添加；一个都没有时，列表会说明。
+3. 要打开服务器，按 `:` 输入它的地址，例如 `sftp://me@box/srv`（见[位置与地址](#位置与地址)）。要打开 rclone 里的远程，按 F9（或 `g`）：会打开一个列表，里面有本地磁盘和 `rclone.conf` 里的远程；输入文字缩小范围，Enter 打开选中的那个。远程用 `rclone config` 添加；一个都没有时，列表会说明。
 4. 用 Space 标记条目，按 F5 把它们复制到另一个窗格显示的目录，F6 则移动过去。没有标记时，复制的是光标所在的条目。传输窗口显示进度；按 Ctrl+T 进入，可以取消或重试任务。
-5. `?` 列出所有按键，`man rse` 是完整的手册（见[手册](#手册)）。`q` 退出。
+5. `?` 列出所有按键，`man rse` 是完整的手册（见[手册](#手册)）。F10（或 `q`）退出。
 
 屏幕从上到下：每个窗格上方的地址行；窗格，最后一行显示过滤条件和光标所在条目的完整名称，刷新（Ctrl+R 或 ↻）后几秒显示刷新的时间和变化；打开时的[终端](#终端)（Ctrl+O）；传输窗口；按键提示，最右端反色显示两个窗格之间复制时会用的引擎（`rsync` 或 `rclone`）；最底部的消息行，显示提示消息，几秒后消失（错误留得更久；刚加入队列的任务在这期间结束的，消息换成结果），输入法也在这里显示正在输入的内容。
 
@@ -270,37 +272,42 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
 
 ### 按键
 
-所有按键都可以在配置文件里修改。F 键有字母别名，方便没有 F 键的键盘。
+所有按键都可以在配置文件里修改。F 键有字母别名，方便没有 F 键的键盘。mc 一列是 Midnight Commander 里做同一件事的按键，供熟悉它的人参考；两者相同的按键横跨两列。
 
-| 按键 | 操作 |
-|-----|--------|
-| Tab | 切换窗格 |
-| 1 / 2 / 3 / 4 / 5 | 聚焦窗口：左地址栏 / 左窗格 / 右地址栏 / 右窗格 / Transfers（按键显示在各窗口的右上角；窗格按显示的内容命名为 Local 或 Remote） |
-| ↑ ↓ / j k、PgUp PgDn、Home End | 移动光标 |
-| Enter / l | 打开目录 |
-| Backspace / h | 上级目录（光标落在刚离开的目录上） |
-| Space / Insert | 标记并下移 |
-| Esc | 清除标记；在地址栏中则回到条目列表 |
-| a | 全部标记 / 全部取消 |
-| / | 按名称过滤，在窗格的最后一行输入（Enter 保留，Esc 清除；过滤时条目照样可以滚动） |
-| s | 按名称、大小、时间排序 |
-| S | 反转排序顺序 |
-| . | 显示或隐藏点文件 |
-| : | 跳转到路径、远程或地址，例如 `nas:backup`、`ftp://me@box/pub` |
-| F10 / g | 从本地磁盘和 `rclone.conf` 里的远程组成的列表中，选择窗格要显示的内容（输入文字缩小范围；没有远程时会说明怎样添加） |
-| Ctrl+U | 交换窗格 |
-| Ctrl+R | 重新加载窗格 |
-| F5 / c | 复制到另一个窗格 |
-| F6 / m | 移动到另一个窗格 |
-| F2 / r | 重命名光标所在的条目 |
-| F7 / n | 新建目录 |
-| F8 / Delete | 删除 |
-| O | 开关覆写模式：复制、移动和重命名直接覆盖已有文件，不再询问（每次启动时都是关闭的；开启时屏幕顶部有一行红色提示） |
-| Ctrl+T | 进入或离开传输队列；在队列里 x 取消，r 重试，c 清除已完成的任务 |
-| Ctrl+O | 在窗格下方打开终端，从窗格所在目录开始（本地或通过 ssh 连接的服务器）；在终端里则回到窗格（见[终端](#终端)） |
-| E | 错误日志（最近 100 条） |
-| ? | 帮助 |
-| q | 退出 |
+<table>
+<thead>
+<tr><th>用途</th><th>rse</th><th>mc</th></tr>
+</thead>
+<tbody>
+<tr><td>切换窗格</td><td colspan="2">Tab</td></tr>
+<tr><td>聚焦窗口：左地址栏 / 左窗格 / 右地址栏 / 右窗格 / Transfers（按键显示在各窗口的右上角；窗格按显示的内容命名为 Local 或 Remote）</td><td>1 / 2 / 3 / 4 / 5</td><td>—</td></tr>
+<tr><td>移动光标</td><td>↑ ↓ / j k、PgUp PgDn、Home End</td><td>↑ ↓、PgUp PgDn、Home End</td></tr>
+<tr><td>打开目录</td><td>Enter / l</td><td>Enter</td></tr>
+<tr><td>上级目录（光标落在刚离开的目录上）</td><td>Backspace / h</td><td>Ctrl+PgUp</td></tr>
+<tr><td>标记并下移</td><td>Space / Insert</td><td>Insert / Ctrl+T</td></tr>
+<tr><td>清除标记；在地址栏中则回到条目列表</td><td>Esc</td><td>—</td></tr>
+<tr><td>全部标记 / 全部取消</td><td>a</td><td>—</td></tr>
+<tr><td>按名称过滤，在窗格的最后一行输入（Enter 保留，Esc 清除；过滤时条目照样可以滚动）</td><td>/</td><td>—</td></tr>
+<tr><td>按名称、大小、时间排序</td><td>s</td><td>—</td></tr>
+<tr><td>反转排序顺序</td><td>S</td><td>—</td></tr>
+<tr><td>显示或隐藏点文件</td><td>.</td><td>Alt+.</td></tr>
+<tr><td>跳转到路径、远程或地址，例如 <code>nas:backup</code>、<code>ftp://me@box/pub</code></td><td>:</td><td>Alt+C</td></tr>
+<tr><td>从本地磁盘和 <code>rclone.conf</code> 里的远程组成的列表中，选择窗格要显示的内容（输入文字缩小范围；没有远程时会说明怎样添加）</td><td>F9 / g</td><td>—</td></tr>
+<tr><td>交换窗格</td><td colspan="2">Ctrl+U</td></tr>
+<tr><td>重新加载窗格</td><td colspan="2">Ctrl+R</td></tr>
+<tr><td>复制到另一个窗格</td><td>F5 / c</td><td>F5</td></tr>
+<tr><td>移动到另一个窗格</td><td>F6 / m</td><td>F6</td></tr>
+<tr><td>重命名光标所在的条目</td><td>F2 / r</td><td>Shift+F6</td></tr>
+<tr><td>新建目录</td><td>F7 / n</td><td>F7</td></tr>
+<tr><td>删除</td><td>F8 / Delete</td><td>F8</td></tr>
+<tr><td>开关覆写模式：复制、移动和重命名直接覆盖已有文件，不再询问（每次启动时都是关闭的；开启时屏幕顶部有一行红色提示）</td><td>O</td><td>—</td></tr>
+<tr><td>进入或离开传输队列；在队列里 x 取消，r 重试，c 清除已完成的任务</td><td>Ctrl+T</td><td>Ctrl+X J</td></tr>
+<tr><td>在窗格下方打开终端，从窗格所在目录开始（本地或通过 ssh 连接的服务器）；在终端里则回到窗格（见<a href="#终端">终端</a>）</td><td colspan="2">Ctrl+O</td></tr>
+<tr><td>错误日志（最近 100 条）</td><td>E</td><td>—</td></tr>
+<tr><td>帮助</td><td>?</td><td>F1</td></tr>
+<tr><td>退出</td><td>F10 / q</td><td>F10</td></tr>
+</tbody>
+</table>
 
 复制和移动作用于已标记的条目；没有标记时作用于光标所在的条目。目标是另一个窗格的目录。
 

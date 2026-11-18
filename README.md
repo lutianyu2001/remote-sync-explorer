@@ -61,9 +61,16 @@ system's own, never shipped with rse.
 │   copy huge.bin → nas:backup/2026       ██████░░░░░░  48%    52 MB/s   0:16 ✕│
 │   copy report-final-v3.pdf → nas:backup/2026                         queued ✕│
 ╰──────────────────────────────────────────────────────────────────────────────╯
- F2 Rename  F5 Copy  F6 Move  F8 Delete  F10 Remote  / Filter  ? Help    rclone
+ F2 Rename  F5 Copy  F6 Move  F8 Delete  F9 Remote  / Filter  ? Help     rclone
  copy 2 items queued
 ```
+
+The two panes, the F keys along the bottom and many of the keys themselves (Tab, F5 to
+F8, Ctrl+U, Ctrl+O, F10) will look familiar to users of
+[Midnight Commander](https://midnight-commander.org) (mc). rse was not modelled on it:
+when we first designed rse we did not know mc existed, and came across it only later, by
+chance. Good designs, it seems, think alike. Not every key is the same, though:
+[Keys](#keys) lists rse's keys with mc's beside them.
 
 ## Features
 
@@ -308,7 +315,7 @@ An encrypted rclone config needs its password before rse starts: use
    Backspace. Tab switches between the panes.
 3. To open a server, press `:` and type its address, such as `sftp://me@box/srv` (see
    [Locations and Addresses](#locations-and-addresses)). To open one of your rclone
-   remotes, press F10 (or `g`): a list of the local disk and the remotes in
+   remotes, press F9 (or `g`): a list of the local disk and the remotes in
    `rclone.conf` opens; type to narrow it, and Enter opens the one chosen. Remotes are
    added with `rclone config`; with none, the list says so.
 4. Mark entries with Space and press F5 to copy them into the directory the other pane
@@ -316,7 +323,7 @@ An encrypted rclone config needs its password before rse starts: use
    copied. The Transfers window shows the progress; Ctrl+T enters it, to cancel or retry
    a job.
 5. `?` lists every key, and `man rse` has the whole manual (see
-   [Manual Page](#manual-page)). `q` quits.
+   [Manual Page](#manual-page)). F10 (or `q`) quits.
 
 The screen, from the top: the address row over each pane; the panes, whose last row
 shows the filter and the whole name of the entry under the cursor, and for a few
@@ -384,7 +391,7 @@ whole address, and the protocol box follows what you type: typing `ftp://` moves
 there, Backspace at the start of the field takes it back, and Ctrl+U clears the field
 and the protocol. On a remote or a server the field holds only the path (`backup/2026`,
 `/srv`, `~/docs` for the login's home on an sftp server; empty for the remote's root),
-so editing it never leaves that server; F10 or `g` chooses another remote or the local
+so editing it never leaves that server; F9 or `g` chooses another remote or the local
 disk.
 
 Marked entries are counted in the pane's bottom right corner (`[2 marked]`). Esc, or a
@@ -393,37 +400,43 @@ click on blank space in the pane, clears the marks.
 ### Keys
 
 All keys can be changed in the config file. F keys have letter aliases for keyboards
-without them.
+without them. The mc column gives the key Midnight Commander uses for the same action,
+for those who know it; a key the two share spans both columns.
 
-| Key | Action |
-|-----|--------|
-| Tab | Switch panes |
-| 1 / 2 / 3 / 4 / 5 | Focus a window: left address bar / left pane / right address bar / right pane / Transfers (the key is shown in each window's top right corner; a pane is named Local or Remote after what it shows) |
-| ↑ ↓ / j k, PgUp PgDn, Home End | Move the cursor |
-| Enter / l | Open directory |
-| Backspace / h | Parent directory (the cursor lands on the one you left) |
-| Space / Insert | Mark and move down |
-| Esc | Clear marks; in the address bar, go back to the entries |
-| a | Mark all / unmark all |
-| / | Filter by name, on the pane's last row (Enter keeps it, Esc clears it; the entries still scroll meanwhile) |
-| s | Sort by name, size, time |
-| S | Reverse the sort order |
-| . | Show or hide dot files |
-| : | Go to a path, remote or address, e.g. `nas:backup`, `ftp://me@box/pub` |
-| F10 / g | Choose what the pane shows from a list of the local disk and the remotes in `rclone.conf` (type to narrow it; with no remotes, it says how to add one) |
-| Ctrl+U | Swap panes |
-| Ctrl+R | Reload the pane |
-| F5 / c | Copy to the other pane |
-| F6 / m | Move to the other pane |
-| F2 / r | Rename the entry under the cursor |
-| F7 / n | New directory |
-| F8 / Delete | Delete |
-| O | Overwrite mode on or off: copies, moves and renames replace existing files without asking (off at every start; a red row across the top shows it is on) |
-| Ctrl+T | Enter or leave the transfer queue; there x cancels, r retries, c clears finished jobs |
-| Ctrl+O | Terminal under the active pane, in its directory, locally or on a server reached through ssh; in the terminal, back to the panes, folding it to five lines; `exit` in it closes it (see [Terminal](#terminal)) |
-| E | Error log (last 100) |
-| ? | Help |
-| q | Quit |
+<table>
+<thead>
+<tr><th>Action</th><th>rse</th><th>mc</th></tr>
+</thead>
+<tbody>
+<tr><td>Switch panes</td><td colspan="2">Tab</td></tr>
+<tr><td>Focus a window: left address bar / left pane / right address bar / right pane / Transfers (the key is shown in each window's top right corner; a pane is named Local or Remote after what it shows)</td><td>1 / 2 / 3 / 4 / 5</td><td>—</td></tr>
+<tr><td>Move the cursor</td><td>↑ ↓ / j k, PgUp PgDn, Home End</td><td>↑ ↓, PgUp PgDn, Home End</td></tr>
+<tr><td>Open directory</td><td>Enter / l</td><td>Enter</td></tr>
+<tr><td>Parent directory (the cursor lands on the one you left)</td><td>Backspace / h</td><td>Ctrl+PgUp</td></tr>
+<tr><td>Mark and move down</td><td>Space / Insert</td><td>Insert / Ctrl+T</td></tr>
+<tr><td>Clear marks; in the address bar, go back to the entries</td><td>Esc</td><td>—</td></tr>
+<tr><td>Mark all / unmark all</td><td>a</td><td>—</td></tr>
+<tr><td>Filter by name, on the pane's last row (Enter keeps it, Esc clears it; the entries still scroll meanwhile)</td><td>/</td><td>—</td></tr>
+<tr><td>Sort by name, size, time</td><td>s</td><td>—</td></tr>
+<tr><td>Reverse the sort order</td><td>S</td><td>—</td></tr>
+<tr><td>Show or hide dot files</td><td>.</td><td>Alt+.</td></tr>
+<tr><td>Go to a path, remote or address, e.g. <code>nas:backup</code>, <code>ftp://me@box/pub</code></td><td>:</td><td>Alt+C</td></tr>
+<tr><td>Choose what the pane shows from a list of the local disk and the remotes in <code>rclone.conf</code> (type to narrow it; with no remotes, it says how to add one)</td><td>F9 / g</td><td>—</td></tr>
+<tr><td>Swap panes</td><td colspan="2">Ctrl+U</td></tr>
+<tr><td>Reload the pane</td><td colspan="2">Ctrl+R</td></tr>
+<tr><td>Copy to the other pane</td><td>F5 / c</td><td>F5</td></tr>
+<tr><td>Move to the other pane</td><td>F6 / m</td><td>F6</td></tr>
+<tr><td>Rename the entry under the cursor</td><td>F2 / r</td><td>Shift+F6</td></tr>
+<tr><td>New directory</td><td>F7 / n</td><td>F7</td></tr>
+<tr><td>Delete</td><td>F8 / Delete</td><td>F8</td></tr>
+<tr><td>Overwrite mode on or off: copies, moves and renames replace existing files without asking (off at every start; a red row across the top shows it is on)</td><td>O</td><td>—</td></tr>
+<tr><td>Enter or leave the transfer queue; there x cancels, r retries, c clears finished jobs</td><td>Ctrl+T</td><td>Ctrl+X J</td></tr>
+<tr><td>Terminal under the active pane, in its directory, locally or on a server reached through ssh; in the terminal, back to the panes, folding it to five lines; <code>exit</code> in it closes it (see <a href="#terminal">Terminal</a>)</td><td colspan="2">Ctrl+O</td></tr>
+<tr><td>Error log (last 100)</td><td>E</td><td>—</td></tr>
+<tr><td>Help</td><td>?</td><td>F1</td></tr>
+<tr><td>Quit</td><td>F10 / q</td><td>F10</td></tr>
+</tbody>
+</table>
 
 Copy and move act on the marked entries, or on the entry under the cursor when nothing
 is marked. The target is the other pane's directory.

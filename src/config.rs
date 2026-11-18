@@ -370,7 +370,7 @@ move = ["F6", "m"]
         assert_eq!(c.jobs.max_concurrent, 3);
         assert_eq!((c.jobs.engine, c.jobs.checksum), (EngineChoice::Rclone, true));
         assert_eq!(c.keys["move"], ["F6", "m"]);
-        assert_eq!(c.keys["quit"], ["q"]); // not written: the default
+        assert_eq!(c.keys["quit"], ["F10", "q"]); // not written: the default
     }
 
     #[test]
