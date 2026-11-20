@@ -702,10 +702,11 @@ remotes in `rclone.conf`. An sftp remote reached through another remote (a `cryp
 `alias` or `union` over it, for example) is opened by rclone itself, as rclone always
 does, with its built-in ssh; to have it use OpenSSH there too, give that sftp remote an
 `ssh = …` line of its own. A remote's `host`, `user`,
-`port`, `key_file`, `pubkey_file` and `known_hosts_file` become ssh options. A remote
+`port`, `key_file`, `pubkey_file` and `known_hosts_file` become ssh options, and so do
+the algorithms it names (`ciphers`, `key_exchange`, `macs`, `host_key_algorithms`). A remote
 with its own `ssh = …` line is left as it is. A `host` or `user` that starts with `-`
 uses rclone's built-in ssh, since the system `ssh` would read it as an option. So does
-a remote with options only the built-in ssh honours, such as `key_pem`, `ciphers` or a
+a remote with options only the built-in ssh honours, such as `key_pem`, `use_insecure_cipher` or a
 proxy, still checking host keys against `known_hosts` as ssh would, and one that pins
 its host keys (`host_keys`, `pin_host_key`), which rclone then checks. A
 `known_hosts_file` of the remote's own is the file ssh checks; a server not in it is
@@ -766,7 +767,7 @@ settings) when:
 - there is no `ssh` program, or `system_ssh = false` is set under `[rclone]` in rse's
   config;
 - the remote needs something only the built-in ssh can do: an inline key (`key_pem`), a
-  proxy or cipher setting;
+  proxy or `use_insecure_cipher`;
 - logging in through the system ssh fails, for example with a refused key. The built-in
   ssh then checks the host key against ssh's `known_hosts` file (unless the remote sets
   `known_hosts_file`), so a server ssh has never accepted is refused rather than

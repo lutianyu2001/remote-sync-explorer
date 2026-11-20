@@ -83,18 +83,23 @@ const NEED_ASKPASS: [&str; 3] = ["pass", "key_file_pass", "ask_password"];
 
 /// sftp options that only the built-in ssh can honour. Pinned host keys are among them:
 /// rclone ignores them once it runs ssh.
-const BUILTIN_ONLY: [&str; 11] = [
+const BUILTIN_ONLY: [&str; 7] = [
     "host_keys",
     "pin_host_key",
     "key_pem",
     "pubkey",
     "socks_proxy",
     "http_proxy",
-    "ciphers",
-    "key_exchange",
-    "macs",
-    "host_key_algorithms",
     "use_insecure_cipher",
+];
+
+/// sftp options that list algorithms, with the ssh option that takes the same names
+/// (those of the protocol), separated by commas where rclone has spaces.
+const ALGORITHMS: [(&str, &str); 4] = [
+    ("ciphers", "Ciphers"),
+    ("key_exchange", "KexAlgorithms"),
+    ("macs", "MACs"),
+    ("host_key_algorithms", "HostKeyAlgorithms"),
 ];
 
 /// Options with secrets, left out of the log.
@@ -1218,7 +1223,28 @@ pub(crate) fn ssh_dest(
     if !askpass && let Some(k) = NEED_ASKPASS.iter().find(|k| set(k)) {
         return Err(format!("{k} is set, which needs OpenSSH 8.4 or newer"));
     }
-    ssh_target(params)
+    let mut args = Vec::new();
+    for (key, option) in ALGORITHMS {
+        if let Some(list) = get(key) {
+            let names = algorithms(list).ok_or_else(|| format!("{key} does not list names"))?;
+            args.extend(["-o".to_owned(), format!("{option}={names}")]);
+        }
+    }
+    args.extend(ssh_target(params)?);
+    Ok(args)
+}
+
+/// rclone's list of algorithm names, apart by spaces, as ssh takes it: apart by commas.
+/// `None` for an empty list, and for a name of other than letters, digits and `-_.@`,
+/// or one that starts otherwise than with a letter or digit: ssh would read a leading
+/// `+`, `-` or `^` as changing its own list, and anything else is no algorithm's name.
+fn algorithms(list: &str) -> Option<String> {
+    let names: Vec<&str> = list.split_whitespace().collect();
+    let name = |n: &&str| {
+        n.starts_with(|c: char| c.is_ascii_alphanumeric())
+            && n.chars().all(|c| c.is_ascii_alphanumeric() || "-_.@".contains(c))
+    };
+    (!names.is_empty() && names.iter().all(name)).then(|| names.join(","))
 }
 
 /// The ssh arguments naming the server and the account, whether or not the system ssh
@@ -1531,6 +1557,41 @@ mod tests {
             ssh_dest(&params(&[("host", "box"), ("use_insecure_cipher", "false")]), true).is_ok()
         );
         assert!(ssh_dest(&params(&[("user", "me")]), true).is_err());
+    }
+
+    /// The algorithms a remote names are the ones ssh is told to use, and nothing else
+    /// gets to ssh through their lists.
+    #[test]
+    fn algorithm_lists_become_ssh_options() {
+        let p = params(&[
+            ("host", "box"),
+            ("user", "me"),
+            ("ciphers", "aes256-gcm@openssh.com  aes128-ctr"),
+            ("key_exchange", "curve25519-sha256"),
+            ("macs", "hmac-sha2-256-etm@openssh.com"),
+            ("host_key_algorithms", "ssh-ed25519 rsa-sha2-512"),
+        ]);
+        assert_eq!(
+            ssh_dest(&p, true).unwrap(),
+            [
+                "-o",
+                "Ciphers=aes256-gcm@openssh.com,aes128-ctr",
+                "-o",
+                "KexAlgorithms=curve25519-sha256",
+                "-o",
+                "MACs=hmac-sha2-256-etm@openssh.com",
+                "-o",
+                "HostKeyAlgorithms=ssh-ed25519,rsa-sha2-512",
+                "me@box",
+            ]
+        );
+        for bad in ["+aes128-cbc", "-aes128-ctr", "^aes128-ctr", "aes128-ctr,x y", "a=b", "*"] {
+            let p = params(&[("host", "box"), ("ciphers", bad)]);
+            assert!(ssh_dest(&p, true).is_err(), "{bad:?}");
+        }
+        // The server and the account stay last, where ssh reads them as such.
+        let p = params(&[("host", "box"), ("macs", "hmac-sha2-512")]);
+        assert_eq!(ssh_dest(&p, true).unwrap().last().unwrap(), "box");
     }
 
     #[test]
