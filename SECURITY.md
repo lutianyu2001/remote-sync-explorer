@@ -306,7 +306,14 @@ names.
   program can still create it, as with any `mv`. The command's input is held open by rse,
   and a watcher in the script ends `rm` or `mv` when it closes, so stopping the job stops
   the work on the server too; what was deleted or moved by then stays so.
-  A copy to a name not taken inside one such remote (never inside the local disk) is the
+  A copy inside one such remote (never inside the local disk), and a move there onto what
+  the user chose to replace, are the server's own rsync when `rsync --version` there names
+  rsync 3.1 or newer (asked once): the command line rse builds for rsync between two
+  machines, with two paths of the server and no remote shell, each argument spelt in
+  octal and passed as it is by a script held to the same rules, so the decisions on
+  rsync's command line hold for it too. Stopping closes the command's input, on which the
+  watcher ends rsync there, which keeps its partial file as it does here.
+  On a server without such an rsync, a copy to a name not taken is the
   server's own `cp -RPp`, by a script held to the same rules. It copies links as links,
   never what they lead to, and writes under the name `.rse-copy.<the script's process
   number>` in the target's directory, which it renames to the target only once `cp` has
@@ -316,7 +323,7 @@ names.
   directory and never from an empty value. Stopping ends the script's whole process
   group, which sshd gives it alone. A job goes to `rm`, `mv` or `cp` only when rse has
   just seen its target free: one the user chose to overwrite, one started in overwrite
-  mode and one going on after a pause stay with rclone.
+  mode and one going on after a pause go to the server's rsync, or stay with rclone.
 - **Following the terminal.** Only while the user has tied a pane and its terminal
   together (off at every start): after a line typed into that terminal, rse asks where
   its shell is with a fixed script (`ps`, `readlink /proc/<pid>/cwd`, `lsof`), run through

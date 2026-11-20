@@ -161,10 +161,13 @@ the system ssh is carried out by that machine's own
 or
 .BR mv ,
 which takes one command where rclone would ask the server about every file.
-A copy to a name not taken inside one such server is carried out by its own
+A copy inside one such server, and a move onto what is already there, are carried out by
+the server's own rsync (3.1 or newer), where rclone would download every file and upload
+it again.
+A server without it copies to a name not taken with its own
 .BR cp ,
-where rclone would download every file and upload it again.
-The copy is made under the name
+and leaves the rest to rclone.
+That copy is made under the name
 .BI .rse\-copy. number
 beside its target and renamed once it is whole; cancelled, paused or failed, it is removed.
 .TP

@@ -1,9 +1,10 @@
 //! Which program carries out a copy or move: rsync between the local disk and an sftp
 //! server reached through the system ssh that has an `rsync` of its own, when the local one
 //! is rsync 3.1 or newer ([`rsync::usable`]); the machine's own `rm` and `mv` for a delete or
-//! a move inside the local disk or one such server, and its `cp` for a copy inside such a
-//! server ([`hostops`]); rclone for everything else (other remotes, two servers, a server
-//! rclone's built-in ssh reaches).
+//! a move inside the local disk or one such server ([`hostops`]); for a copy inside such a
+//! server, and a move there onto what may be replaced, the server's own rsync, 3.1 or newer
+//! too, or its `cp` for a copy to a name not taken when it has none; rclone for everything
+//! else (other remotes, two servers, a server rclone's built-in ssh reaches).
 
 use std::ffi::OsString;
 use std::sync::Arc;
@@ -15,7 +16,7 @@ use crate::location::Location;
 use crate::rclone::RpcError;
 use crate::rclone::system_ssh::SystemSsh;
 use crate::rsync::{self, Op, Side};
-use crate::terminal::ShellTarget;
+use crate::terminal::{ShellDir, ShellTarget};
 
 /// What the choice of engine depends on.
 pub struct Engines {
@@ -87,9 +88,10 @@ impl Engines {
     /// The command that carries `t` out on the machine it happens on, and the command that
     /// runs it there: a delete, or a move to a name not taken, on the local disk or on a
     /// server reached through the system ssh that has sh, and on such a server a copy to
-    /// a name not taken too. `None` leaves `t` to the other engines: with rclone chosen
-    /// for everything, between two machines, for a copy inside the local disk, or for a
-    /// move or copy onto what may be there ([`Transfer::overwrite`]), which rclone merges.
+    /// a name not taken too, for one without an rsync to do it ([`Self::server_rsync`],
+    /// asked first). `None` leaves `t` to the other engines: with rclone chosen for
+    /// everything, between two machines, for a copy inside the local disk, or for a move
+    /// or copy onto what may be there ([`Transfer::overwrite`]), which is merged.
     /// May open the master connection to the server.
     pub fn host_command(&self, t: &Transfer) -> Option<(Vec<String>, String)> {
         if self.choice != EngineChoice::Auto || t.name.is_empty() {
@@ -119,10 +121,53 @@ impl Engines {
         self.hosts.has_sh(&target.run).then_some((target.run, command))
     }
 
+    /// The server's own rsync for `t`, a transfer inside one server reached through the
+    /// system ssh: its command line, and the command that runs it there. It carries out a
+    /// copy, and a move onto what may be there ([`Transfer::overwrite`]), merging into
+    /// what the target has as rclone would, without the files leaving the server. `None`
+    /// for a move to a name not taken, which is `mv`'s ([`Self::host_command`]), and when
+    /// the server has no sh or no rsync that takes rse's options. May open the master
+    /// connection to the server.
+    pub fn server_rsync(&self, t: &Transfer) -> Option<(Vec<String>, String)> {
+        let op = match t.kind {
+            OpKind::Copy => Op::Copy,
+            OpKind::Move if t.overwrite => Op::Move,
+            OpKind::Move | OpKind::Delete => return None,
+        };
+        let dst = t.dst_dir.as_ref()?;
+        if t.name.is_empty() {
+            return None;
+        }
+        let target = self.server_with_rsync(&t.src_dir, dst)?;
+        let side = |dir: &Location| {
+            Side::Local(match target.dir(&dir.path) {
+                // One in the login directory as it is: rsync starts there, as every
+                // command does.
+                ShellDir::Absolute(path) | ShellDir::Home(path) => path.into(),
+            })
+        };
+        let args = rsync::args(op, &side(&t.src_dir), &side(dst), &t.name, self.checksum);
+        Some((target.run, hostops::rsync_command(&args)))
+    }
+
+    /// The server both `a` and `b` are on, when it is reached through the system ssh and
+    /// has an rsync of its own that rse can use.
+    fn server_with_rsync(&self, a: &Location, b: &Location) -> Option<ShellTarget> {
+        if self.choice != EngineChoice::Auto || a.is_local() || a.fs != b.fs {
+            return None;
+        }
+        let target = self.ssh.as_ref()?.shell(&a.fs).ok().flatten()?;
+        self.hosts.has_rsync(&target.run).then_some(target)
+    }
+
     /// The engine of copies and moves between `a` and `b`, either way. May open the
     /// master connection to a server, and ask whether it has rsync.
     pub fn between(&self, a: &Location, b: &Location) -> Engine {
-        if self.rsync_sides(a, b).is_some() { Engine::Rsync } else { Engine::Rclone }
+        if self.rsync_sides(a, b).is_some() || self.server_with_rsync(a, b).is_some() {
+            Engine::Rsync
+        } else {
+            Engine::Rclone
+        }
     }
 
     /// rsync's command line for `t`, when rsync carries it out.

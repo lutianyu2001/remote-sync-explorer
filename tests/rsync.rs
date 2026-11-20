@@ -405,6 +405,10 @@ fn relative_paths(
     }
 }
 
+fn engines_between(ssh: &Arc<SystemSsh>, a: &Location, b: &Location) -> Engine {
+    Engines::new(Some(ssh.clone()), EngineChoice::Auto, false).between(a, b)
+}
+
 /// The job worker copies to and from the server with rsync, and between two places on the
 /// local disk with rclone, as `Engines` decides; `Engines::between` tells the same.
 fn the_job_worker_chooses_rsync(ssh: &Arc<SystemSsh>, fs_name: &str, local: &Path, server: &Path) {
@@ -446,8 +450,9 @@ fn the_job_worker_chooses_rsync(ssh: &Arc<SystemSsh>, fs_name: &str, local: &Pat
     assert_eq!(fs::read_to_string(server.join("by-job/one file.txt")).unwrap(), "local file");
 }
 
-/// A delete, a move and a copy inside the server are the server's own `rm`, `mv` and `cp`,
-/// run through the master connection, whatever the names.
+/// A delete and a move inside the server are the server's own `rm` and `mv`, and a copy,
+/// or a move onto what is there, its own rsync, which merges: all run through the master
+/// connection, whatever the names, and no file leaves the server.
 fn the_server_deletes_and_moves_what_is_on_it(ssh: &Arc<SystemSsh>, fs_name: &str, server: &Path) {
     let name = "it's a $HOME `tree` -rf";
     fs::create_dir_all(server.join("ops/old").join(name).join("deep")).unwrap();
@@ -457,7 +462,8 @@ fn the_server_deletes_and_moves_what_is_on_it(ssh: &Arc<SystemSsh>, fs_name: &st
     let (tx, rx) = unbounded();
     let exec = Exec::spawn_with(ssh.clone(), tx, 1, Duration::from_millis(50), engines);
     let at = |dir: &str| Location::new(fs_name, server.join(dir).to_str().unwrap());
-    let finish = |id, transfer: Transfer| {
+    assert_eq!(engines_between(ssh, &at("ops/old"), &at("ops/new")), Engine::Rsync);
+    let finish = |id, transfer: Transfer, by: Engine| {
         let (method, params) = transfer.rc_call().unwrap();
         exec.submit(id, transfer, method, params);
         let deadline = Instant::now() + Duration::from_secs(30);
@@ -469,7 +475,7 @@ fn the_server_deletes_and_moves_what_is_on_it(ssh: &Arc<SystemSsh>, fs_name: &st
                 _ => {}
             }
         }
-        assert_eq!((engine, finished), (Some(Engine::Host), Some(Ok(()))));
+        assert_eq!((engine, finished), (Some(by), Some(Ok(()))));
     };
     let entry = |kind, dir: &str, dst: Option<&str>| Transfer {
         kind,
@@ -480,18 +486,34 @@ fn the_server_deletes_and_moves_what_is_on_it(ssh: &Arc<SystemSsh>, fs_name: &st
         size: None,
         overwrite: false,
     };
-    finish(1, entry(OpKind::Move, "ops/old", Some("ops/new")));
-    assert!(server.join("ops/new").join(name).join("deep/file").exists());
-    assert!(!server.join("ops/old").join(name).exists());
-    finish(3, entry(OpKind::Copy, "ops/new", Some("ops/old")));
-    assert_eq!(
-        fs::read_to_string(server.join("ops/old").join(name).join("deep/file")).unwrap(),
-        "x"
-    );
-    assert!(server.join("ops/new").join(name).join("deep/file").exists());
+    let (old, new) = (server.join("ops/old").join(name), server.join("ops/new").join(name));
+    finish(1, entry(OpKind::Move, "ops/old", Some("ops/new")), Engine::Host);
+    assert!(new.join("deep/file").exists());
+    assert!(!old.exists());
+    finish(3, entry(OpKind::Copy, "ops/new", Some("ops/old")), Engine::Rsync);
+    assert_eq!(fs::read_to_string(old.join("deep/file")).unwrap(), "x");
+    assert!(new.join("deep/file").exists());
     assert_eq!(fs::read_dir(server.join("ops/old")).unwrap().count(), 1, "only the copy");
-    fs::remove_dir_all(server.join("ops/old").join(name)).unwrap();
-    finish(2, entry(OpKind::Delete, "ops/new", None));
+    // Onto what is there, merging: what differs is replaced, what only the target has stays.
+    fs::write(new.join("deep/file"), "changed here").unwrap();
+    fs::write(new.join("deep/added"), "new").unwrap();
+    fs::write(old.join("only in the target"), "kept").unwrap();
+    let onto = |kind| Transfer { overwrite: true, ..entry(kind, "ops/new", Some("ops/old")) };
+    finish(4, onto(OpKind::Copy), Engine::Rsync);
+    assert_eq!(fs::read_to_string(old.join("deep/file")).unwrap(), "changed here");
+    assert_eq!(fs::read_to_string(old.join("deep/added")).unwrap(), "new");
+    assert_eq!(fs::read_to_string(old.join("only in the target")).unwrap(), "kept");
+    assert!(new.join("deep/added").exists(), "a copy leaves the source");
+    // A move onto it takes the source away, directories too.
+    fs::write(new.join("deep/moved"), "last").unwrap();
+    finish(5, onto(OpKind::Move), Engine::Rsync);
+    assert_eq!(fs::read_to_string(old.join("deep/moved")).unwrap(), "last");
+    assert_eq!(fs::read_to_string(old.join("only in the target")).unwrap(), "kept");
+    // The moved directory itself, emptied, is left to the caller, as after rclone's move.
+    assert_eq!(fs::read_dir(&new).unwrap().count(), 0, "moved away");
+    fs::remove_dir(&new).unwrap();
+    fs::rename(&old, &new).unwrap();
+    finish(2, entry(OpKind::Delete, "ops/new", None), Engine::Host);
     assert!(!server.join("ops/new").join(name).exists());
     assert!(server.join("ops/new").exists() && server.join("ops/old").exists());
     exec.shutdown();

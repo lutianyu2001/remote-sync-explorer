@@ -24,7 +24,7 @@ use std::io::{self, Read};
 use std::os::unix::ffi::{OsStrExt, OsStringExt};
 use std::os::unix::process::{CommandExt, ExitStatusExt};
 use std::path::PathBuf;
-use std::process::{Child, Command, ExitStatus, Stdio};
+use std::process::{Child, ChildStdin, Command, ExitStatus, Stdio};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
@@ -170,7 +170,7 @@ pub fn usable() -> bool {
 
 /// Whether the first line `rsync --version` printed, such as `rsync  version v3.2.7
 /// protocol version 31` (3.2.3 on put a `v` there), names rsync 3.1 or newer.
-fn supported(version: &[u8]) -> bool {
+pub(crate) fn supported(version: &[u8]) -> bool {
     let text = String::from_utf8_lossy(version);
     let mut words = text.lines().next().unwrap_or_default().split_whitespace();
     if words.next() != Some("rsync") || words.next() != Some("version") {
@@ -530,6 +530,9 @@ fn unescape(name: &[u8]) -> String {
 /// rsync at work, its output read on threads of their own. Dropping it stops rsync.
 pub struct Running {
     child: Child,
+    /// Of an rsync that runs on a server ([`Self::spawn_on`]), held open while it runs:
+    /// closing it is what stops rsync there.
+    stdin: Option<ChildStdin>,
     output: Arc<Mutex<Output>>,
     /// How rsync ended, and when that was seen.
     exit: Option<(ExitStatus, Instant)>,
@@ -550,11 +553,27 @@ struct Output {
 impl Running {
     /// Starts `rsync` with `args` (from [`args`], maybe with more options before the `--`).
     pub fn spawn(args: Vec<OsString>) -> io::Result<Self> {
-        let child = Command::new("rsync")
-            .args(args)
-            // Numbers and messages as they are read here.
-            .env("LC_ALL", "C")
-            .stdin(Stdio::null())
+        let mut rsync = Command::new("rsync");
+        // Numbers and messages as they are read here.
+        rsync.args(args).env("LC_ALL", "C").stdin(Stdio::null());
+        Self::start(rsync)
+    }
+
+    /// Starts a server's own rsync, for a transfer inside that server: `command`
+    /// ([`crate::hostops::rsync_command`]) with `run`, the command that runs a command
+    /// line on the server. Its output is read as that of an rsync here.
+    ///
+    /// # Errors
+    /// Fails when the program of `run` cannot be started.
+    pub fn spawn_on(run: &[String], command: &str) -> io::Result<Self> {
+        let (program, args) = run.split_first().ok_or(io::ErrorKind::InvalidInput)?;
+        let mut ssh = Command::new(program);
+        ssh.args(args).arg(command).stdin(Stdio::piped());
+        Self::start(ssh)
+    }
+
+    fn start(mut command: Command) -> io::Result<Self> {
+        let mut child = command
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             // A process group of its own, with the processes it starts (ssh and its own):
@@ -562,7 +581,8 @@ impl Running {
             .process_group(0)
             .spawn()?;
         let output = Arc::new(Mutex::new(Output::default()));
-        let mut running = Self { child, output, exit: None, stopped: false, kill_at: None };
+        let stdin = child.stdin.take();
+        let mut running = Self { child, stdin, output, exit: None, stopped: false, kill_at: None };
         let (stdout, stderr) = (running.child.stdout.take(), running.child.stderr.take());
         if let Some(pipe) = stdout {
             read_into(pipe, &running.output, 0, |o, data| o.progress.feed(data))?;
@@ -582,7 +602,11 @@ impl Running {
     pub fn poll(&mut self) -> (Stats, Option<Result<(), String>>) {
         if self.exit.is_none() {
             match self.child.try_wait() {
-                Ok(Some(status)) => self.exit = Some((status, Instant::now())),
+                Ok(Some(status)) => {
+                    self.exit = Some((status, Instant::now()));
+                    // What watches it on the server ends too.
+                    self.stdin = None;
+                }
                 _ if self.kill_at.is_some_and(|at| Instant::now() >= at) => {
                     self.signal(rustix::process::Signal::KILL);
                     self.kill_at = None;
@@ -638,8 +662,17 @@ impl Running {
             return;
         }
         self.stopped = true;
-        self.signal(rustix::process::Signal::TERM);
+        self.ask_to_stop();
         self.kill_at = Some(Instant::now() + STOP_TIME);
+    }
+
+    /// SIGTERM for an rsync here. One on a server is stopped there, by closing its input:
+    /// ending the ssh that carries it would leave it no time to keep its partial file,
+    /// and ssh ends by itself once rsync has.
+    fn ask_to_stop(&mut self) {
+        if self.stdin.take().is_none() {
+            self.signal(rustix::process::Signal::TERM);
+        }
     }
 
     /// Stops rsync with SIGTERM, on which it keeps the file it is in the middle of in
@@ -657,7 +690,7 @@ impl Running {
         } else {
             if !self.stopped {
                 self.stopped = true;
-                self.signal(rustix::process::Signal::TERM);
+                self.ask_to_stop();
             }
             let deadline = self.kill_at.unwrap_or_else(|| Instant::now() + STOP_TIME);
             let status = loop {
@@ -674,6 +707,7 @@ impl Running {
             };
             self.exit = status.map(|s| (s, Instant::now()));
         }
+        self.stdin = None;
         // The processes rsync started end after it, and the one that receives is still
         // keeping the partial file: they are gone when the output they share has ended.
         let drained = Instant::now() + DRAIN_TIME;
@@ -1096,6 +1130,47 @@ mod tests {
         assert_eq!(finish(&mut run).1, Ok(()));
         assert_eq!(fs::read(dst.join("big")).unwrap(), data);
         assert!(!dst.join(PARTIAL_DIR).exists(), "the partial directory is gone once used");
+    }
+
+    /// An rsync that a machine runs for itself, as a server does for a transfer inside
+    /// it: its progress is read, and closing its input stops it with the partial file kept.
+    #[test]
+    fn an_rsync_on_its_machine_is_read_and_stopped_the_same() {
+        if !have_rsync() {
+            eprintln!("skipped: no rsync");
+            return;
+        }
+        let sh = ["/bin/sh".to_owned(), "-c".to_owned()];
+        let dir = tempfile::tempdir().unwrap();
+        let (src, dst) = (dir.path().join("src"), dir.path().join("dst"));
+        fs::create_dir_all(&src).unwrap();
+        fs::create_dir(&dst).unwrap();
+        let data: Vec<u8> = (0..4_000_000u32).map(|i| (i * 7 % 251) as u8).collect();
+        fs::write(src.join("big"), &data).unwrap();
+        let (from, to) = (Side::Local(src.clone()), Side::Local(dst.clone()));
+        let mut slow = args(Op::Copy, &from, &to, "big", false);
+        let at = slow.iter().position(|a| a == "--").unwrap();
+        slow.insert(at, "--bwlimit=1000".into());
+        let mut run = Running::spawn_on(&sh, &crate::hostops::rsync_command(&slow)).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(20);
+        while run.poll().0.bytes < 1_000_000 {
+            assert!(Instant::now() < deadline, "no progress");
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        let begun = Instant::now();
+        run.stop();
+        assert!(begun.elapsed() < STOP_TIME, "killed, not stopped");
+        assert_eq!(run.poll().1, Some(Err(tr!("rsync-stopped"))));
+        let partial = fs::metadata(dst.join(PARTIAL_DIR).join("big")).unwrap().len();
+        assert!(partial >= 1_000_000, "{partial}");
+        assert!(!dst.join("big").exists());
+
+        let command = crate::hostops::rsync_command(&args(Op::Copy, &from, &to, "big", false));
+        let mut run = Running::spawn_on(&sh, &command).unwrap();
+        let (stats, result) = finish(&mut run);
+        assert_eq!(result, Ok(()));
+        assert_eq!(stats.bytes, 4_000_000, "{stats:?}");
+        assert_eq!(fs::read(dst.join("big")).unwrap(), data);
     }
 
     #[test]

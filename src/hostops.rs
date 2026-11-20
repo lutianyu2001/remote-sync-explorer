@@ -3,7 +3,8 @@
 //! the master connection rse already holds. rclone would list a directory and delete it
 //! file by file, each a round trip to the server, where `rm -rf` on the server takes one;
 //! and it would copy inside a server by downloading every file and uploading it again,
-//! since sftp has no copy of its own.
+//! since sftp has no copy of its own. A server with an rsync of its own copies with that
+//! instead of `cp` ([`rsync_command`], run and read by [`crate::rsync::Running`]).
 //!
 //! The command is an sh script handed to the login shell as `exec /bin/sh -c '…'`, which
 //! every common one (sh, bash, zsh, fish, tcsh) passes on unchanged: the script holds no
@@ -19,6 +20,7 @@
 //! target's name never holds half a copy.
 
 use std::collections::HashMap;
+use std::ffi::OsString;
 use std::fmt::Write as _;
 use std::io::{self, Read};
 use std::os::unix::process::CommandExt;
@@ -61,14 +63,36 @@ fn assign(script: &mut String, name: &str, dir: &ShellDir) {
         ShellDir::Absolute(path) => (path, ""),
         ShellDir::Home(path) => (path, "$HOME/"),
     };
+    assign_bytes(script, name, path.as_bytes(), home);
+}
+
+/// Sets the shell variable `name` to `before`, which the shell reads, and then `bytes` as
+/// they are, spelt in octal.
+fn assign_bytes(script: &mut String, name: &str, bytes: &[u8], before: &str) {
     let mut octal = String::new();
-    for b in path.bytes() {
+    for b in bytes {
         let _ = write!(octal, "\\0{b:03o}");
     }
     let _ = write!(
         script,
-        r#"{name}=$(printf "%b" "{octal}"; echo x); {name}="{home}${{{name}%x}}"; "#
+        r#"{name}=$(printf "%b" "{octal}"; echo x); {name}="{before}${{{name}%x}}"; "#
     );
+}
+
+/// The command line, for a login shell, that runs the machine's own `rsync` with `args`
+/// ([`crate::rsync::args`], both sides paths on that machine), each passed as it is. The
+/// watcher ends rsync when standard input closes, as it ends `rm`; rsync then keeps the
+/// file it is in the middle of. Messages come as they are read here.
+pub fn rsync_command(args: &[OsString]) -> String {
+    use std::os::unix::ffi::OsStrExt;
+    let mut script = String::from(r"exec 3<&0; ( read x <&3; kill $$ ) >/dev/null 2>&1 & ");
+    let mut call = String::from("LC_ALL=C; export LC_ALL; exec rsync");
+    for (i, arg) in args.iter().enumerate() {
+        assign_bytes(&mut script, &format!("a{i}"), arg.as_bytes(), "");
+        let _ = write!(call, r#" "$a{i}""#);
+    }
+    script.push_str(&call);
+    format!("exec /bin/sh -c '{script}'")
 }
 
 /// The command line that carries `op` out, for a login shell. `None` for a path that names
@@ -133,10 +157,12 @@ pub fn command(op: &Op) -> Option<String> {
     Some(format!("exec /bin/sh -c '{script}'"))
 }
 
-/// Which machines have sh, by the command that runs a command line on them.
+/// Which machines have sh, and which an rsync of their own that rse can use, by the
+/// command that runs a command line on them.
 #[derive(Debug, Default)]
 pub struct Hosts {
     known: Mutex<HashMap<Vec<String>, bool>>,
+    rsync: Mutex<HashMap<Vec<String>, bool>>,
 }
 
 impl Hosts {
@@ -146,20 +172,40 @@ impl Hosts {
         if let Some(known) = self.known.lock().ok().and_then(|known| known.get(run).copied()) {
             return known;
         }
-        let Some(answer) = probe(run) else { return false };
+        let Some(answer) = probe(run, &format!("echo {PROBE}")) else { return false };
+        let answer = answer.trim() == PROBE;
         if let Ok(mut known) = self.known.lock() {
+            known.insert(run.to_vec(), answer);
+        }
+        answer
+    }
+
+    /// Whether the machine that `run` reaches has sh and an `rsync` that takes the options
+    /// [`crate::rsync::args`] passes ([`crate::rsync::supported`]), asked once. A machine
+    /// that does not answer is asked again the next time.
+    pub fn has_rsync(&self, run: &[String]) -> bool {
+        if let Some(known) = self.rsync.lock().ok().and_then(|known| known.get(run).copied()) {
+            return known;
+        }
+        if !self.has_sh(run) {
+            return false;
+        }
+        let Some(version) = probe(run, "rsync --version") else { return false };
+        let answer = crate::rsync::supported(version.as_bytes());
+        if let Ok(mut known) = self.rsync.lock() {
             known.insert(run.to_vec(), answer);
         }
         answer
     }
 }
 
-/// Asks the machine `run` reaches for sh; `None` when it does not answer in time.
-fn probe(run: &[String]) -> Option<bool> {
+/// What sh on the machine `run` reaches prints for `script`, which holds nothing a login
+/// shell reads; `None` when the machine does not answer in time.
+fn probe(run: &[String], script: &str) -> Option<String> {
     let (program, args) = run.split_first()?;
     let mut child = Command::new(program)
         .args(args)
-        .arg(format!("exec /bin/sh -c 'echo {PROBE}'"))
+        .arg(format!("exec /bin/sh -c '{script}'"))
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
@@ -177,9 +223,9 @@ fn probe(run: &[String]) -> Option<bool> {
             }
         }
     }
-    let mut out = String::new();
-    child.stdout.take()?.read_to_string(&mut out).ok()?;
-    Some(out.trim() == PROBE)
+    let mut out = Vec::new();
+    child.stdout.take()?.read_to_end(&mut out).ok()?;
+    Some(String::from_utf8_lossy(&out).into_owned())
 }
 
 /// A command at work on its machine. Dropping it stops the command.
@@ -385,13 +431,19 @@ mod tests {
             Op::Copy { from: dir.clone(), to: dir.clone() },
         ] {
             let command = command(&op).unwrap();
-            let script = command.strip_prefix("exec /bin/sh -c '").unwrap();
-            let script = script.strip_suffix('\'').unwrap();
-            assert!(!script.contains('\'') && !script.contains('!'), "{script}");
-            let after: Vec<char> =
-                script.split('\\').skip(1).filter_map(|s| s.chars().next()).collect();
-            assert!(after.iter().all(char::is_ascii_digit), "{script}");
+            keeps_to_the_rules(&command);
         }
+        let args = ["-rlt", "--", "it's a \\ ! name", "$HOME `id`\n"].map(OsString::from);
+        keeps_to_the_rules(&rsync_command(&args));
+    }
+
+    fn keeps_to_the_rules(command: &str) {
+        let script = command.strip_prefix("exec /bin/sh -c '").unwrap();
+        let script = script.strip_suffix('\'').unwrap();
+        assert!(!script.contains('\'') && !script.contains('!'), "{script}");
+        let after: Vec<char> =
+            script.split('\\').skip(1).filter_map(|s| s.chars().next()).collect();
+        assert!(after.iter().all(char::is_ascii_digit), "{script}");
     }
 
     #[test]
@@ -652,6 +704,36 @@ mod tests {
         let mut run = Running::spawn(&sh(), "exec sleep 60").unwrap();
         run.terminate();
         assert_eq!(finish(run), Err(tr!("host-stopped")));
+    }
+
+    /// Each argument reaches the machine's rsync as it is, whatever it holds.
+    #[test]
+    fn rsync_gets_its_arguments_as_they_are() {
+        let hosts = Hosts::default();
+        if !hosts.has_rsync(&sh()) {
+            eprintln!("skipped: no rsync 3.1 or newer");
+            return;
+        }
+        assert!(hosts.has_rsync(&sh()));
+        let tmp = tempfile::tempdir().unwrap();
+        let (a, b) = (tmp.path().join("a"), tmp.path().join("b"));
+        fs::create_dir_all(&b).unwrap();
+        for name in NAMES {
+            fs::create_dir_all(a.join(name)).unwrap();
+            fs::write(a.join(name).join("file"), *name).unwrap();
+            let args = crate::rsync::args(
+                crate::rsync::Op::Copy,
+                &crate::rsync::Side::Local(a.clone()),
+                &crate::rsync::Side::Local(b.clone()),
+                name,
+                false,
+            );
+            finish(Running::spawn(&sh(), &rsync_command(&args)).unwrap()).unwrap();
+            assert_eq!(fs::read_to_string(b.join(name).join("file")).unwrap(), *name);
+        }
+        // A machine whose rsync is too old, or not rsync, has none to use.
+        let old = vec!["/bin/sh".to_owned(), "-c".to_owned(), "echo rse-sh".to_owned()];
+        assert!(hosts.has_sh(&old) && !hosts.has_rsync(&old));
     }
 
     #[test]

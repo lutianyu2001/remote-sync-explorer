@@ -327,6 +327,12 @@ fn start(
     method: &str,
     mut params: Value,
 ) -> (Result<Active, String>, (Engine, bool)) {
+    if let Some((run, command)) = engines.server_rsync(&transfer) {
+        let run = Running::spawn_on(&run, &command)
+            .map(|run| Active::Rsync { run: Box::new(run), transfer })
+            .map_err(|e| tr!("rsync-not-started", error = e.to_string()));
+        return (run, (Engine::Rsync, true));
+    }
     if let Some((run, command)) = engines.host_command(&transfer) {
         let run = hostops::Running::spawn(&run, &command)
             .map(|run| Active::Host { run: Box::new(run) })
