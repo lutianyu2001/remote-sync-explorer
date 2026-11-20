@@ -306,6 +306,12 @@ names.
   program can still create it, as with any `mv`. The command's input is held open by rse,
   and a watcher in the script ends `rm` or `mv` when it closes, so stopping the job stops
   the work on the server too; what was deleted or moved by then stays so.
+- **Following the terminal.** Only while the user has tied a pane and its terminal
+  together (off at every start): after a line typed into that terminal, rse asks where
+  its shell is with a fixed script (`ps`, `readlink /proc/<pid>/cwd`, `lsof`), run through
+  the master connection with only the shell's pid in it, a number the shell reported. The
+  answer is a path the pane then lists, as if typed into its address bar: it is never run,
+  and one with a control character in it is dropped.
 - **The saved queue.** Unfinished jobs are kept in `$XDG_STATE_HOME/rse/queue.json`
   (else `~/.local/state/rse/`), in a directory created `0700`, written `0600` to a new
   file then renamed over the old one. A server opened by address is saved without its

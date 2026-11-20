@@ -38,6 +38,8 @@ pub enum Action {
     Queue,
     /// Open the active pane's terminal under it, or focus it; in it, back to the panes.
     Terminal,
+    /// Keep the active pane and its terminal in the same directory, or stop.
+    TerminalSync,
     ErrorLog,
     /// Open the settings page.
     Settings,
@@ -132,6 +134,12 @@ const BINDINGS: &[Binding] = &[
     },
     Binding { action: Action::Queue, name: "queue", keys: &["Ctrl+T"], scope: Scope::Both },
     Binding { action: Action::Terminal, name: "terminal", keys: &["Ctrl+O"], scope: Scope::Both },
+    Binding {
+        action: Action::TerminalSync,
+        name: "terminal_sync",
+        keys: &["Ctrl+S"],
+        scope: Scope::Both,
+    },
     Binding {
         action: Action::FocusLeftAddress,
         name: "focus_left_address",

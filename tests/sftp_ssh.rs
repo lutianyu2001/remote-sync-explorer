@@ -575,6 +575,9 @@ fn a_terminal_runs_the_login_shell_through_the_master() {
                 Ok(Event::TermIdle { idle, .. }) => {
                     assert_eq!(s.idle(idle, Instant::now()), None);
                 }
+                Ok(Event::TermWhere { idle, dirs, .. }) => {
+                    s.located(idle, dirs, Instant::now());
+                }
                 Ok(Event::TermClosed { .. }) => panic!("closed: {:?}", s.closed()),
                 _ => s.tick(Instant::now()),
             }
@@ -588,13 +591,14 @@ fn a_terminal_runs_the_login_shell_through_the_master() {
         s.screen().contents().lines().filter(|l| !l.trim().is_empty()).map(str::to_owned).collect();
     assert!(lines.len() <= 1, "only the prompt on a clean screen: {lines:?}");
 
+    s.sync(true, None, Instant::now());
     s.input(b"pwd\r");
     pump(&mut s, "starts in the directory", &|s| {
         s.screen().contents().contains(&format!("\n{root}\n"))
     });
     let sub = served.join("it's here").to_str().unwrap().to_owned();
     s.want(ShellDir::Absolute(sub.clone()), Instant::now());
-    pump(&mut s, "cd typed", &|s| s.dir() == &ShellDir::Absolute(sub.clone()));
+    pump(&mut s, "cd typed", &|s| s.dir() == Some(&ShellDir::Absolute(sub.clone())));
     s.input(b"pwd\r");
     pump(&mut s, "follows the pane", &|s| s.screen().contents().contains(&format!("\n{sub}\n")));
     assert_eq!(logins(work.path()), 1, "through the master connection");

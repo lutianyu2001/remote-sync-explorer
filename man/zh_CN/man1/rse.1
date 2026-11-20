@@ -39,7 +39,7 @@ rse \- remote-sync-explorer，本地磁盘、服务器与 rclone 远程的双栏
 从上到下：
 .TP
 \fB地址行\fR
-在每个窗格上方：协议（\fBsftp://\fR、\fBsmb://\fR、\&……，本地磁盘为\fB本地\fR），地址栏（\fB[1]\fR 和 \fB[3]\fR），以及一个按钮 \fB↻\fR，用来刷新窗格。在获得焦点的地址栏里按 Enter、在窗格里按 \fB:\fR，或点击地址，都可以编辑地址。
+在每个窗格上方：协议（\fBsftp://\fR、\fBsmb://\fR、\&……，本地磁盘为\fB本地\fR），地址栏（\fB[1]\fR 和 \fB[3]\fR），以及一个按钮 \fB↻\fR，用来刷新窗格（窗格开着终端时，它左边还有一个 \fB⇅\fR）。在获得焦点的地址栏里按 Enter、在窗格里按 \fB:\fR，或点击地址，都可以编辑地址。
 .TP
 \fB窗格\fR
 （\fB[2]\fR 和 \fB[4]\fR，按显示的内容叫“本地”或“远程”）：列标题下的条目，点击列标题按该列排序。窗格的最后一行是它自己的一行：正在输入或已保留的过滤条件，以及光标所在条目的完整名称（列表里可能显示不全）。刷新（Ctrl+R 或 \fB↻\fR）时这里显示“刷新中”，完成后显示几秒刷新的时间和变化（“已刷新 14:03:27 · 新增 2 项”）。选中的条目数显示在右下角（\fB[已选 2 项]\fR）。
@@ -298,6 +298,11 @@ T}	T{
 \fBCtrl+O\fR
 T}
 T{
+让当前窗格和它的终端保持在同一个目录，或者停止（每次启动时关闭）。
+T}	T{
+\fBCtrl+S\fR
+T}
+T{
 错误日志（最近 100 条）。
 T}	T{
 \fBE\fR
@@ -341,13 +346,15 @@ T}
 .SS 对话框
 Enter 按下高亮的按钮，Esc 取消，Tab、方向键或点击选择别的按钮。在文本框里，Ctrl+U 清空内容；两端的 \fB<\fR 或 \fB>\fR 表示文字超出了那一端。
 .SH 鼠标
-鼠标默认开启（\fBui.mouse\fR）。单击把光标移到那里、清除选中并让该窗格获得焦点；按住 Ctrl 单击或右键单击，选中或取消选中，保留其他选中；按住 Alt 单击（终端把 Shift+单击交给程序时，Shift 也一样），选中从光标到该处的所有条目；双击打开目录，在 \fB..\fR 上则回到上级；滚轮滚动指针下的窗格；拖动窗格右边框内侧的滚动条（条目放不下时才显示）同样滚动该窗格；单击它的轨道把滑块移到那里，单击它的 \fB▴\fR 或 \fB▾\fR 滚动一行；点击列标题按该列排序，再点一次反向；点击窗格里的空白处清除选中；点击地址编辑地址，点击 \fB↻\fR 刷新窗格；点击队列中的一行选中该任务，点击它的 \fB✕\fR 取消任务；点击按键提示即执行。
+鼠标默认开启（\fBui.mouse\fR）。单击把光标移到那里、清除选中并让该窗格获得焦点；按住 Ctrl 单击或右键单击，选中或取消选中，保留其他选中；按住 Alt 单击（终端把 Shift+单击交给程序时，Shift 也一样），选中从光标到该处的所有条目；双击打开目录，在 \fB..\fR 上则回到上级；滚轮滚动指针下的窗格；拖动窗格右边框内侧的滚动条（条目放不下时才显示）同样滚动该窗格；单击它的轨道把滑块移到那里，单击它的 \fB▴\fR 或 \fB▾\fR 滚动一行；点击列标题按该列排序，再点一次反向；点击窗格里的空白处清除选中；点击地址编辑地址，点击 \fB↻\fR 刷新窗格，点击 \fB⇅\fR 让窗格和它的终端保持在同一个目录，或者停止；点击队列中的一行选中该任务，点击它的 \fB✕\fR 取消任务；点击按键提示即执行。
 .PP
 拖动可以复制或移动：在条目上按下并移动；选中的条目一起拖动。放在目录上则放进该目录，放在窗格的其他地方则放进该窗格的目录。随后的菜单提供\fI复制到这里\fR、\fI移动到这里\fR和\fI取消\fR；设置 \fBdrop_action = "copy"\fR 则不经菜单直接复制。
 .PP
 鼠标开启时，大多数终端里按住 Shift 拖动才能选择文字。在 \fBtmux\fR(1) 里，用 \fBset \-g mouse on\fR 开启鼠标。
 .SH 终端
-Ctrl+O 在窗格下方打开一个终端，位于窗格显示的目录：本地磁盘上是你的登录 shell，经由系统 ssh 访问的服务器上则通过 rse 已有的连接打开。其他远程没有终端。终端拿着按键时（边框为绿色），所有按键都交给 shell，包括 Ctrl+C 和 Esc；Ctrl+O 把按键交还给窗格。窗格在同一磁盘或服务器上换到别的目录时，rse 会在 shell 里没有命令运行时输入 \fBcd\fR。\fBexit\fR 或 Ctrl+D 关闭终端。
+Ctrl+O 在窗格下方打开一个终端，位于窗格显示的目录：本地磁盘上是你的登录 shell，经由系统 ssh 访问的服务器上则通过 rse 已有的连接打开。其他远程没有终端。终端拿着按键时（边框为绿色），所有按键都交给 shell，包括 Ctrl+C 和 Esc；Ctrl+O 把按键交还给窗格。\fBexit\fR 或 Ctrl+D 关闭终端。
+.PP
+窗格和它的终端默认各走各的：在窗格里按 Ctrl+S，或点击 \fB⇅\fR（窗格开着终端时在 \fB↻\fR 左边），把它们连起来，再按一次分开；连着时按钮反白，每次启动时都是分开的。连起来时，终端先回到窗格所在的目录。此后窗格在同一磁盘或服务器上换到别的目录时，rse 会在 shell 里没有命令运行时输入 \fBcd\fR。窗格也跟随终端：在终端里敲完一行、shell 回到提示符后，rse 会问 shell 在哪个目录，目录变了，窗格就跟过去，所以在终端里 \fBcd\fR，文件列表会一起走。窗格显示不了的目录（在打开这个远程时所用的根目录之外）不会跟随。
 .SH 冲突与覆盖
 目标里已有同名条目时，rse 会询问：覆盖、跳过、全部覆盖、全部跳过或取消；默认跳过。只有大小写不同的名称算作同名。移动和删除总要确认。每个任务开始时会再检查一次目标，两个任务从不同时写同一个文件。覆盖时能接着来的就接着来：相同的文件跳过，传了一半的文件续传，不同的文件替换。停下的传输把已完成的部分留在目标旁边：rclone 为 \fI<名称>.rse\-partial\fR，rsync 为 \fI.rse\-partial/\fR 目录；放弃这次传输时请删掉它们。跨远程移动是先复制、再删除源文件。
 .SH 配置
@@ -380,7 +387,7 @@ checksum = false         # 按校验和比较文件
 copy = ["F5", "c"]       # 任何操作，按下面的名称
 .EE
 .PP
-操作的名称有 switch_pane, up, down, page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort, sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename, mkdir, delete, overwrite_mode, queue, terminal, focus_left_address, focus_left, focus_right_address, focus_right, focus_queue, error_log, settings, help, quit, queue_cancel, queue_retry, queue_clear。按键写作 F5、c、E、Ctrl+U、Alt+x、Space、Enter、PgDn 或 Delete 这样。
+操作的名称有 switch_pane, up, down, page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort, sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename, mkdir, delete, overwrite_mode, queue, terminal, terminal_sync, focus_left_address, focus_left, focus_right_address, focus_right, focus_queue, error_log, settings, help, quit, queue_cancel, queue_retry, queue_clear。按键写作 F5、c、E、Ctrl+U、Alt+x、Space、Enter、PgDn 或 Delete 这样。
 .PP
 设置页面（\fBF4\fR）列出所有设置和配置文件给它们的值，可以直接在上面修改：开关类和只有几个取值的设置，值的两侧各有一个箭头，按左右方向键或单击箭头换到前一个或后一个值（空格也换到后一个），按 Enter 或单击该设置则展开它的取值列表供选择；其余设置按 Enter 或单击进入编辑，按键写成用空格隔开的按键名。Del 把设置从文件里删掉，即恢复默认值。每次修改都立即写入配置文件，文件的其余部分（包括注释）保持原样；不符合设置的值不会写入。\fBui.show_hidden\fR、\fBui.mouse\fR、\fBui.multi_select_modifier\fR、\fBui.drop_action\fR、\fBui.language\fR、\fBjobs.max_concurrent\fR 和按键立即生效，其余设置下次启动时生效。环境变量或 \fB\-\-set\fR 为本次运行设了某项设置时，页面会在文件的值旁边显示那个值。
 .SH 经由 OpenSSH 的 SFTP

@@ -27,6 +27,9 @@ const TIME_W: usize = 16;
 const TIME_MIN_PANE: u16 = 48;
 /// The button box right of the address bar: reload, or go once the address is edited.
 const REFRESH: &str = "↻";
+/// The box left of it while the pane has a terminal: the two keep to one directory while
+/// it is lit.
+const SYNC: &str = "⇅";
 const GO: &str = ">";
 const BUTTON_W: u16 = 5;
 /// The address window keeps at least this width before the boxes beside it are dropped.
@@ -96,7 +99,8 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) -> PaneArea {
         Some((purpose, text)) => input_tag(app, purpose, text),
         None => tag_text(app, &pane.loc),
     };
-    let (tag_box, bar, button) = address_row(top, tag.as_deref());
+    let (tag_box, bar, sync, button) =
+        address_row(top, tag.as_deref(), app.terminals[id].is_some());
 
     let selected = editing || (id == app.active && app.focus == Focus::Address);
     let bar_border = if selected { super::FOCUSED } else { Style::new() };
@@ -114,6 +118,15 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) -> PaneArea {
         let inner = super::window(buf, button, Window::new().border_style(bar_border));
         let bold = Style::new().add_modifier(Modifier::BOLD);
         buf.set_stringn(inner.x + 1, inner.y, if go { GO } else { REFRESH }, 1, bold);
+    }
+    if !sync.is_empty() {
+        let inner = super::window(buf, sync, Window::new().border_style(bar_border));
+        let mut style = Style::new().add_modifier(Modifier::BOLD);
+        if app.term_sync[id] {
+            style = style.add_modifier(Modifier::REVERSED);
+            buf.set_style(inner, style);
+        }
+        buf.set_stringn(inner.x + 1, inner.y, SYNC, 1, style);
     }
     let edit = if edit_h > 0 {
         let dim = Style::new().add_modifier(Modifier::DIM);
@@ -135,7 +148,7 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) -> PaneArea {
         frame,
         super::named(app, action, &name).note(&marked).border_style(border),
     );
-    PaneArea { frame, bar, title, button, edit, ..draw_entries(buf, inner, app, id) }
+    PaneArea { frame, bar, title, button, sync, edit, ..draw_entries(buf, inner, app, id) }
 }
 
 /// What the pane's window `inner` holds: the column headers, the entries under them, the
@@ -255,9 +268,10 @@ fn draw_header(buf: &mut Buffer, area: Rect, pane: &Pane, columns: Columns) -> [
 
 /// Splits the address row into the protocol box, the address window and the button box.
 /// A box is left out (an empty rect) when the address window would get too narrow.
-fn address_row(row: Rect, tag: Option<&str>) -> (Rect, Rect, Rect) {
+fn address_row(row: Rect, tag: Option<&str>, with_sync: bool) -> (Rect, Rect, Rect, Rect) {
     let mut bar = row;
     let mut button = Rect::default();
+    let mut sync = Rect::default();
     let mut tag_box = Rect::default();
     if bar.width >= BUTTON_W + BAR_MIN {
         bar.width -= BUTTON_W;
@@ -271,7 +285,12 @@ fn address_row(row: Rect, tag: Option<&str>) -> (Rect, Rect, Rect) {
             bar.width -= w;
         }
     }
-    (tag_box, bar, button)
+    // Last, so that it is the first to go when the row is narrow.
+    if with_sync && !button.is_empty() && bar.width >= BUTTON_W + BAR_MIN {
+        bar.width -= BUTTON_W;
+        sync = Rect { x: bar.x + bar.width, width: BUTTON_W, ..row };
+    }
+    (tag_box, bar, sync, button)
 }
 
 /// What the protocol box shows for a location: `sftp://`, or `Local` on the local disk.

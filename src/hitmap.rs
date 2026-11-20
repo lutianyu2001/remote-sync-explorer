@@ -16,6 +16,9 @@ pub struct PaneArea {
     pub title: Rect,
     /// The button box right of the address bar (reload, or go while editing).
     pub button: Rect,
+    /// The box left of it that keeps the pane and its terminal in one directory; empty
+    /// without a terminal, and when the row has no room for it.
+    pub sync: Rect,
     /// Where Go to edits the address: the edit window's inside, or the title.
     pub edit: Rect,
     /// The rows of entries, below the column headers, left of the scrollbar's column.
@@ -180,6 +183,9 @@ impl HitMap {
             if area.button.contains(p) {
                 return Target::PaneButton { pane, action: Action::Refresh };
             }
+            if area.sync.contains(p) {
+                return Target::PaneButton { pane, action: Action::TerminalSync };
+            }
             if area.bar.contains(p) {
                 return Target::Title { pane };
             }
@@ -218,6 +224,7 @@ mod tests {
         m.panes[0] = PaneArea {
             title: Rect::new(0, 0, 10, 1),
             button: Rect::new(6, 0, 2, 1),
+            sync: Rect::new(4, 0, 2, 1),
             edit: Rect::default(),
             frame: Rect::default(),
             bar: Rect::new(0, 0, 10, 1),
@@ -276,6 +283,7 @@ mod tests {
         let m = map();
         assert_eq!(m.hit(2, 0), Target::Title { pane: 0 });
         assert_eq!(m.hit(7, 0), Target::PaneButton { pane: 0, action: Action::Refresh });
+        assert_eq!(m.hit(5, 0), Target::PaneButton { pane: 0, action: Action::TerminalSync });
         assert_eq!(m.hit(8, 0), Target::Title { pane: 0 });
         assert_eq!(m.hit(3, 8), Target::QueueRow { index: 0, cancel: false });
         assert_eq!(m.hit(20, 8), Target::QueueRow { index: 0, cancel: true });

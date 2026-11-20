@@ -2458,6 +2458,78 @@ fn type_in(h: &mut Harness, text: &str) {
     h.settle();
 }
 
+/// Left alone, the pane and its terminal go their own ways; the box beside the refresh
+/// button, there while the pane has a terminal, ties them together and lights up.
+#[test]
+fn the_pane_and_its_terminal_keep_together_only_when_asked() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().canonicalize().unwrap().to_string_lossy().into_owned();
+    std::fs::create_dir(tmp.path().join("sub")).unwrap();
+    let (backend, _) =
+        fake_fs(&[("srv:", vec![dir("sub")]), ("srv:sub", vec![]), ("/home/sky", vec![])], &[]);
+    let shell = crate::terminal::ShellTarget {
+        open: ["/bin/sh", "-c"].map(str::to_owned).to_vec(),
+        run: ["/bin/sh", "-c"].map(str::to_owned).to_vec(),
+        root: root.clone(),
+        env: [("SHELL", "/bin/sh"), ("HOME", root.as_str()), ("PS1", "$ ")]
+            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+            .to_vec(),
+    };
+    let mut h = Harness::with_shell(backend, Location::new("srv:", ""), home(), shell);
+    assert!(h.app.hitmap.panes[0].sync.is_empty(), "no box without a terminal");
+    h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    tick_until(&mut h, "shell shown", |a| running(a).is_some_and(crate::terminal::Session::shown));
+    let wait = |h: &mut Harness| {
+        for _ in 0..6 {
+            std::thread::sleep(Duration::from_millis(150));
+            h.app.handle(Event::Tick, Instant::now());
+            h.settle();
+        }
+    };
+
+    // The shell moves: the pane stays.
+    type_in(&mut h, "cd sub; echo there\r");
+    tick_until(&mut h, "printed", |a| {
+        running(a).is_some_and(|s| ends_a_line(&s.screen().contents(), "there"))
+    });
+    wait(&mut h);
+    assert_eq!(h.app.panes[0].loc.path, "");
+    // The pane moves: the shell is sent nowhere.
+    h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    h.press(KeyCode::Enter);
+    h.press(KeyCode::Backspace);
+    wait(&mut h);
+    assert_eq!(h.app.panes[0].loc.path, "");
+    assert!(!term_text(&h).contains("cd '"), "{}", term_text(&h));
+
+    // The box: lit, and the terminal comes to where the pane is. The keys stay where
+    // they are.
+    h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    let sync = h.app.hitmap.panes[0].sync;
+    assert!(!h.cell_modifiers(sync.x + 2, sync.y + 1).contains(ratatui::style::Modifier::REVERSED));
+    h.click(sync.x + 2, sync.y + 1);
+    assert_eq!(h.app.focus, Focus::Terminal);
+    assert!(h.app.term_sync[0] && !h.app.term_sync[1]);
+    assert!(h.cell_modifiers(sync.x + 2, sync.y + 1).contains(ratatui::style::Modifier::REVERSED));
+    tick_until(&mut h, "cd typed", |a| {
+        running(a).is_some_and(|s| s.screen().contents().contains(&format!("cd '{root}'")))
+    });
+    // From now on a cd in the shell takes the pane along.
+    wait(&mut h);
+    type_in(&mut h, "cd sub\r");
+    tick_until(&mut h, "the pane in sub", |a| a.panes[0].loc.path == "sub");
+
+    // The key puts it out again.
+    h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    h.press_mod(KeyCode::Char('s'), KeyModifiers::CONTROL);
+    assert!(!h.app.term_sync[0]);
+    assert!(!h.cell_modifiers(sync.x + 2, sync.y + 1).contains(ratatui::style::Modifier::REVERSED));
+    h.press(KeyCode::Backspace);
+    wait(&mut h);
+    assert_eq!(h.app.panes[0].loc.path, "");
+    assert_eq!(term_text(&h).matches("cd '").count(), 1, "{}", term_text(&h));
+}
+
 /// A shell where the pane is, which follows the pane once nothing runs in it. sh with a
 /// known setup stands in for ssh to a server.
 #[test]
@@ -2479,6 +2551,7 @@ fn the_terminal_opens_in_the_pane_directory_and_follows_it() {
     };
     let mut h = Harness::with_shell(backend, Location::new("srv:", ""), home(), shell);
 
+    h.press_mod(KeyCode::Char('s'), KeyModifiers::CONTROL);
     h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
     assert_eq!(h.app.focus, Focus::Terminal);
     tick_until(&mut h, "shell shown", |a| running(a).is_some_and(crate::terminal::Session::shown));
@@ -2520,6 +2593,83 @@ fn the_terminal_opens_in_the_pane_directory_and_follows_it() {
     type_in(&mut h, "exit\r");
     tick_until(&mut h, "closed", |a| a.terminals.iter().all(Option::is_none));
     assert_eq!(h.app.focus, Focus::Panes);
+}
+
+/// A `cd` typed into the terminal takes the pane along, once the shell is back at its
+/// prompt; the pane's own moves still take the shell along.
+#[test]
+fn the_pane_follows_the_terminal_to_where_its_shell_goes() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().canonicalize().unwrap().to_string_lossy().into_owned();
+    std::fs::create_dir_all(tmp.path().join("sub dir/deeper")).unwrap();
+    let (backend, _) = fake_fs(
+        &[
+            ("srv:", vec![dir("sub dir")]),
+            ("srv:sub dir", vec![dir("deeper")]),
+            ("srv:sub dir/deeper", vec![]),
+            ("/home/sky", vec![]),
+        ],
+        &[],
+    );
+    let shell = crate::terminal::ShellTarget {
+        open: ["/bin/sh", "-c"].map(str::to_owned).to_vec(),
+        run: ["/bin/sh", "-c"].map(str::to_owned).to_vec(),
+        root: root.clone(),
+        env: [("SHELL", "/bin/sh"), ("HOME", root.as_str()), ("PS1", "$ ")]
+            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+            .to_vec(),
+    };
+    let mut h = Harness::with_shell(backend, Location::new("srv:", ""), home(), shell);
+    h.press_mod(KeyCode::Char('s'), KeyModifiers::CONTROL);
+    h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    tick_until(&mut h, "shell shown", |a| running(a).is_some_and(crate::terminal::Session::shown));
+    // Where the shell starts is only taken note of.
+    type_in(&mut h, "true\r");
+    for _ in 0..4 {
+        std::thread::sleep(Duration::from_millis(150));
+        h.app.handle(Event::Tick, Instant::now());
+        h.settle();
+    }
+    assert_eq!(h.app.panes[0].loc.path, "");
+
+    type_in(&mut h, "cd 'sub dir/deeper'\r");
+    tick_until(&mut h, "the pane in deeper", |a| a.panes[0].loc.path == "sub dir/deeper");
+    assert_eq!(h.app.focus, Focus::Terminal, "the keys stay with the terminal");
+    // Not while a program runs in the shell, whatever it prints: once it is done.
+    type_in(&mut h, "cd ..; echo moved; sleep 1\r");
+    tick_until(&mut h, "printed", |a| {
+        running(a).is_some_and(|s| ends_a_line(&s.screen().contents(), "moved"))
+    });
+    assert_eq!(h.app.panes[0].loc.path, "sub dir/deeper");
+    tick_until(&mut h, "the pane in sub dir", |a| a.panes[0].loc.path == "sub dir");
+    // The shell was not sent back: no cd of rse's was typed for a move of its own.
+    assert!(!term_text(&h).contains("cd '/"), "{}", term_text(&h));
+
+    // The pane's own move still takes the shell along, and is not taken for the shell's.
+    h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    h.press(KeyCode::Backspace);
+    assert_eq!(h.app.panes[0].loc.path, "");
+    tick_until(&mut h, "cd typed", |a| {
+        running(a).is_some_and(|s| s.screen().contents().contains(&format!("cd '{root}'")))
+    });
+    for _ in 0..6 {
+        std::thread::sleep(Duration::from_millis(150));
+        h.app.handle(Event::Tick, Instant::now());
+        h.settle();
+    }
+    assert_eq!(h.app.panes[0].loc.path, "");
+    // Outside the root the pane has nowhere to go: it stays.
+    h.press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    type_in(&mut h, "cd /; echo out\r");
+    tick_until(&mut h, "printed", |a| {
+        running(a).is_some_and(|s| ends_a_line(&s.screen().contents(), "out"))
+    });
+    for _ in 0..6 {
+        std::thread::sleep(Duration::from_millis(150));
+        h.app.handle(Event::Tick, Instant::now());
+        h.settle();
+    }
+    assert_eq!(h.app.panes[0].loc.path, "");
 }
 
 /// On the local disk the terminal is the user's own shell, in the pane's directory.

@@ -65,7 +65,7 @@ impl Location {
         Self { fs, path: trim_trailing_slashes(path), endpoint: Some(Box::new(endpoint)) }
     }
 
-    fn with_path(&self, path: String) -> Self {
+    pub(crate) fn with_path(&self, path: String) -> Self {
         Self { fs: self.fs.clone(), path, endpoint: self.endpoint.clone() }
     }
 

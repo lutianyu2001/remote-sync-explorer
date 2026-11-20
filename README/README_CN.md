@@ -70,7 +70,7 @@ remote-sync-explorer（命令为 `rse`）是一个双栏终端文件管理器，
 - **传输队列**：多个任务并发执行，显示已传字节、速度和剩余时间，可以逐个取消或重试。两个窗格显示着任务的两头时（删除只需要它删除的那一头），任务才运行；在窗格里打开别的地方会暂停它，回来后接着跑。没完成的任务会保留到下次启动。如果有不能续传的传输正在跑，离开或退出前会先列出哪些文件要从头重传。
 - **鼠标**：单击、双击、滚轮、滚动条，Ctrl+单击或右键标记，Alt+单击标记一段，拖动来复制或移动。
 - **通过 OpenSSH 使用 SFTP**：`~/.ssh/config`（ProxyJump、证书、硬件密钥）照常生效，每台服务器只登录一次。
-- **终端**：Ctrl+O 在窗格下方打开你的 shell，从窗格所在目录开始：本地磁盘上直接打开，服务器上走同一个 ssh 登录；浏览时它跟着窗格换目录。
+- **终端**：Ctrl+O 在窗格下方打开你的 shell，从窗格所在目录开始：本地磁盘上直接打开，服务器上走同一个 ssh 登录；Ctrl+S（或 `⇅` 按钮）让它和窗格保持在同一个目录，哪一边换目录，另一边都跟着走。
 - **语言**：英文和简体中文，跟随系统语言。
 
 ## 安全审计
@@ -264,7 +264,7 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
 
 ### 地址栏
 
-每个窗格上方有一行三个框：协议（`sftp://`、`smb://`、`s3://`……，本地磁盘显示 `Local`）、地址栏和一个按钮：`↻` 重新加载窗格。只有地址栏能获得焦点（按键 `1` 或 `3`），旁边的框会随它一起高亮，点击协议框没有反应。路径太长放不下时，地址栏只在 `«` 后显示当前目录，和 Windows Explorer 一样（`« photos`）；编辑时显示完整路径。
+每个窗格上方有一行三个框：协议（`sftp://`、`smb://`、`s3://`……，本地磁盘显示 `Local`）、地址栏和一个按钮：`↻` 重新加载窗格（窗格开着[终端](#终端)时，它左边还有一个 `⇅`）。只有地址栏能获得焦点（按键 `1` 或 `3`），旁边的框会随它一起高亮，点击协议框没有反应。路径太长放不下时，地址栏只在 `«` 后显示当前目录，和 Windows Explorer 一样（`« photos`）；编辑时显示完整路径。
 
 在获得焦点的地址栏按 Enter、在窗格里按 `:`，或点击地址栏，都会开始编辑地址：地址栏下方打开一个窗口，有箭头从地址栏指向它，同时地址栏显示 `[Revising]`（终端高度不够放下这个窗口时，直接在地址栏里编辑）。地址太长时输入框会滚动，两端高亮的 `<` 或 `>` 表示那一侧有文字被截断，与 readline 和 nano 相同。地址改动后按钮变成 `>`，点击即跳转（和 Enter 一样；地址未改动时 Enter 会重新加载）。Esc 或点击别处取消。编辑时协议框会跟随输入：输入 `ftp://` 会把它移进协议框，在输入框开头按 Backspace 会把它取回，Ctrl+U 清空输入框和协议。
 
@@ -303,6 +303,7 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
 <tr><td>开关覆写模式：复制、移动和重命名直接覆盖已有文件，不再询问（每次启动时都是关闭的；开启时屏幕顶部有一行红色提示）</td><td>O</td><td>—</td></tr>
 <tr><td>进入或离开传输队列；在队列里 x 取消，r 重试，c 清除已完成的任务</td><td>Ctrl+T</td><td>Ctrl+X J</td></tr>
 <tr><td>在窗格下方打开终端，从窗格所在目录开始（本地或通过 ssh 连接的服务器）；在终端里则回到窗格（见<a href="#终端">终端</a>）</td><td colspan="2">Ctrl+O</td></tr>
+<tr><td>让当前窗格和它的终端保持在同一个目录，或者停止：任何一边 <code>cd</code>，另一边跟着走（每次启动时关闭；开启时 <code>⇅</code> 按钮反白）</td><td>Ctrl+S</td><td>—</td></tr>
 <tr><td>错误日志（最近 100 条）</td><td>E</td><td>—</td></tr>
 <tr><td>设置页面：修改配置文件里的设置（见<a href="#配置">配置</a>）</td><td>F4</td><td>—</td></tr>
 <tr><td>帮助</td><td>?</td><td>F1</td></tr>
@@ -331,6 +332,7 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
 | 单击窗格空白处 | 清除标记，聚焦该窗格 |
 | 单击地址栏 | 编辑地址 |
 | 单击地址右侧的 ↻ / > 按钮 | 重新加载该窗格 / 跳转到编辑后的地址 |
+| 单击它左边的 ⇅ 按钮（窗格开着终端时才有） | 让窗格和它的终端保持在同一个目录，或者停止；按键留在原处 |
 | 拖动 | 复制或移动（见下文） |
 | 单击队列中的一行 / 它的 ✕ | 选中该任务 / 取消它 |
 | 单击底部的按键提示 | 执行它 |
@@ -346,7 +348,13 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
 
 Ctrl+O 会在窗格下方横跨整个宽度打开一个终端：本地磁盘上是本机你的登录 shell；在通过系统 ssh 连接的服务器上（见[通过 OpenSSH 使用 SFTP](#通过-openssh-使用-sftp)）是那台服务器上你的登录 shell，走 rse 已经建立的主连接，不会再登录一次。其他远程没有终端。它从窗格所在的目录开始，屏幕是干净的：服务器在 shell 之前打印的内容（欢迎横幅、message of the day）会被清掉；bash、zsh 和 fish 会先收到一个 Ctrl+L，清掉它们的启动文件打印的内容。
 
-终端拿着按键时（边框是绿色的），所有按键都交给 shell，Ctrl+C 和 Esc 也一样。Ctrl+O 把按键交还给窗格，在窗格里再按一次则回到终端；这期间终端一直开着。打开终端的那个窗格在同一个磁盘或服务器上换到别的目录时，终端会跟着：rse 先清掉 shell 里输入了一半的命令行，再输入一条 `cd`，开头的空格让大多数 shell 不把它记进历史。shell 里有命令在运行时（rse 用 `ps` 询问），`cd` 会等命令结束再输入，所以绝不会打进 `vim` 这样的程序里。名字里有控制字符的目录不会跟过去。`exit` 或 Ctrl+D 关闭终端；在终端上滚动滚轮可以往回翻看输出。如果你运行的程序要用 Ctrl+O，可以把终端换到别的键（`[keys]` 下的 `terminal = [...]`）。`-T`（`--no-terminal`）在本次运行中关闭终端功能（本地和服务器都关），用于不应从 rse 打开 shell 的场合。
+终端拿着按键时（边框是绿色的），所有按键都交给 shell，Ctrl+C 和 Esc 也一样。Ctrl+O 把按键交还给窗格，在窗格里再按一次则回到终端；这期间终端一直开着。
+
+窗格和它的终端默认各走各的，要你把它们连起来才同步：在窗格里按 Ctrl+S，或单击 `⇅` 按钮（窗格开着终端时，它在 `↻` 左边），为这个窗格开启同步，再按一次关闭；开启时按钮反白，每次启动时都是关闭的。开启时，终端先回到窗格所在的目录。此后，窗格在同一个磁盘或服务器上换到别的目录时，终端会跟着：rse 先清掉 shell 里输入了一半的命令行，再输入一条 `cd`，开头的空格让大多数 shell 不把它记进历史。shell 里有命令在运行时（rse 用 `ps` 询问），`cd` 会等命令结束再输入，所以绝不会打进 `vim` 这样的程序里。名字里有控制字符的目录不会跟过去。
+
+同步开启时，窗格也跟随终端：在终端里敲完一行、shell 回到提示符后，rse 会问 shell 在哪个目录（经由同一条连接读 `/proc/<pid>/cwd`，没有 `/proc` 的系统用 `lsof`），目录变了，窗格就跟过去，所以在终端里 `cd`，上面的文件列表会一起走。按键仍留在终端。窗格显示不了的目录（在打开这个远程时所用的根目录之外）不会跟随，窗格留在原处。同步关闭时，rse 不会去问 shell。
+
+`exit` 或 Ctrl+D 关闭终端；在终端上滚动滚轮可以往回翻看输出。如果你运行的程序要用 Ctrl+O，可以把终端换到别的键（`[keys]` 下的 `terminal = [...]`）。`-T`（`--no-terminal`）在本次运行中关闭终端功能（本地和服务器都关），用于不应从 rse 打开 shell 的场合。
 
 ### 冲突、移动与取消
 
@@ -406,7 +414,7 @@ move = ["F6", "m"]
 # Any action from the help screen (?) by its name: switch_pane, up, down,
 # page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort,
 # sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename,
-# mkdir, delete, overwrite_mode, queue, terminal, focus_left_address,
+# mkdir, delete, overwrite_mode, queue, terminal, terminal_sync, focus_left_address,
 # focus_left, focus_right_address, focus_right, focus_queue, error_log,
 # settings, help, quit, queue_cancel, queue_retry, queue_clear.
 # Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn, Delete.

@@ -120,7 +120,9 @@ and
 .BR [3] ),
 and a button,
 .BR ↻ ,
-that reloads the pane.
+that reloads the pane (a second one,
+.BR ⇅ ,
+stands left of it while the pane has a terminal).
 Enter in the focused address bar,
 .B :
 in a pane, or a click on the address edits it.
@@ -475,6 +477,11 @@ T}	T{
 \fBCtrl+O\fR
 T}
 T{
+Keep the active pane and its terminal in the same directory, or stop (off at every start).
+T}	T{
+\fBCtrl+S\fR
+T}
+T{
 The error log (the last 100).
 T}	T{
 \fBE\fR
@@ -544,7 +551,9 @@ a click on a column header sorts by it, and again the other way round;
 a click on blank space in a pane clears the marks;
 a click on the address edits it, on
 .B ↻
-reloads the pane;
+reloads the pane, on
+.B ⇅
+keeps the pane and its terminal in the same directory, or stops;
 a click on a queue row selects the job, on its
 .B ✕
 cancels it;
@@ -575,12 +584,25 @@ Other remotes have no terminal.
 While it has the keys (its border is green), every key goes to the shell, Ctrl+C and
 Esc included; Ctrl+O gives them back to the panes, and the terminal folds to the last
 five lines up to its cursor.
-When the pane goes to another directory on the same disk or server, rse types a
-.B cd
-into the shell, once no command runs there.
 No key of rse closes it: only
 .B exit
 in its shell does.
+.PP
+A pane and its terminal each go their own way until Ctrl+S in the panes, or a click on
+.B ⇅
+(left of
+.B ↻
+while the pane has a terminal), ties them together, and again unties them; the button is
+lit while they are tied, and they are not at any start. Tied, the terminal first goes to
+the pane's directory. From then on, when the pane goes to another directory on the same
+disk or server, rse types a
+.B cd
+into the shell, once no command runs there.
+The pane follows the terminal too: after a line typed into it, once the shell is back at its
+prompt, rse asks where the shell is and, when that changed, the pane goes there, so a
+.B cd
+in the terminal moves the file list with it. A directory the pane cannot show (outside the
+root of the remote it was opened on) leaves the pane where it is.
 .SH CONFLICTS AND OVERWRITING
 When the target already has an entry of the same name, rse asks: overwrite, skip,
 overwrite all, skip all or cancel; skip is the default.
@@ -637,7 +659,7 @@ copy = ["F5", "c"]       # any action, by its name below
 The actions are named switch_pane, up, down, page_up, page_down, home, end, enter,
 parent, mark, mark_all, filter, sort, sort_reverse, toggle_hidden, goto, remote, swap,
 refresh, copy, move, rename, mkdir, delete, overwrite_mode, queue, terminal,
-focus_left_address, focus_left, focus_right_address, focus_right, focus_queue,
+terminal_sync, focus_left_address, focus_left, focus_right_address, focus_right, focus_queue,
 error_log, settings, help, quit, queue_cancel, queue_retry and queue_clear.
 Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn or Delete.
 .PP

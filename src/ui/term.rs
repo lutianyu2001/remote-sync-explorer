@@ -8,6 +8,7 @@ use super::panes::SPINNER;
 use crate::app::{App, Focus, TermState};
 use crate::event::PaneId;
 use crate::keymap::Action;
+use crate::terminal::ShellDir;
 
 /// The terminal's share of the panes' room, and what the panes keep at least.
 const SHARE: (u16, u16) = (2, 5);
@@ -32,7 +33,8 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App, pane: PaneId) -> Option<(u1
     let border = if focused { super::FOCUSED } else { Style::new() };
     let name = tr!("window-terminal");
     let note = match &term.state {
-        TermState::Running(s) => s.dir().shown(),
+        // Unknown once a line was typed into a shell its pane does not follow.
+        TermState::Running(s) => s.dir().map(ShellDir::shown).unwrap_or_default(),
         TermState::Opening(_) => String::new(),
     };
     let inner = super::window(

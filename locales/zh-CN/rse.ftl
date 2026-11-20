@@ -78,6 +78,8 @@ terminal-not-ssh = 只有本地磁盘和通过 ssh 连接的服务器才能打�
 terminal-disabled = 终端功能已关闭（-T）
 terminal-failed = 终端：{ $error }
 terminal-cd-control = 终端：目录名里有控制字符，不输入到 shell 里
+terminal-sync-on = 终端：现在和窗格保持在同一个目录
+terminal-sync-off = 终端：现在和窗格各走各的
 terminal-cd-unknown = 终端：无法判断 shell 里是否有命令在运行，留在原目录
 
 ## 操作
@@ -302,6 +304,8 @@ mouse-address = 单击地址栏
 mouse-address-does = 编辑地址
 mouse-button = 单击 ↻ / > 按钮
 mouse-button-does = 刷新 / 前往编辑后的地址
+mouse-sync = 单击 ⇅ 按钮
+mouse-sync-does = 让窗格和它的终端保持在同一个目录，或者停止（开启时反白）
 mouse-drag = 拖动
 mouse-drag-does = 复制或移动（拖动已选中的项时，带上所有选中项）
 mouse-cancel = 单击队列中的 ✕
@@ -444,6 +448,7 @@ key-mkdir = 新建目录
 key-delete = 删除
 key-overwrite_mode = 开关覆写模式：不询问，直接覆盖已有文件
 key-queue = 进入或离开传输队列
+key-terminal_sync = 让窗格和它的终端保持在同一个目录，或者停止：任何一边换目录，另一边跟着走（默认关闭）
 key-terminal = 在窗格下方、窗格所在目录打开终端（本地或通过 ssh 连接的服务器）；在终端里则回到窗格（终端折叠为 5 行）。只能在 shell 里输入 exit 关闭终端
 key-focus_left_address = 聚焦左侧地址栏
 key-focus_left = 聚焦左侧窗格

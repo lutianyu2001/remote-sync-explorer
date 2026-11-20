@@ -18,6 +18,11 @@
 //! a program it runs; while one runs, the `cd` waits and is tried again every
 //! [`RETRY`]. A directory whose name holds a control character is never typed: the
 //! shell would read a line break in it as the end of the command.
+//!
+//! Followed by the pane: after a line typed into the terminal, once its output has been
+//! still for [`ASK_WAIT`] and the shell is in the foreground again, the shell's working
+//! directory is asked for through the master (`/proc/<pid>/cwd`, or `lsof` where there is
+//! no `/proc`). When it is another than the one last seen, the pane goes there.
 
 use std::fmt::Write as _;
 use std::fs::{File, OpenOptions};
@@ -42,6 +47,8 @@ pub const CLEAR_WAIT: Duration = Duration::from_secs(2);
 pub const START_WAIT: Duration = Duration::from_secs(5);
 /// How often a `cd` waiting for a running program to end is tried again.
 pub const RETRY: Duration = Duration::from_secs(1);
+/// How long the terminal's output is still before the shell is asked where it is.
+pub const ASK_WAIT: Duration = Duration::from_millis(300);
 /// Lines kept above the screen, for the wheel.
 const SCROLLBACK: usize = 1000;
 /// The OSC sequence number the start script reports the shell with.
@@ -74,6 +81,28 @@ impl ShellTarget {
     pub fn local(root: &str) -> Self {
         let sh = vec!["/bin/sh".to_owned(), "-c".to_owned()];
         Self { open: sh.clone(), run: sh, root: root.to_owned(), env: Vec::new() }
+    }
+
+    /// The pane's path of the directory `cwd` on the server, whose login directory is
+    /// `home`: what [`Self::dir`] leads back from. `None` for a directory outside the root.
+    pub fn path_of(&self, cwd: &str, home: &str) -> Option<String> {
+        let under = |base: &str| {
+            let base = base.trim_end_matches('/');
+            let rest = cwd.strip_prefix(base)?;
+            if rest.is_empty() { Some("") } else { rest.strip_prefix('/') }
+        };
+        if !cwd.starts_with('/') || !home.starts_with('/') {
+            return None;
+        }
+        let path = if self.root.is_empty() {
+            // The login directory: what is outside it is written from the root.
+            under(home).unwrap_or(cwd)
+        } else if self.root.starts_with('/') {
+            under(&self.root)?
+        } else {
+            under(&crate::rsync::join(&format!("{}/", home.trim_end_matches('/')), &self.root))?
+        };
+        Some(path.trim_end_matches('/').to_owned())
     }
 
     /// The directory of a pane's path (a [`Location`](crate::location::Location)'s).
@@ -225,11 +254,24 @@ pub struct Session {
     child: Child,
     shell: Option<Shell>,
     start: Start,
-    /// Where the shell is, as far as rse knows, and where the pane wants it.
-    at: ShellDir,
-    wanted: ShellDir,
-    checking: bool,
+    /// Where the shell is, when rse knows (not after a line typed while the pane and the
+    /// shell go their own ways), and where the pane wants it, when it wants it anywhere.
+    at: Option<ShellDir>,
+    wanted: Option<ShellDir>,
+    /// A question to the shell is out (whether it is idle, or where it is): one at a time.
+    asked: bool,
     retry_at: Option<Instant>,
+    /// The shell's working directory as it last said, for the pane to follow when it
+    /// changes; unknown after a `cd` rse typed, until the shell says.
+    cwd: Option<String>,
+    /// A line was typed, or the directory is unknown: the shell is to be asked where it
+    /// is, at `ask_at`, once its output is still.
+    ask: bool,
+    ask_at: Option<Instant>,
+    /// Not before this: the shell was busy when last asked.
+    ask_after: Option<Instant>,
+    /// The pane and the shell keep to one directory (see [`Session::sync`]).
+    synced: bool,
     /// Lines scrolled back with the wheel.
     pub scroll: usize,
     events: Sender<Event>,
@@ -303,10 +345,15 @@ impl Session {
             child,
             shell: None,
             start: Start::Connecting(now),
-            at: dir.clone(),
-            wanted: dir,
-            checking: false,
+            at: Some(dir),
+            wanted: None,
+            asked: false,
             retry_at: None,
+            cwd: None,
+            ask: true,
+            ask_at: None,
+            ask_after: None,
+            synced: false,
             scroll: 0,
             events,
         })
@@ -321,9 +368,9 @@ impl Session {
         self.start == Start::Ready
     }
 
-    /// Where the shell is, as far as rse knows.
-    pub fn dir(&self) -> &ShellDir {
-        &self.at
+    /// Where the shell is, when rse knows.
+    pub fn dir(&self) -> Option<&ShellDir> {
+        self.at.as_ref()
     }
 
     pub fn target(&self) -> &ShellTarget {
@@ -355,6 +402,11 @@ impl Session {
             self.parser.screen_mut().clear_scrollback();
             self.start = Start::Ready;
         }
+        // Once this output has been still a while; not sooner than a busy shell allows.
+        if self.ask {
+            let at = now + ASK_WAIT;
+            self.ask_at = Some(self.ask_after.map_or(at, |after| at.max(after)));
+        }
         if self.start == Start::Ready {
             self.follow(now);
         }
@@ -374,12 +426,84 @@ impl Session {
         }
         if self.start == Start::Ready {
             self.follow(now);
+            self.ask_where(now);
         }
+    }
+
+    /// Asks the shell where it is, when that is due and no other question is out.
+    fn ask_where(&mut self, now: Instant) {
+        let Some(shell) = &self.shell else { return };
+        let due = self.ask && self.ask_at.is_some_and(|at| now >= at);
+        // A `cd` of the pane's that waits comes first: the shell is about to move.
+        if !due || !self.synced || self.asked || self.behind() {
+            return;
+        }
+        self.asked = true;
+        self.ask_at = None;
+        let (run, pid, id, tx) = (self.target.run.clone(), shell.pid, self.id, self.events.clone());
+        thread::spawn(move || {
+            let (idle, dirs) = shell_state(&run, pid);
+            let _ = tx.send(Event::TermWhere { id, idle, dirs });
+        });
+    }
+
+    /// What the shell said of itself (see [`Event::TermWhere`]). Returns the pane's path
+    /// of its working directory when that changed since it was last seen, and the pane
+    /// can show it.
+    pub fn located(
+        &mut self,
+        idle: Option<bool>,
+        dirs: Option<(String, String)>,
+        now: Instant,
+    ) -> Option<String> {
+        self.asked = false;
+        if idle == Some(false) {
+            // A program runs in it: asked again when its output is next still, and no
+            // sooner than `RETRY` from now, however often it prints.
+            self.ask_after = Some(now + RETRY);
+            return None;
+        }
+        self.ask = false;
+        self.ask_after = None;
+        let (home, cwd) = dirs?;
+        let before = self.cwd.replace(cwd.clone());
+        // The first answer, and the one after a `cd` of rse's own, only say where it is.
+        if before.is_none_or(|before| before == cwd) || !self.synced || self.behind() {
+            return None;
+        }
+        let path = self.target.path_of(&cwd, &home)?;
+        self.at = Some(self.target.dir(&path));
+        self.wanted = None;
+        Some(path)
+    }
+
+    /// Whether the pane and the shell keep to one directory.
+    pub fn synced(&self) -> bool {
+        self.synced
+    }
+
+    /// Keeps the pane and the shell in one directory from now on (`on`), starting from
+    /// the pane's, `dir`, when the pane is on the shell's server; or lets each go its own
+    /// way, dropping a `cd` that waits.
+    pub fn sync(&mut self, on: bool, dir: Option<ShellDir>, now: Instant) {
+        self.synced = on;
+        match dir {
+            Some(dir) if on => self.want(dir, now),
+            _ => {
+                self.wanted = None;
+                self.retry_at = None;
+            }
+        }
+    }
+
+    /// Whether a `cd` of the pane's is still to be typed.
+    fn behind(&self) -> bool {
+        self.wanted.is_some() && self.wanted != self.at
     }
 
     /// Sends the shell to `dir`, as soon as nothing runs in it.
     pub fn want(&mut self, dir: ShellDir, now: Instant) {
-        self.wanted = dir;
+        self.wanted = Some(dir);
         self.retry_at = None;
         if self.start == Start::Ready {
             self.follow(now);
@@ -388,10 +512,10 @@ impl Session {
 
     fn follow(&mut self, now: Instant) {
         let Some(shell) = &self.shell else { return };
-        if self.wanted == self.at || self.checking || self.retry_at.is_some_and(|t| now < t) {
+        if !self.synced || !self.behind() || self.asked || self.retry_at.is_some_and(|t| now < t) {
             return;
         }
-        self.checking = true;
+        self.asked = true;
         let (run, pid, id, tx) = (self.target.run.clone(), shell.pid, self.id, self.events.clone());
         thread::spawn(move || {
             let idle = foreground_is(&run, pid);
@@ -402,12 +526,17 @@ impl Session {
     /// Whether the shell was in the foreground when asked (`None`: it could not be told).
     /// Types the `cd` when it was; returns a note for the user when it cannot be typed.
     pub fn idle(&mut self, idle: Option<bool>, now: Instant) -> Option<String> {
-        self.checking = false;
+        self.asked = false;
+        // The pane no longer wants it anywhere: untied meanwhile.
+        let wanted = self.wanted.clone()?;
         let name = self.shell.as_ref().map_or("", |s| s.name.as_str());
         match idle {
             Some(true) => {
-                let input = cd_input(&self.wanted, name);
-                self.at = self.wanted.clone();
+                let input = cd_input(&wanted, name);
+                self.at = Some(wanted);
+                // Where that leads is the shell's to say: a link's target, perhaps.
+                self.cwd = None;
+                self.ask = true;
                 match input {
                     Some(input) => {
                         self.scroll = 0;
@@ -422,14 +551,22 @@ impl Session {
                 None
             }
             None => {
-                self.at = self.wanted.clone();
+                self.at = Some(wanted);
                 Some(tr!("terminal-cd-unknown"))
             }
         }
     }
 
-    /// Types `bytes`, back at the bottom of the screen.
+    /// Types `bytes`, back at the bottom of the screen. After a line's end, the shell is
+    /// asked where it is.
     pub fn input(&mut self, bytes: &[u8]) {
+        if bytes.iter().any(|b| matches!(b, b'\r' | b'\n' | 0x04)) {
+            self.ask = true;
+            self.ask_at = None;
+            if !self.synced {
+                self.at = None;
+            }
+        }
         self.scroll = 0;
         self.parser.screen_mut().set_scrollback(0);
         self.write(bytes);
@@ -583,6 +720,33 @@ fn foreground_is(run: &[String], pid: u32) -> Option<bool> {
     Some(tpgid == pid)
 }
 
+/// Whether the shell `pid` was in the foreground of its terminal, and its login and working
+/// directories, asked with `run`. The script goes to sh whatever the login shell (see
+/// [`remote_command`]): it holds no single quote, `!` or backslash.
+fn shell_state(run: &[String], pid: u32) -> (Option<bool>, Option<(String, String)>) {
+    let script = format!(
+        r#"ps -o tpgid= -p {pid}; echo "$HOME"; readlink /proc/{pid}/cwd 2>/dev/null || lsof -a -d cwd -p {pid} -Fn 2>/dev/null | sed -n s/^n//p"#
+    );
+    let Some((program, args)) = run.split_first() else { return (None, None) };
+    let out = Command::new(program)
+        .args(args)
+        .arg(format!("exec /bin/sh -c '{script}'"))
+        .stdin(Stdio::null())
+        .stderr(Stdio::null())
+        .output();
+    let Ok(out) = out else { return (None, None) };
+    let said = String::from_utf8_lossy(&out.stdout);
+    let mut lines = said.splitn(3, '\n');
+    let idle = lines.next().and_then(|l| l.trim().parse::<u32>().ok()).map(|tpgid| tpgid == pid);
+    let home = lines.next().unwrap_or_default();
+    // All of the rest but its line end: a name may hold line breaks of its own.
+    let cwd = lines.next().unwrap_or_default();
+    let cwd = cwd.strip_suffix('\n').unwrap_or(cwd);
+    let dirs = (home.starts_with('/') && cwd.starts_with('/') && !cwd.contains(char::is_control))
+        .then(|| (home.to_owned(), cwd.to_owned()));
+    (idle, dirs)
+}
+
 /// The bytes a key sends to the programs on the terminal, as xterm sends them;
 /// `app_cursor` when they asked for the arrows' application mode.
 pub fn key_bytes(key: &KeyEvent, app_cursor: bool) -> Vec<u8> {
@@ -674,6 +838,51 @@ mod tests {
 
     /// The script passes every login shell unchanged: no quote, and a backslash only
     /// before a digit.
+    /// A directory of the server as the pane's path, from each kind of root, and back.
+    #[test]
+    fn a_directory_becomes_the_panes_path() {
+        let home = "/home/me";
+        for (root, cwd, path) in [
+            ("", "/home/me", Some("")),
+            ("", "/home/me/a b/c", Some("a b/c")),
+            // Outside the login directory: from the server's root.
+            ("", "/etc/ssh", Some("/etc/ssh")),
+            ("", "/home/meadow", Some("/home/meadow")),
+            ("/", "/", Some("")),
+            ("/", "/etc/ssh", Some("etc/ssh")),
+            ("/srv", "/srv", Some("")),
+            ("/srv/", "/srv/www", Some("www")),
+            ("/srv", "/srvx", None),
+            ("/srv", "/etc", None),
+            ("data", "/home/me/data/x", Some("x")),
+            ("data", "/home/me", None),
+            ("", "relative", None),
+        ] {
+            let t = target(root);
+            assert_eq!(t.path_of(cwd, home).as_deref(), path, "{root:?} {cwd:?}");
+            if let Some(path) = path {
+                let back = match t.dir(path) {
+                    ShellDir::Absolute(p) => p,
+                    ShellDir::Home(p) => crate::rsync::join("/home/me/", &p),
+                };
+                assert_eq!(back.trim_end_matches('/'), cwd.trim_end_matches('/'), "{root:?}");
+            }
+        }
+    }
+
+    /// What a shell says of itself: this test's own process, which leads no terminal.
+    #[test]
+    fn a_process_says_where_it_is() {
+        let run = ["/bin/sh", "-c"].map(str::to_owned);
+        let (idle, dirs) = shell_state(&run, std::process::id());
+        // Without a terminal of its own, or not in the foreground of the one it has.
+        assert_ne!(idle, Some(true));
+        let (home, cwd) = dirs.expect("its directories");
+        assert_eq!(std::path::Path::new(&cwd), std::env::current_dir().unwrap());
+        assert!(home.starts_with('/'));
+        assert_eq!(shell_state(&run, u32::MAX - 1).1, None);
+    }
+
     #[test]
     fn the_start_script_needs_no_escaping() {
         let cmd = remote_command(&ShellDir::Absolute("/it's a \\ \"dir\"\n$(x)".into()));

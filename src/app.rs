@@ -682,6 +682,8 @@ pub struct App {
     engines_asked: HashSet<(String, String)>,
     /// Each pane's terminal, under it, while open; by pane, so a swap takes them along.
     pub terminals: [Option<Terminal>; 2],
+    /// Whether each pane and its terminal keep to one directory (off until asked for).
+    pub term_sync: [bool; 2],
     /// Whether the terminal may be opened at all.
     terminal_allowed: bool,
     /// Where the settings are from, and the file the settings page writes.
@@ -736,6 +738,7 @@ impl App {
             engines: HashMap::new(),
             engines_asked: HashSet::new(),
             terminals: [None, None],
+            term_sync: [false; 2],
             terminal_allowed: init.terminal,
             settings: init.settings,
         };
@@ -818,6 +821,7 @@ impl App {
             Event::TermOutput { id, bytes } => self.on_term_output(id, &bytes, now),
             Event::TermClosed { id } => self.on_term_closed(id),
             Event::TermIdle { id, idle } => self.on_term_idle(id, idle, now),
+            Event::TermWhere { id, idle, dirs } => self.on_term_where(id, idle, dirs, now),
         }
     }
 
@@ -1203,6 +1207,7 @@ impl App {
                 self.dialog = Some(Dialog::Remotes { filter: String::new(), cursor: 0 });
             }
             Action::Terminal => self.toggle_terminal(),
+            Action::TerminalSync => self.toggle_terminal_sync(self.active, now),
             Action::Swap => {
                 self.terminal_swapped();
                 self.panes.swap(0, 1);
@@ -2241,6 +2246,10 @@ impl App {
                     self.run_effects(effects);
                 }
             }
+            // The focus stays where it is: in the terminal, perhaps.
+            Target::PaneButton { pane, action: Action::TerminalSync } => {
+                self.toggle_terminal_sync(pane, now);
+            }
             Target::PaneButton { pane, action } => {
                 self.active = pane;
                 self.focus = Focus::Panes;
@@ -2694,6 +2703,7 @@ fn works_in_address_bar(action: Action) -> bool {
             | Action::Goto
             | Action::Remote
             | Action::Refresh
+            | Action::TerminalSync
             | Action::ErrorLog
             | Action::OverwriteMode
             | Action::Settings

@@ -137,6 +137,14 @@ pub enum Event {
         id: crate::terminal::TermId,
         idle: Option<bool>,
     },
+    /// Where the terminal's shell is, asked after a command typed into it: whether the
+    /// shell was in the foreground, and its login and working directories when they could
+    /// be told.
+    TermWhere {
+        id: crate::terminal::TermId,
+        idle: Option<bool>,
+        dirs: Option<(String, String)>,
+    },
 }
 
 /// Short operations run on the browse workers.

@@ -102,8 +102,9 @@ chance. Good designs, it seems, think alike. Not every key is the same, though:
 - **SFTP through OpenSSH**: `~/.ssh/config` (ProxyJump, certificates, hardware keys)
   applies, with one shared login per server.
 - **Terminal**: Ctrl+O opens your shell under the active pane, in its directory: on the
-  local disk, or on a server through the same ssh login; each pane has its own, and it
-  follows its pane as you browse.
+  local disk, or on a server through the same ssh login; each pane has its own, and
+  Ctrl+S (or the `⇅` button) keeps it and its pane in the same directory, whichever of
+  the two moves.
 - **Languages**: English and Simplified Chinese, following the system locale.
 
 ## Security Audit
@@ -377,7 +378,8 @@ Any other rclone backend can be opened with a connection string, such as
 ### Address Bar
 
 Above each pane is a row of three boxes: the protocol (`sftp://`, `smb://`, `s3://`, …,
-or `Local` on the local disk), the address bar, and one button: `↻` reloads the pane.
+or `Local` on the local disk), the address bar, and one button: `↻` reloads the pane (a second one, `⇅`, stands left of
+it while the pane has a [terminal](#terminal)).
 Only the address bar can be focused (its key is `1` or `3`); the boxes beside it light
 up with it, and clicking the protocol box does nothing. A path too long for the bar
 shows only the current directory after `«`, as Windows Explorer does (`« photos`);
@@ -438,6 +440,7 @@ for those who know it; a key the two share spans both columns.
 <tr><td>Overwrite mode on or off: copies, moves and renames replace existing files without asking (off at every start; a red row across the top shows it is on)</td><td>O</td><td>—</td></tr>
 <tr><td>Enter or leave the transfer queue; there x cancels, r retries, c clears finished jobs</td><td>Ctrl+T</td><td>Ctrl+X J</td></tr>
 <tr><td>Terminal under the active pane, in its directory, locally or on a server reached through ssh; in the terminal, back to the panes, folding it to five lines; <code>exit</code> in it closes it (see <a href="#terminal">Terminal</a>)</td><td colspan="2">Ctrl+O</td></tr>
+<tr><td>Keep the active pane and its terminal in the same directory, or stop: a <code>cd</code> in either moves the other (off at every start; the <code>⇅</code> button is lit while it is on)</td><td>Ctrl+S</td><td>—</td></tr>
 <tr><td>Error log (last 100)</td><td>E</td><td>—</td></tr>
 <tr><td>Settings page: change the settings of the config file (see <a href="#configuration">Configuration</a>)</td><td>F4</td><td>—</td></tr>
 <tr><td>Help</td><td>?</td><td>F1</td></tr>
@@ -468,6 +471,7 @@ Mouse support is on by default (`[ui] mouse = true`). Every mouse action also ha
 | Click blank space in a pane | Clear marks, focus that pane |
 | Click the address bar | Edit the address |
 | Click the ↻ / > button right of the address | Reload that pane / go to the edited address |
+| Click the ⇅ button left of it (there while the pane has a terminal) | Keep the pane and its terminal in the same directory, or stop; the keys stay where they are |
 | Drag | Copy or move (see below) |
 | Click a queue row / its ✕ | Select the job / cancel it |
 | Click a key hint at the bottom | Run it |
@@ -504,12 +508,28 @@ While the terminal has the keys (its border is green), every key goes to the she
 Ctrl+C and Esc included. Ctrl+O gives the keys back to the panes, and from there to the
 active pane's terminal again; the terminal stays open meanwhile, folded to the last five
 lines up to its cursor (its shell keeps the full size). A click on a terminal gives it
-the keys, unfolded, and makes its pane the active one. When the pane it was opened from goes
+the keys, unfolded, and makes its pane the active one.
+
+A pane and its terminal each go their own way until you tie them together: Ctrl+S in the
+panes, or a click on the `⇅` button that stands left of `↻` while the pane has a terminal,
+turns that on for the pane, and again off; the button is lit (reverse video) while it is
+on, and it is off at every start. Turned on, the terminal first goes to the pane's
+directory. From then on, when the pane goes
 to another directory there (on the same disk or server), the terminal follows: rse types
 a `cd` into the shell, after clearing a half-typed line, with a leading space that keeps
 it out of the history of most shells. While a command runs in the shell (rse asks with
 `ps`), the `cd` waits and is typed once the command ends, so it never lands in a program
-such as `vim`. A directory whose name holds a control character is not followed. No key
+such as `vim`. A directory whose name holds a control character is not followed.
+
+The pane follows the terminal too, while the two are tied: after a line typed into the
+terminal, once the shell is back at
+its prompt, rse asks where the shell is (`/proc/<pid>/cwd`, or `lsof` where there is no
+`/proc`, through the same connection) and, when that changed, the pane goes there, so a
+`cd` in the terminal moves the file list with it. The keys stay with the terminal. A
+directory the pane cannot show (outside the root of the remote it was opened on) leaves
+the pane where it is. Left untied, the shell is never asked.
+
+No key
 of rse closes the terminal, since any key it took would be lost to the programs in it:
 it closes when its shell ends, with `exit`. The wheel scrolls back through its output. If a program
 you run needs Ctrl+O, bind the terminal to another key (`terminal = [...]` under
@@ -622,9 +642,10 @@ move = ["F6", "m"]
 # Any action from the help screen (?) by its name: switch_pane, up, down,
 # page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort,
 # sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename,
-# mkdir, delete, overwrite_mode, queue, terminal, focus_left_address,
-# focus_left, focus_right_address, focus_right, focus_queue, error_log,
-# settings, help, quit, queue_cancel, queue_retry, queue_clear.
+# mkdir, delete, overwrite_mode, queue, terminal, terminal_sync,
+# focus_left_address, focus_left, focus_right_address, focus_right,
+# focus_queue, error_log, settings, help, quit, queue_cancel, queue_retry,
+# queue_clear.
 # Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn, Delete.
 ```
 

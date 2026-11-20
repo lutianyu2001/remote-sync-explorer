@@ -1,7 +1,7 @@
 //! The terminals under the panes, one a pane, as the interface sees them: opening one for the
 //! active pane,
-//! keys and the wheel while it has them, and following the pane's directory (see
-//! [`crate::terminal`]).
+//! keys and the wheel while it has them, following the pane's directory, and the pane
+//! following the shell's (see [`crate::terminal`]).
 
 use std::time::Instant;
 
@@ -74,7 +74,12 @@ impl App {
             Ok(Some(target)) => {
                 let dir = target.dir(path);
                 let size = self.terminal_size(pane);
+                let synced = self.term_sync[pane];
                 Session::open(req, target, dir, size, self.exec.events(), now)
+                    .map(|mut s| {
+                        s.sync(synced, None, now);
+                        s
+                    })
                     .map_err(|e| e.to_string())
             }
             Ok(None) => Err(String::new()),
@@ -144,6 +149,24 @@ impl App {
         }
     }
 
+    /// The shell said where it is: its pane goes there, while it shows that server.
+    pub(super) fn on_term_where(
+        &mut self,
+        id: TermId,
+        idle: Option<bool>,
+        dirs: Option<(String, String)>,
+        now: Instant,
+    ) {
+        let Some(pane) = self.session_pane(id) else { return };
+        let Some(path) = self.session(id).and_then(|s| s.located(idle, dirs, now)) else { return };
+        let loc = &self.panes[pane].loc;
+        let shown = self.terminals[pane].as_ref().is_some_and(|t| endpoint_key(loc) == t.endpoint);
+        if shown && loc.path != path {
+            let loc = loc.with_path(path);
+            self.navigate(pane, loc);
+        }
+    }
+
     pub(super) fn terminal_tick(&mut self, now: Instant) {
         for t in &mut self.terminals {
             if let Some(Terminal { state: TermState::Running(s), .. }) = t {
@@ -157,15 +180,33 @@ impl App {
         if let Some(t) = &mut self.terminals[pane]
             && t.endpoint == endpoint_key(loc)
             && let TermState::Running(s) = &mut t.state
+            && s.synced()
         {
             let dir = s.target().dir(&loc.path);
             s.want(dir, now);
         }
     }
 
+    /// Keeps `pane` and its terminal in the same directory from now on, the terminal
+    /// going to the pane's first; or, when they are, lets each go its own way.
+    pub(super) fn toggle_terminal_sync(&mut self, pane: PaneId, now: Instant) {
+        let on = !self.term_sync[pane];
+        self.term_sync[pane] = on;
+        let loc = &self.panes[pane].loc;
+        if let Some(t) = &mut self.terminals[pane]
+            && let TermState::Running(s) = &mut t.state
+        {
+            // On another server than the terminal's, the pane has nowhere to send it.
+            let dir = (t.endpoint == endpoint_key(loc)).then(|| s.target().dir(&loc.path));
+            s.sync(on, dir, now);
+        }
+        self.say(if on { tr!("terminal-sync-on") } else { tr!("terminal-sync-off") });
+    }
+
     /// The panes swapped places: each terminal goes along with its pane.
     pub(super) fn terminal_swapped(&mut self) {
         self.terminals.swap(0, 1);
+        self.term_sync.swap(0, 1);
     }
 
     /// Keys for the active pane's terminal, which has the focus.

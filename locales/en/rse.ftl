@@ -81,6 +81,8 @@ terminal-not-ssh = A terminal opens only on the local disk or on a server reache
 terminal-disabled = The terminal is turned off (-T)
 terminal-failed = terminal: { $error }
 terminal-cd-control = terminal: the directory's name holds a control character, so it is not typed into the shell
+terminal-sync-on = terminal: it and the pane now keep to the same directory
+terminal-sync-off = terminal: it and the pane now go their own ways
 terminal-cd-unknown = terminal: cannot tell whether a command runs in the shell, so it stays where it is
 
 ## Operations
@@ -320,6 +322,8 @@ mouse-address = click the address bar
 mouse-address-does = edit the address
 mouse-button = click the ↻ / > button
 mouse-button-does = reload / go to the edited address
+mouse-sync = click the ⇅ button
+mouse-sync-does = keep the pane and its terminal in the same directory, or stop (lit while they are)
 mouse-drag = drag
 mouse-drag-does = copy or move (marked entries if you drag a marked one)
 mouse-cancel = click ✕ in the queue
@@ -465,6 +469,7 @@ key-mkdir = New directory
 key-delete = Delete
 key-overwrite_mode = Overwrite mode on or off: overwrite existing files without asking
 key-queue = Enter or leave the transfer queue
+key-terminal_sync = Keep the pane and its terminal in the same directory, or stop: a cd in either moves the other (off at first)
 key-terminal = Terminal under the pane, in its directory, locally or on a server reached through ssh; in the terminal, back to the panes (it folds to 5 lines). Only exit in the shell closes it
 key-focus_left_address = Focus the left address bar
 key-focus_left = Focus the left pane
