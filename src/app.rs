@@ -2065,6 +2065,28 @@ impl App {
         }
     }
 
+    /// Whether a click with `mods` marks every entry from the cursor to it: with Shift,
+    /// where the terminal passes Shift+click on instead of selecting text itself, and with
+    /// the one of Ctrl and Alt that does not mark single entries, which every terminal
+    /// passes on.
+    fn range_select_held(&self, mods: KeyModifiers) -> bool {
+        let other = match self.ui.multi_select_modifier {
+            MultiSelectModifier::Ctrl => KeyModifiers::ALT,
+            MultiSelectModifier::Alt => KeyModifiers::CONTROL,
+        };
+        mods.contains(KeyModifiers::SHIFT) || mods.contains(other)
+    }
+
+    /// Marks the entries of `pane` from its cursor to `row`, keeping the other marks, and
+    /// puts the cursor on `row`.
+    fn mark_range(&mut self, pane: PaneId, row: usize) {
+        let p = &mut self.panes[pane];
+        let (from, to) = (p.cursor.min(row), p.cursor.max(row));
+        let marks: Vec<Mark> = (from..=to).filter_map(|r| p.entry(r)).map(Entry::mark).collect();
+        p.marks.extend(marks);
+        p.set_cursor(row);
+    }
+
     fn on_mouse(&mut self, m: MouseEvent, now: Instant) {
         if self.quit != QuitState::Running {
             return;
@@ -2093,7 +2115,9 @@ impl App {
     fn left_down(&mut self, at: (u16, u16), mods: KeyModifiers, now: Instant) {
         self.status = None;
         let target = self.hitmap.hit(at.0, at.1);
-        let multi = self.multi_select_held(mods);
+        let range = self.range_select_held(mods);
+        // With both held, the range: as in a file manager, where Ctrl+Shift+click adds one.
+        let multi = range || self.multi_select_held(mods);
         let double = !multi
             && self
                 .last_click
@@ -2139,7 +2163,9 @@ impl App {
                 self.focus = Focus::Panes;
                 let opens = self.panes[pane].view.get(row) == Some(&Row::Parent)
                     || self.panes[pane].entry(row).is_some_and(|e| e.is_dir);
-                if multi {
+                if range {
+                    self.mark_range(pane, row);
+                } else if multi {
                     self.panes[pane].set_cursor(row);
                     self.toggle_mark(pane, row);
                 } else if double && opens {

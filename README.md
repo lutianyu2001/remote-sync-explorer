@@ -94,7 +94,8 @@ chance. Good designs, it seems, think alike. Not every key is the same, though:
   (the one it deletes in, for a delete); opening another place in a pane pauses it, and
   coming back goes on. Unfinished jobs are kept for the next start. Leaving or quitting
   while a transfer that cannot resume runs names the files that would start over first.
-- **Mouse**: click, double click, wheel, scrollbar, Ctrl+click or right click to mark, drag to
+- **Mouse**: click, double click, wheel, scrollbar, Ctrl+click or right click to mark,
+  Alt+click to mark a range, drag to
   copy or move.
 - **SFTP through OpenSSH**: `~/.ssh/config` (ProxyJump, certificates, hardware keys)
   applies, with one shared login per server.
@@ -453,6 +454,7 @@ Mouse support is on by default (`[ui] mouse = true`). Every mouse action also ha
 |--------|--------|
 | Click | Move the cursor there, clear marks, focus that pane |
 | Ctrl+click or right click | Mark or unmark, keep the other marks |
+| Alt+click or Shift+click | Mark everything from the cursor to there, keep the other marks |
 | Double click | Open a directory; on `..` go up |
 | Wheel | Scroll the pane under the pointer (focus and cursor do not move) |
 | Drag the scrollbar's thumb / click its track | Scroll that pane: the thumb follows the pointer / jumps there (focus, cursor and marks do not change) |
@@ -478,7 +480,8 @@ edge scrolls. Esc cancels. On release a menu offers *Copy here*, *Move here* and
 Note: while mouse support is on, hold Shift to select text in most terminals. In tmux
 use `set -g mouse on`. On macOS some terminals turn Ctrl+click into a right click (which
 also marks) or open their own menu; `multi_select_modifier = "alt"` switches to
-Alt+click.
+Alt+click, and Ctrl+click then marks the range. Most terminals keep Shift+click to themselves,
+for selecting text; where one passes it on, it marks the range too.
 
 ### Terminal
 

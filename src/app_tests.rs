@@ -1506,8 +1506,41 @@ fn alt_modifier_can_replace_ctrl() {
     let (x, y) = h.find(" a ");
     h.click_mod(x + 1, y, KeyModifiers::ALT);
     assert_eq!(h.app.panes[0].marks.len(), 1);
-    h.click_mod(x + 1, y, KeyModifiers::CONTROL);
-    assert!(h.app.panes[0].marks.is_empty(), "ctrl+click is a plain click now");
+    // Ctrl is now the key of ranges: from the cursor, on a, to b.
+    let (bx, by) = h.find(" b ");
+    h.click_mod(bx + 1, by, KeyModifiers::CONTROL);
+    assert_eq!(h.app.panes[0].marks.len(), 2);
+}
+
+/// Shift, where the terminal passes it on, and the one of Ctrl and Alt that marks no single
+/// entry mark all from the cursor to the click, keeping the other marks.
+#[test]
+fn shift_click_and_alt_click_mark_a_range() {
+    let mut h = standard();
+    let names = |h: &Harness| -> Vec<String> {
+        h.app.panes[0].marks.iter().map(|m| m.name.clone()).collect()
+    };
+    let rows = h.app.panes[0].view.len();
+    assert!(rows >= 4, "{rows} rows");
+    h.app.panes[0].set_cursor(1);
+    let (x, y) = h.find("a.pdf");
+    let first = h.app.panes[0].entry(1).unwrap().name.clone();
+    let last_row = rows - 1;
+    let last = h.app.panes[0].entry(last_row).unwrap().name.clone();
+    // The row of the last entry, counted from the one "a.pdf" is on.
+    let a_row = (0..rows).find(|r| h.app.panes[0].entry(*r).is_some_and(|e| e.name == "a.pdf"));
+    let at = |row: usize| y + u16::try_from(row).unwrap() - u16::try_from(a_row.unwrap()).unwrap();
+    h.click_mod(x, at(last_row), KeyModifiers::ALT);
+    assert_eq!(names(&h).len(), last_row);
+    assert!(names(&h).contains(&first) && names(&h).contains(&last));
+    assert_eq!(h.app.panes[0].cursor, last_row);
+    // A plain click clears the marks; Shift marks back up from there.
+    h.click(x, at(last_row));
+    h.click_mod(x, at(last_row - 1), KeyModifiers::SHIFT);
+    assert_eq!(names(&h).len(), 2);
+    // A single one more with Ctrl.
+    h.click_mod(x, at(1), KeyModifiers::CONTROL);
+    assert_eq!(names(&h).len(), 3);
 }
 
 #[test]

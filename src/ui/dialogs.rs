@@ -274,14 +274,15 @@ fn help_text(app: &App) -> Vec<(String, Style)> {
     }
     lines.push(plain(String::new()));
     lines.push((tr!("help-mouse"), bold));
-    let modifier = match app.ui.multi_select_modifier {
-        crate::config::MultiSelectModifier::Ctrl => "Ctrl",
-        crate::config::MultiSelectModifier::Alt => "Alt",
+    let (modifier, other) = match app.ui.multi_select_modifier {
+        crate::config::MultiSelectModifier::Ctrl => ("Ctrl", "Alt"),
+        crate::config::MultiSelectModifier::Alt => ("Alt", "Ctrl"),
     };
     for (what, effect) in [
         (tr!("mouse-click"), tr!("mouse-click-does")),
         (tr!("mouse-blank"), tr!("mouse-blank-does")),
         (tr!("mouse-mark", modifier = modifier), tr!("mouse-mark-does")),
+        (tr!("mouse-range", modifier = other), tr!("mouse-range-does")),
         (tr!("mouse-double"), tr!("mouse-double-does")),
         (tr!("mouse-wheel"), tr!("mouse-wheel-does")),
         (tr!("mouse-scrollbar"), tr!("mouse-scrollbar-does")),
