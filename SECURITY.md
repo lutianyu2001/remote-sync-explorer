@@ -283,6 +283,17 @@ names.
   is checked with `lstat` first). The sftp sessions for this run the remote's own `ssh`
   command with the sftp subsystem, as rclone does, so they are bound by the same ssh
   settings as rclone's.
+  A file copied inside one such sftp remote is copied by the server itself, since sftp
+  has no copy and the file would otherwise come down and go up again: `rse/copy` runs
+  the server's own `cp -p` through the same `ssh` command, when the server has
+  `/bin/sh` (asked once a job), and copies through this machine when it has not. The
+  command is a fixed sh script held to the rules of the machine's own `rm` and `mv`
+  below: no single quote, `!` or backslash but before a digit, the two paths spelt in
+  octal and given to `cp` after `--`. It writes the partial name, which it removes
+  first, so that a link left there is replaced and never written through; a partial
+  file there is not resumed. What `cp` wrote is checked and renamed as any other copy.
+  The command's input is held open, and closing it ends `cp`, which is how a stopped
+  job stops the copy on the server.
 - **rsync** carries copies and moves only between the local disk and an sftp remote
   reached through the system ssh, and only when the server has an `rsync` of its own
   (`command -v rsync`, asked through the master connection); rse never ships or uploads
@@ -323,7 +334,8 @@ names.
   directory and never from an empty value. Stopping ends the script's whole process
   group, which sshd gives it alone. A job goes to `rm`, `mv` or `cp` only when rse has
   just seen its target free: one the user chose to overwrite, one started in overwrite
-  mode and one going on after a pause go to the server's rsync, or stay with rclone.
+  mode and one going on after a pause go to the server's rsync, or stay with rclone,
+  which has the server copy each file that differs (`rse/copy`, above).
 - **Following the terminal.** Only while the user has tied a pane and its terminal
   together (off at every start): after a line typed into that terminal, rse asks where
   its shell is with a fixed script (`ps`, `readlink /proc/<pid>/cwd`, `lsof`), run through

@@ -114,8 +114,11 @@ func (j *job) resumableCopy(ctx context.Context, remote string, src fs.Object, s
 	case err != nil:
 		return err
 	}
+	// Inside one sftp server the server copies the file itself, from its start: a
+	// partial file there is not resumed, which would take the rest through this machine.
+	onServer := sameConfig && j.serverCopier() != nil
 	var off int64
-	if partial != nil {
+	if partial != nil && !onServer {
 		if off, err = j.resumeAt(ctx, partial, src, false); err != nil {
 			return err
 		}
@@ -140,6 +143,14 @@ func (j *job) resumableCopy(ctx context.Context, remote string, src fs.Object, s
 		if err == nil {
 			written = true
 		} else if !errors.Is(err, fs.ErrorCantCopy) {
+			return err
+		}
+	}
+	if !written && onServer {
+		err = j.copyOnServer(ctx, tr, part, src)
+		if err == nil {
+			written = true
+		} else if !errors.Is(err, errNoServerCopy) {
 			return err
 		}
 	}
@@ -337,6 +348,27 @@ func serverSideCopy(ctx context.Context, tr *accounting.Transfer, f fs.Fs, remot
 	}
 	_ = in.Close()
 	if errors.Is(err, fs.ErrorCantCopy) {
+		tr.Reset(ctx)
+	}
+	return err
+}
+
+// copyOnServer copies src to part with the cp of the sftp server both are on, or
+// returns errNoServerCopy.
+func (j *job) copyOnServer(ctx context.Context, tr *accounting.Transfer, part string, src fs.Object) error {
+	if dir := path.Dir(part); dir != "." {
+		if err := j.fdst.Mkdir(ctx, dir); err != nil {
+			return err
+		}
+	}
+	in := tr.Account(ctx, nil)
+	in.ServerSideTransferStart()
+	err := j.serverCopier().copyOnServer(ctx, src, part)
+	if err == nil {
+		in.ServerSideCopyEnd(src.Size())
+	}
+	_ = in.Close()
+	if errors.Is(err, errNoServerCopy) {
 		tr.Reset(ctx)
 	}
 	return err

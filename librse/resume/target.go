@@ -128,6 +128,7 @@ type sftpTarget struct {
 
 	mu      sync.Mutex
 	absRoot string // root as the server names it, once known
+	sh      *bool  // whether the server runs /bin/sh, once known
 	idle    []*sshConn
 }
 

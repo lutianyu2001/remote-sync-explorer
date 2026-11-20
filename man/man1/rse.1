@@ -166,7 +166,9 @@ the server's own rsync (3.1 or newer), where rclone would download every file an
 it again.
 A server without it copies to a name not taken with its own
 .BR cp ,
-and leaves the rest to rclone.
+and merges into what is there file by file, each copied by the server's
+.B cp
+too, when it has a shell.
 That copy is made under the name
 .BI .rse\-copy. number
 beside its target and renamed once it is whole; cancelled, paused or failed, it is removed.

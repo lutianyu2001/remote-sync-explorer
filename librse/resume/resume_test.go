@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -55,7 +56,24 @@ func fakeSSH(args []string) int {
 		}
 		return 0
 	}
-	cmd := exec.Command("sh", "-c", args[len(args)-1])
+	command := args[len(args)-1]
+	if log := os.Getenv("RSE_FAKE_SSH_LOG"); log != "" {
+		if f, err := os.OpenFile(log, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600); err == nil {
+			fmt.Fprintln(f, strings.ReplaceAll(command, "\n", " "))
+			_ = f.Close()
+		}
+	}
+	// A server whose login shell runs nothing as sh would.
+	if os.Getenv("RSE_FAKE_SSH_NO_SH") != "" && strings.HasPrefix(command, "exec /bin/sh") {
+		return 127
+	}
+	// In place of cp, one that says it runs, waits to be ended, and says so.
+	if mark := os.Getenv("RSE_FAKE_SSH_SLOW_CP"); mark != "" {
+		slow := fmt.Sprintf(`trap "touch %s/cp-ended; exit 143" TERM; touch %s; while :; do sleep 0.05; done`,
+			filepath.Dir(mark), mark)
+		command = strings.Replace(command, `rm -f -- "$d" && exec cp -p -- "$s" "$d"`, slow, 1)
+	}
+	cmd := exec.Command("sh", "-c", command)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {
 		if exit, ok := err.(*exec.ExitError); ok {
@@ -440,4 +458,112 @@ func TestTargetForParsedFs(t *testing.T) {
 	tgt, err := targetFor(f)
 	require.NoError(t, err)
 	assert.IsType(t, &localTarget{}, tgt)
+}
+
+// commandLog makes the fake ssh note each command it runs with sh, and returns them.
+func commandLog(t *testing.T) func() []string {
+	log := filepath.Join(t.TempDir(), "commands")
+	t.Setenv("RSE_FAKE_SSH_LOG", log)
+	return func() []string {
+		data, _ := os.ReadFile(log)
+		return strings.Split(strings.TrimSuffix(string(data), "\n"), "\n")
+	}
+}
+
+// A copy inside one sftp server is the server's own to make: no byte of the file comes
+// through this machine. It merges as any copy does: what is the same is skipped, what
+// differs is replaced, and what only the target has stays.
+func TestCopyInsideAnSftpServerStaysThere(t *testing.T) {
+	home := t.TempDir()
+	commands := commandLog(t)
+	name := "it's a $HOME `file`\n -rf"
+	data := randomFile(t, filepath.Join(home, "from", "dir", name), 3*mib)
+	same := randomFile(t, filepath.Join(home, "from", "dir", "sub", "same"), mib)
+	require.NoError(t, os.MkdirAll(filepath.Join(home, "to", "dir", "sub"), 0o755))
+	// Already there, with the source's time: skipped.
+	stat, err := os.Stat(filepath.Join(home, "from", "dir", "sub", "same"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(home, "to", "dir", "sub", "same"), same, 0o644))
+	require.NoError(t, os.Chtimes(filepath.Join(home, "to", "dir", "sub", "same"), stat.ModTime(), stat.ModTime()))
+	// Different there: replaced. Only there: kept.
+	require.NoError(t, os.WriteFile(filepath.Join(home, "to", "dir", name), []byte("old"), 0o644))
+	kept := randomFile(t, filepath.Join(home, "to", "dir", "only here"), 10)
+	// A partial file is not resumed, nor is a link left in its place written through.
+	outside := randomFile(t, filepath.Join(home, "outside"), 10)
+	require.NoError(t, os.Symlink(filepath.Join(home, "outside"), filepath.Join(home, "to", "dir", name+PartialSuffix)))
+
+	// Two roots of the one server, one relative to the login directory.
+	in := copyParams(sftpRemote(t, home, "from/dir"), "", sftpRemote(t, home, filepath.Join(home, "to", "dir")), "")
+	in["isDir"] = true
+	n, err := call(t, "rse/copy", in)
+	require.NoError(t, err)
+	// Counted as transferred, though by the server: the commands below tell how.
+	assert.Equal(t, int64(len(data)), n)
+	assertFile(t, filepath.Join(home, "to", "dir", name), data)
+	assertFile(t, filepath.Join(home, "to", "dir", "sub", "same"), same)
+	assertFile(t, filepath.Join(home, "to", "dir", "only here"), kept)
+	assertFile(t, filepath.Join(home, "outside"), outside)
+	assertFile(t, filepath.Join(home, "from", "dir", name), data)
+	from, err := os.Stat(filepath.Join(home, "from", "dir", name))
+	require.NoError(t, err)
+	to, err := os.Stat(filepath.Join(home, "to", "dir", name))
+	require.NoError(t, err)
+	assert.True(t, from.ModTime().Truncate(time.Second).Equal(to.ModTime().Truncate(time.Second)))
+	copies := 0
+	for _, c := range commands() {
+		if strings.Contains(c, "exec cp -p") {
+			copies++
+			// What every login shell passes on unchanged.
+			script := strings.TrimSuffix(strings.TrimPrefix(c, "exec /bin/sh -c '"), "'")
+			assert.NotContains(t, script, "'")
+			assert.NotContains(t, script, "!")
+			for _, after := range strings.Split(script, `\`)[1:] {
+				assert.Contains(t, "0123456789", after[:1], script)
+			}
+		}
+	}
+	assert.Equal(t, 1, copies, "one file differed")
+}
+
+// A server without sh copies through this machine, as before.
+func TestCopyInsideAServerWithoutShGoesThroughHere(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("RSE_FAKE_SSH_NO_SH", "1")
+	data := randomFile(t, filepath.Join(home, "plain-from", "big"), mib)
+	require.NoError(t, os.Mkdir(filepath.Join(home, "plain-to"), 0o755))
+	commands := commandLog(t)
+	n, err := call(t, "rse/copy", copyParams(sftpRemote(t, home, "plain-from"), "big", sftpRemote(t, home, "plain-to"), "big"))
+	require.NoError(t, err)
+	assert.Equal(t, int64(len(data)), n)
+	assertFile(t, filepath.Join(home, "plain-to", "big"), data)
+	for _, c := range commands() {
+		assert.NotContains(t, c, "exec cp -p", "asked once whether it has sh, and no more")
+	}
+}
+
+// Stopping the job ends the copy on the server.
+func TestStoppedCopyInsideAServerEndsThere(t *testing.T) {
+	home := t.TempDir()
+	randomFile(t, filepath.Join(home, "slow-from", "big"), mib)
+	require.NoError(t, os.Mkdir(filepath.Join(home, "slow-to"), 0o755))
+	// A cp that never ends by itself.
+	t.Setenv("RSE_FAKE_SSH_SLOW_CP", filepath.Join(home, "cp-running"))
+	in := copyParams(sftpRemote(t, home, "slow-from"), "big", sftpRemote(t, home, "slow-to"), "big")
+	in["_async"] = true
+	job, _, err := jobs.NewJob(context.Background(), rc.Calls.Get("rse/copy").Fn, in)
+	require.NoError(t, err)
+	require.Eventually(t, func() bool {
+		_, err := os.Stat(filepath.Join(home, "cp-running"))
+		return err == nil
+	}, 10*time.Second, 20*time.Millisecond, "cp did not start")
+	job.Stop()
+	require.Eventually(t, func() bool {
+		status, err := rc.Calls.Get("job/status").Fn(context.Background(), rc.Params{"jobid": job.ID})
+		return err == nil && status["finished"] == true
+	}, 5*time.Second, 20*time.Millisecond, "the job waited for a cp that was not stopped")
+	require.Eventually(t, func() bool {
+		_, err := os.Stat(filepath.Join(home, "cp-ended"))
+		return err == nil
+	}, 5*time.Second, 20*time.Millisecond, "cp went on after the job was stopped")
+	assert.NoFileExists(t, filepath.Join(home, "slow-to", "big"))
 }
