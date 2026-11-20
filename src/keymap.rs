@@ -90,7 +90,12 @@ const BINDINGS: &[Binding] = &[
         scope: Scope::Panes,
     },
     Binding { action: Action::Mark, name: "mark", keys: &["Space", "Insert"], scope: Scope::Panes },
-    Binding { action: Action::MarkAll, name: "mark_all", keys: &["a"], scope: Scope::Panes },
+    Binding {
+        action: Action::MarkAll,
+        name: "mark_all",
+        keys: &["a", "Ctrl+A"],
+        scope: Scope::Panes,
+    },
     Binding { action: Action::Filter, name: "filter", keys: &["/"], scope: Scope::Panes },
     Binding { action: Action::Sort, name: "sort", keys: &["s"], scope: Scope::Panes },
     Binding {

@@ -416,7 +416,7 @@ for those who know it; a key the two share spans both columns.
 <tr><td>Parent directory (the cursor lands on the one you left)</td><td>Backspace / h</td><td>Ctrl+PgUp</td></tr>
 <tr><td>Mark and move down</td><td>Space / Insert</td><td>Insert / Ctrl+T</td></tr>
 <tr><td>Clear marks; in the address bar, go back to the entries</td><td>Esc</td><td>—</td></tr>
-<tr><td>Mark all / unmark all</td><td>a</td><td>—</td></tr>
+<tr><td>Mark all / unmark all</td><td>a / Ctrl+A</td><td>—</td></tr>
 <tr><td>Filter by name, on the pane's last row (Enter keeps it, Esc clears it; the entries still scroll meanwhile)</td><td>/</td><td>—</td></tr>
 <tr><td>Sort by name, size, time</td><td>s</td><td>—</td></tr>
 <tr><td>Reverse the sort order</td><td>S</td><td>—</td></tr>

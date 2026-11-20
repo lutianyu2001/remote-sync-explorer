@@ -286,7 +286,7 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
 <tr><td>上级目录（光标落在刚离开的目录上）</td><td>Backspace / h</td><td>Ctrl+PgUp</td></tr>
 <tr><td>标记并下移</td><td>Space / Insert</td><td>Insert / Ctrl+T</td></tr>
 <tr><td>清除标记；在地址栏中则回到条目列表</td><td>Esc</td><td>—</td></tr>
-<tr><td>全部标记 / 全部取消</td><td>a</td><td>—</td></tr>
+<tr><td>全部标记 / 全部取消</td><td>a / Ctrl+A</td><td>—</td></tr>
 <tr><td>按名称过滤，在窗格的最后一行输入（Enter 保留，Esc 清除；过滤时条目照样可以滚动）</td><td>/</td><td>—</td></tr>
 <tr><td>按名称、大小、时间排序</td><td>s</td><td>—</td></tr>
 <tr><td>反转排序顺序</td><td>S</td><td>—</td></tr>

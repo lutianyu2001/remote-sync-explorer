@@ -1544,6 +1544,16 @@ fn shift_click_and_alt_click_mark_a_range() {
 }
 
 #[test]
+fn ctrl_a_marks_all_and_then_none() {
+    let mut h = standard();
+    let all = (0..h.app.panes[0].view.len()).filter(|r| h.app.panes[0].entry(*r).is_some()).count();
+    h.press_mod(KeyCode::Char('a'), KeyModifiers::CONTROL);
+    assert_eq!(h.app.panes[0].marks.len(), all);
+    h.press_mod(KeyCode::Char('a'), KeyModifiers::CONTROL);
+    assert!(h.app.panes[0].marks.is_empty());
+}
+
+#[test]
 fn double_click_enters_directories_and_parent() {
     let mut h = standard();
     let (x, y) = h.find("projects/");
