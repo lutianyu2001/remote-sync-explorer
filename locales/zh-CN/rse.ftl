@@ -281,6 +281,7 @@ help-start-more = 完整说明见手册 man rse 和 README。
 help-keys = 按键
 help-mouse = 鼠标
 help-shift = 在大多数终端里，按住 Shift 拖动可以选中文字。
+help-function-keys = 没有功能键时：Alt 加数字，或先按 Esc 再按数字，就是对应的 F 键（0 是 F10，q 是 F11，w 是 F12）。
 mouse-click = 单击
 mouse-click-does = 移动光标，取消选择
 mouse-blank = 单击空白处

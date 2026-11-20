@@ -272,7 +272,7 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
 
 ### 按键
 
-所有按键都可以在配置文件里修改。F 键有字母别名，方便没有 F 键的键盘。mc 一列是 Midnight Commander 里做同一件事的按键，供熟悉它的人参考；两者相同的按键横跨两列。
+所有按键都可以在配置文件里修改。F 键有字母别名，方便没有 F 键的键盘；和 Midnight Commander 一样，Alt 加数字，或者先按 Esc、一秒内再按数字，也代表一个 F 键：1 到 9 是 F1 到 F9，0 是 F10，q 是 F11，w 是 F12（Esc 先照常起作用，用来关闭对话框的那一下不算；配置里绑定了的 Alt 组合键保持原来的含义）。mc 一列是 Midnight Commander 里做同一件事的按键，供熟悉它的人参考；两者相同的按键横跨两列。
 
 <table>
 <thead>

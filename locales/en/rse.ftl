@@ -299,6 +299,7 @@ help-start-more = The whole manual: man rse, and the README.
 help-keys = Keys
 help-mouse = Mouse
 help-shift = Hold Shift while dragging to select text in most terminals.
+help-function-keys = Without function keys: Alt with a digit, or Esc and then the digit, is that F key (0 is F10, q F11, w F12).
 mouse-click = click
 mouse-click-does = move the cursor, clear marks
 mouse-blank = click blank space

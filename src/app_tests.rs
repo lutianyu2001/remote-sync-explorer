@@ -1553,6 +1553,34 @@ fn ctrl_a_marks_all_and_then_none() {
     assert!(h.app.panes[0].marks.is_empty());
 }
 
+/// Without function keys: Alt with a digit, or Esc and then the digit, as in Midnight
+/// Commander.
+#[test]
+fn alt_and_esc_with_a_digit_stand_for_function_keys() {
+    let mut h = standard();
+    let settings = |h: &Harness| matches!(h.app.dialog, Some(Dialog::Settings(_)));
+    h.press_mod(KeyCode::Char('4'), KeyModifiers::ALT);
+    assert!(settings(&h), "Alt+4 is F4");
+    h.press_mod(KeyCode::Char('4'), KeyModifiers::ALT);
+    assert!(!settings(&h), "and closes the page as F4 does");
+    h.press(KeyCode::Esc);
+    h.press(KeyCode::Char('4'));
+    assert!(settings(&h), "Esc 4 is F4");
+    h.press(KeyCode::Esc);
+    // Too long after Esc, 4 is the key of the right pane again.
+    let now = Instant::now();
+    h.app.handle(Event::Key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)), now);
+    let later = now + Duration::from_secs(2);
+    h.app.handle(Event::Key(KeyEvent::new(KeyCode::Char('4'), KeyModifiers::NONE)), later);
+    h.settle();
+    assert!(!settings(&h));
+    assert_eq!((h.app.active, h.app.focus), (1, Focus::Panes));
+    // Esc 0 is F10, which quits.
+    h.press(KeyCode::Esc);
+    h.press(KeyCode::Char('0'));
+    assert_ne!(h.app.quit, QuitState::Running);
+}
+
 #[test]
 fn double_click_enters_directories_and_parent() {
     let mut h = standard();

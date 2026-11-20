@@ -401,7 +401,10 @@ click on blank space in the pane, clears the marks.
 ### Keys
 
 All keys can be changed in the config file. F keys have letter aliases for keyboards
-without them. The mc column gives the key Midnight Commander uses for the same action,
+without them, and, as in Midnight Commander, Alt with a digit or Esc followed by the digit
+within a second stands for one: 1 to 9 for F1 to F9, 0 for F10, q for F11 and w for F12
+(Esc first does what Esc does, and one that closes a dialog starts no such pair; Alt with
+a key the config binds keeps that meaning). The mc column gives the key Midnight Commander uses for the same action,
 for those who know it; a key the two share spans both columns.
 
 <table>

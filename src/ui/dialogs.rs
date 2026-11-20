@@ -273,6 +273,8 @@ fn help_text(app: &App) -> Vec<(String, Style)> {
         lines.push(plain(format!("  {}  {what}", fit(&keys, 22))));
     }
     lines.push(plain(String::new()));
+    lines.push(plain(tr!("help-function-keys")));
+    lines.push(plain(String::new()));
     lines.push((tr!("help-mouse"), bold));
     let (modifier, other) = match app.ui.multi_select_modifier {
         crate::config::MultiSelectModifier::Ctrl => ("Ctrl", "Alt"),

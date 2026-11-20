@@ -35,6 +35,10 @@ const SKIP: usize = 1;
 /// Clicks on a dialog's buttons this soon after it appeared are ignored, so the second
 /// click of a double click cannot land on a dialog that opened under the pointer.
 const CLICK_GUARD: Duration = Duration::from_millis(300);
+
+/// How long after Esc a digit, `q` or `w` still stands for a function key (see
+/// [`App::function_key`]); Midnight Commander waits as long.
+const ESC_PREFIX: Duration = Duration::from_secs(1);
 /// How long a message stays on the message line, unless a key or click clears it first.
 const MESSAGE_SHORT: Duration = Duration::from_secs(5);
 /// The same for a failure, which also goes to the error log.
@@ -663,6 +667,8 @@ pub struct App {
     /// once no other dialog is open.
     job_conflicts: Vec<(JobId, Entry)>,
     last_click: Option<((u16, u16), Instant)>,
+    /// When Esc was last pressed by itself, for `ESC_PREFIX`.
+    esc_at: Option<Instant>,
     /// When the current dialog (or conflict step) appeared, for `CLICK_GUARD`.
     dialog_since: Option<Instant>,
     queue_file: Option<PathBuf>,
@@ -721,6 +727,7 @@ impl App {
             ssh_prompt_shown: false,
             job_conflicts: Vec::new(),
             last_click: None,
+            esc_at: None,
             dialog_since: None,
             queue_file: init.queue_file,
             saved: init.saved.clone(),
@@ -1018,10 +1025,44 @@ impl App {
 
     // ----- keys -------------------------------------------------------------------
 
+    /// `key` as the function key it stands for where a terminal or a keyboard has none, as
+    /// in Midnight Commander: Alt with 1 to 9 is F1 to F9, with 0 F10, with q F11, with w
+    /// F12, and so is each of them pressed within `ESC_PREFIX` of an Esc that closed no
+    /// dialog (which first does what Esc does). A key the user's bindings name keeps its own meaning with Alt, and
+    /// the terminal under a pane gets every key as it is.
+    fn function_key(&mut self, key: KeyEvent, now: Instant) -> KeyEvent {
+        let after_esc =
+            self.esc_at.take().is_some_and(|at| now.saturating_duration_since(at) < ESC_PREFIX);
+        if self.focus == Focus::Terminal && self.dialog.is_none() {
+            return key;
+        }
+        if key.code == KeyCode::Esc && key.modifiers.is_empty() {
+            // An Esc that closes a dialog is only that: the key after it is often a
+            // window's number.
+            self.esc_at = self.dialog.is_none().then_some(now);
+            return key;
+        }
+        let number = match key.code {
+            KeyCode::Char('0') => 10,
+            KeyCode::Char(c @ '1'..='9') => c as u8 - b'0',
+            KeyCode::Char('q') => 11,
+            KeyCode::Char('w') => 12,
+            _ => return key,
+        };
+        let bound = || self.keymap.pane_action(&key).or(self.keymap.queue_action(&key)).is_some();
+        let stands = match key.modifiers {
+            KeyModifiers::ALT => !bound(),
+            KeyModifiers::NONE => after_esc,
+            _ => false,
+        };
+        if stands { KeyEvent::new(KeyCode::F(number), KeyModifiers::NONE) } else { key }
+    }
+
     fn on_key(&mut self, key: KeyEvent, now: Instant) {
         if self.quit != QuitState::Running {
             return;
         }
+        let key = self.function_key(key, now);
         self.status = None;
         if key.code == KeyCode::Esc && self.drag != Drag::Idle {
             self.drag = Drag::Idle;
