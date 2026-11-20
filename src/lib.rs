@@ -16,6 +16,7 @@ pub mod hitmap;
 pub mod hostops;
 pub mod jobs;
 pub mod keymap;
+pub mod librse;
 pub mod location;
 pub mod rclone;
 pub mod rsync;

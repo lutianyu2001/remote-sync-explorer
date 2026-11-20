@@ -22,7 +22,7 @@ use crate::jobs::{Engine, OpKind, Transfer};
 use crate::location::{Location, endpoint_key};
 use crate::rclone::api::{self, Stats};
 use crate::rclone::{Backend, RpcError};
-use crate::rsync::Running;
+use crate::rsync::{self, Running};
 
 enum BrowseReq {
     List { generation: u64, loc: Location },
@@ -375,14 +375,16 @@ fn poll_jobs(backend: &dyn Backend, active: &mut BTreeMap<JobId, Active>) -> Vec
     for (&id, job) in active.iter_mut() {
         let (stats, finished) = match job {
             Active::Rclone { rc_id, .. } => poll_rclone(backend, *rc_id),
-            Active::Host { run } => (Stats::default(), run.poll()),
+            Active::Host { run } => {
+                (Stats::default(), run.poll().map(|end| end.map_err(hostops::said)))
+            }
             Active::Rsync { run, transfer } => {
                 let (stats, finished) = run.poll();
                 let finished = match finished {
                     Some(Ok(())) => Some(after_rsync(backend, transfer)),
-                    other => other,
+                    other => other.map(|end| end.map_err(rsync::said)),
                 };
-                (stats, finished)
+                (rsync::stats(stats), finished)
             }
         };
         if finished.is_some() {

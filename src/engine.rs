@@ -195,8 +195,8 @@ impl Engines {
         }
         let remote = |loc: &Location| ssh.rsync_remote(&loc.fs).ok().flatten();
         match (src.is_local(), dst.is_local()) {
-            (true, false) => Some((Side::local(src), remote(dst)?.side(&dst.path))),
-            (false, true) => Some((remote(src)?.side(&src.path), Side::local(dst))),
+            (true, false) => Some((rsync::local(src), remote(dst)?.side(&dst.path))),
+            (false, true) => Some((remote(src)?.side(&src.path), rsync::local(dst))),
             _ => None,
         }
     }

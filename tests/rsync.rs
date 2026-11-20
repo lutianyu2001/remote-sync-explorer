@@ -150,7 +150,8 @@ fn run(args: Vec<OsString>) -> (Stats, Result<(), String>, Option<(u64, u64)>) {
     let deadline = Instant::now() + Duration::from_secs(60);
     loop {
         if let (stats, Some(result)) = running.poll() {
-            return (stats, result, running.wire());
+            let result = result.map_err(rse::rsync::said);
+            return (rse::rsync::stats(stats), result, running.wire());
         }
         assert!(Instant::now() < deadline, "rsync did not finish");
         std::thread::sleep(Duration::from_millis(20));
@@ -285,7 +286,7 @@ fn noise(len: usize) -> Vec<u8> {
 }
 
 fn here(dir: &Path) -> Side {
-    Side::local(&Location::local(dir))
+    rse::rsync::local(&Location::local(dir))
 }
 
 fn there(remote: &RsyncRemote, dir: &Path) -> Side {

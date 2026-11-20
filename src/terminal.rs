@@ -37,6 +37,8 @@ use std::time::{Duration, Instant};
 use crossbeam_channel::Sender;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
+pub use crate::librse::shell::{ShellDir, ShellTarget};
+
 use crate::event::Event;
 
 pub type TermId = u64;
@@ -53,81 +55,6 @@ pub const ASK_WAIT: Duration = Duration::from_millis(300);
 const SCROLLBACK: usize = 1000;
 /// The OSC sequence number the start script reports the shell with.
 const REPORT: &[u8] = b"7799";
-
-/// How to reach a shell on a server.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ShellTarget {
-    /// The command that opens a terminal on the server; the remote command goes last.
-    pub open: Vec<String>,
-    /// A command that runs its last argument on the server, never asking anything.
-    pub run: Vec<String>,
-    /// The fs root on the server, as rclone's sftp backend reads it: absolute, or relative
-    /// to the login directory.
-    pub root: String,
-    /// Environment for `open` beyond rse's own.
-    pub env: Vec<(String, String)>,
-}
-
-/// A directory on the server, as the shell reaches it.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ShellDir {
-    Absolute(String),
-    /// Relative to the login directory (empty for that directory itself).
-    Home(String),
-}
-
-impl ShellTarget {
-    /// The local disk, from `root` (`/`).
-    pub fn local(root: &str) -> Self {
-        let sh = vec!["/bin/sh".to_owned(), "-c".to_owned()];
-        Self { open: sh.clone(), run: sh, root: root.to_owned(), env: Vec::new() }
-    }
-
-    /// The pane's path of the directory `cwd` on the server, whose login directory is
-    /// `home`: what [`Self::dir`] leads back from. `None` for a directory outside the root.
-    pub fn path_of(&self, cwd: &str, home: &str) -> Option<String> {
-        let under = |base: &str| {
-            let base = base.trim_end_matches('/');
-            let rest = cwd.strip_prefix(base)?;
-            if rest.is_empty() { Some("") } else { rest.strip_prefix('/') }
-        };
-        if !cwd.starts_with('/') || !home.starts_with('/') {
-            return None;
-        }
-        let path = if self.root.is_empty() {
-            // The login directory: what is outside it is written from the root.
-            under(home).unwrap_or(cwd)
-        } else if self.root.starts_with('/') {
-            under(&self.root)?
-        } else {
-            under(&crate::rsync::join(&format!("{}/", home.trim_end_matches('/')), &self.root))?
-        };
-        Some(path.trim_end_matches('/').to_owned())
-    }
-
-    /// The directory of a pane's path (a [`Location`](crate::location::Location)'s).
-    pub fn dir(&self, path: &str) -> ShellDir {
-        let joined = crate::rsync::join(&self.root, path);
-        if joined.starts_with('/') { ShellDir::Absolute(joined) } else { ShellDir::Home(joined) }
-    }
-}
-
-impl ShellDir {
-    fn path(&self) -> &str {
-        match self {
-            Self::Absolute(p) | Self::Home(p) => p,
-        }
-    }
-
-    /// How the window's title shows it: `/srv/www`, `~/photos`, `~`.
-    pub fn shown(&self) -> String {
-        match self {
-            Self::Absolute(p) => p.clone(),
-            Self::Home(p) if p.is_empty() => "~".to_owned(),
-            Self::Home(p) => format!("~/{p}"),
-        }
-    }
-}
 
 /// What the server runs: `exec /bin/sh -c '…'`, which every common login shell (sh,
 /// bash, zsh, fish, tcsh) hands to sh unchanged, since the script holds no quote and no
@@ -863,7 +790,7 @@ mod tests {
             if let Some(path) = path {
                 let back = match t.dir(path) {
                     ShellDir::Absolute(p) => p,
-                    ShellDir::Home(p) => crate::rsync::join("/home/me/", &p),
+                    ShellDir::Home(p) => crate::librse::shell::join("/home/me/", &p),
                 };
                 assert_eq!(back.trim_end_matches('/'), cwd.trim_end_matches('/'), "{root:?}");
             }
