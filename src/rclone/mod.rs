@@ -5,6 +5,7 @@ mod backend;
 #[cfg(feature = "embedded")]
 pub(crate) mod ffi;
 pub(crate) mod obscure;
+pub(crate) mod pinned_keys;
 pub mod ssh_passwords;
 pub mod system_ssh;
 

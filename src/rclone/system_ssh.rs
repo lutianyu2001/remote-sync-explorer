@@ -23,10 +23,13 @@
 //!
 //! An inline key (`key_pem`) goes into a private ssh-agent ([`crate::librse::agent`]),
 //! from memory, never into a file, and the ssh commands of that remote log in with it.
+//! An inline certificate (`pubkey`) is given to ssh in a file of the session's, and pinned
+//! host keys (`host_keys`, `pin_host_key`) in a `known_hosts` file of their own
+//! ([`super::pinned_keys`]).
 //!
 //! rclone's built-in ssh stays in use when there is no `ssh` program, or when the remote's
-//! settings have no ssh equivalent (a proxy, …, or a password before OpenSSH 8.4). When the master connection cannot be opened, the built-in ssh is used
-//! too, but checking the host key against ssh's `known_hosts` file: by itself it checks
+//! settings have no ssh equivalent (a proxy, …, or a password before OpenSSH 8.4). When
+//! the master connection cannot be opened, the built-in ssh is used too, but checking the host key against ssh's `known_hosts` file: by itself it checks
 //! none, so an attacker could otherwise block ssh to get past the check. A changed host
 //! key or a cancelled login is an error instead, since falling back would only fail again.
 
@@ -47,6 +50,7 @@ use serde_json::{Value, json};
 
 use super::backend::{Backend, RpcError};
 use super::obscure::reveal;
+use super::pinned_keys::{self, Pins};
 use super::ssh_passwords::PasswordFile;
 use crate::librse::agent::{self, Agent};
 use crate::location::remote_colon;
@@ -68,7 +72,10 @@ const PROBE_TIME: Duration = Duration::from_secs(15);
 /// sftp options the system ssh takes over. rclone still reads some of them when it runs
 /// ssh (the key file, failing on one with a passphrase) and warns about others, so they
 /// are left out of the fs sent to rclone, or blanked when rclone.conf sets them.
-const SSH_TAKES_OVER: [&str; 11] = [
+const SSH_TAKES_OVER: [&str; 14] = [
+    "host_keys",
+    "pin_host_key",
+    "pubkey",
     "host",
     "user",
     "port",
@@ -85,10 +92,8 @@ const SSH_TAKES_OVER: [&str; 11] = [
 /// sftp options the system ssh can honour only by asking through `SSH_ASKPASS`.
 const NEED_ASKPASS: [&str; 3] = ["pass", "key_file_pass", "ask_password"];
 
-/// sftp options that only the built-in ssh can honour. Pinned host keys are among them:
-/// rclone ignores them once it runs ssh.
-const BUILTIN_ONLY: [&str; 6] =
-    ["host_keys", "pin_host_key", "pubkey", "socks_proxy", "http_proxy", "use_insecure_cipher"];
+/// sftp options that only the built-in ssh can honour.
+const BUILTIN_ONLY: [&str; 3] = ["socks_proxy", "http_proxy", "use_insecure_cipher"];
 
 /// sftp options that list algorithms, with the ssh option that takes the same names
 /// (those of the protocol), separated by commas where rclone has spaces.
@@ -179,8 +184,13 @@ pub struct SystemSsh {
     rsync: Mutex<HashMap<Vec<String>, Probe>>,
     /// The private agents of the remotes with an inline key, ended with rse.
     agents: Mutex<Vec<Agent>>,
+    /// The files of the remotes' pinned host keys and certificates, removed with rse.
+    pin_files: Mutex<Vec<PathBuf>>,
     next_log: AtomicU64,
 }
+
+/// A private agent for an inline key, with the key's text, still to be put in.
+type KeyAgent = (Agent, String);
 
 /// Whether a server has rsync, once known.
 type Probe = Arc<Mutex<Option<bool>>>;
@@ -228,6 +238,8 @@ struct Login {
     /// How the built-in ssh checks host keys if the system ssh fails; `None` for the remote
     /// as it is, when it checks them its own way.
     fallback: Option<HostKeys>,
+    /// The remote's pinned host keys, which ssh checks the server against.
+    pins: Option<Pins>,
 }
 
 /// Clear-text answers from rclone.conf, then the remembered password, each offered to
@@ -347,6 +359,7 @@ impl SystemSsh {
             routes: Mutex::new(HashMap::new()),
             rsync: Mutex::new(HashMap::new()),
             agents: Mutex::new(Vec::new()),
+            pin_files: Mutex::new(Vec::new()),
             next_log: AtomicU64::new(0),
         }
     }
@@ -498,17 +511,10 @@ impl SystemSsh {
             // Nowhere private for ssh's sockets and logs: as when the system ssh fails.
             return Ok(fallback.map_or(Route::Builtin, |keys| keys.route()));
         };
-        // An inline key, logged in with from a private agent.
         let pem = params.get("key_pem").filter(|k| !k.is_empty());
-        let agent = match pem.map(|kept| self.start_agent(dir, kept)) {
-            None => None,
-            Some(Ok((agent, key))) => {
-                // Before the server and account, which ssh reads last.
-                let at = dest.len().saturating_sub(1);
-                dest.splice(at..at, agent.ssh_options());
-                Some((agent, key))
-            }
-            Some(Err(why)) => {
+        let (agent, pins) = match self.own_files(name, dir, &params, &mut dest) {
+            Ok(own) => own,
+            Err(why) => {
                 note(&format!("{}: using rclone's built-in ssh: {why}", redacted(name)));
                 return Ok(fallback.map_or(Route::Builtin, |keys| keys.route()));
             }
@@ -543,6 +549,7 @@ impl SystemSsh {
                 params.get("key_file").filter(|k| !k.is_empty()).map(|k| expand_home(k))
             },
             fallback,
+            pins,
         };
         if let Some((agent, key)) = agent {
             if let Err(why) = self.add_key(&agent, &key, &login)? {
@@ -552,6 +559,131 @@ impl SystemSsh {
             self.agents.lock().map_err(|_| poisoned())?.push(agent);
         }
         Ok(if self.connect(name, &mut login)? { Route::Ssh(login) } else { login.fallback() })
+    }
+
+    /// What the system ssh takes from files and agents rse makes for the session, where
+    /// rclone has it in rclone.conf itself, with their options added to `dest`, before the
+    /// server and account, which ssh reads last: a private agent for an inline key, with
+    /// the key's text; a file for an inline certificate; and one for pinned host keys. Or
+    /// why one cannot be made, so that rclone's built-in ssh is used.
+    fn own_files(
+        &self,
+        name: &str,
+        dir: &Path,
+        params: &BTreeMap<String, String>,
+        dest: &mut Vec<String>,
+    ) -> Result<(Option<KeyAgent>, Option<Pins>), String> {
+        let mut options = Vec::new();
+        let agent = match params.get("key_pem").filter(|k| !k.is_empty()) {
+            Some(kept) => {
+                let (agent, key) = self.start_agent(dir, kept)?;
+                options.extend(agent.ssh_options());
+                Some((agent, key))
+            }
+            None => None,
+        };
+        if let Some(cert) = params.get("pubkey").filter(|c| !c.is_empty()) {
+            let file = self.certificate_file(dir, cert)?;
+            options.extend(["-o".to_owned(), format!("CertificateFile={}", file.display())]);
+        }
+        let pins = self.pins(name, dir, params)?;
+        if let Some(pins) = &pins {
+            options.extend(pins.ssh_options(set_in(params, "host_key_algorithms")));
+        }
+        let at = dest.len().saturating_sub(1);
+        dest.splice(at..at, options);
+        Ok((agent, pins))
+    }
+
+    /// The remote's pinned host keys in a file of their own, when it pins them and has no
+    /// `known_hosts_file`, which takes precedence, as rclone has it; or why the system ssh
+    /// cannot check them, so that rclone does.
+    fn pins(
+        &self,
+        name: &str,
+        dir: &Path,
+        params: &BTreeMap<String, String>,
+    ) -> Result<Option<Pins>, String> {
+        let on_first_use = set_in(params, "pin_host_key");
+        if set_in(params, "known_hosts_file") || !(on_first_use || set_in(params, "host_keys")) {
+            return Ok(None);
+        }
+        if on_first_use && self.askpass.is_none() {
+            return Err("pin_host_key needs OpenSSH 8.4 or newer to ask about a new key".to_owned());
+        }
+        let keys = pinned_keys::parse(params.get("host_keys").map_or("", String::as_str))?;
+        let n = self.next_log.fetch_add(1, Ordering::SeqCst);
+        let file = dir.join(format!("known-{}-{n}", std::process::id()));
+        let base = split_params(name).remove(0).0;
+        let persist_to = (!base.starts_with(':')).then_some(base);
+        let pins = Pins::new(file.clone(), keys, on_first_use, persist_to)?;
+        self.pin_files.lock().map_err(|_| "internal lock".to_owned())?.push(file);
+        Ok(Some(pins))
+    }
+
+    /// The inline certificate `cert` (rclone's `pubkey`) in a file of its own for ssh,
+    /// which takes certificates from files alone; or why it cannot be.
+    fn certificate_file(&self, dir: &Path, cert: &str) -> Result<PathBuf, String> {
+        use std::os::unix::fs::OpenOptionsExt;
+        let line = cert.trim();
+        let is_cert = line.split_whitespace().next().is_some_and(|kind| {
+            kind.ends_with("-cert-v01@openssh.com")
+                && kind.bytes().all(|b| b.is_ascii_alphanumeric() || b"-.@".contains(&b))
+        });
+        if !is_cert || line.contains(char::is_control) {
+            return Err("pubkey is not a certificate".to_owned());
+        }
+        let n = self.next_log.fetch_add(1, Ordering::SeqCst);
+        let file = dir.join(format!("cert-{}-{n}", std::process::id()));
+        let plain = file.to_str().is_some_and(|f| {
+            !f.contains(['%', '$', '"', '\'', '\\']) && !f.contains(char::is_whitespace)
+        });
+        if !plain {
+            return Err("the path of the certificate's file is no plain path".to_owned());
+        }
+        let mut out = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(&file)
+            .map_err(|e| format!("{}: {e}", file.display()))?;
+        self.pin_files.lock().map_err(|_| "internal lock".to_owned())?.push(file.clone());
+        out.write_all(format!("{line}\n").as_bytes())
+            .map_err(|e| format!("{}: {e}", file.display()))?;
+        Ok(file)
+    }
+
+    /// Adds the keys ssh accepted on first use to the remote's `host_keys` in rclone.conf,
+    /// with those already there, as rclone does.
+    fn keep_accepted_keys(&self, pins: &mut Pins) {
+        let new = pins.accepted();
+        let Some(remote) = pins.persist_to.clone() else { return };
+        if new.is_empty() {
+            return;
+        }
+        let conf = self.inner.rpc("config/get", json!({ "name": remote })).unwrap_or_default();
+        let stored = conf.get("host_keys").and_then(Value::as_str).unwrap_or_default();
+        let mut keys = match pinned_keys::parse(stored) {
+            Ok(keys) => keys,
+            Err(e) => {
+                note(&format!("{remote}: not keeping the new host key in host_keys: {e}"));
+                return;
+            }
+        };
+        for key in new {
+            if keys.len() < pinned_keys::MAX_KEYS {
+                keys.insert(key);
+            }
+        }
+        let update = json!({
+            "name": remote,
+            "parameters": { "host_keys": pinned_keys::format(&keys) },
+            "opt": { "nonInteractive": true, "noObscure": true },
+        });
+        match self.inner.rpc("config/update", update) {
+            Ok(_) => note(&format!("{remote}: host key pinned in host_keys")),
+            Err(e) => note(&format!("{remote}: not keeping the new host key in host_keys: {e}")),
+        }
     }
 
     /// A private agent for the inline key `kept` (rclone's `key_pem`), and the key's
@@ -605,7 +737,12 @@ impl SystemSsh {
     fn connect(&self, name: &str, login: &mut Login) -> Result<bool, RpcError> {
         if !alive(login) {
             match self.open(login) {
-                Ok(()) => login.opened = true,
+                Ok(()) => {
+                    login.opened = true;
+                    if let Some(pins) = login.pins.as_mut().filter(|p| p.on_first_use) {
+                        self.keep_accepted_keys(pins);
+                    }
+                }
                 Err(OpenError::HostKey(m)) => return Err(RpcError::new(500, m)),
                 Err(OpenError::Cancelled) => return Err(RpcError::new(500, tr!("ssh-cancelled"))),
                 Err(OpenError::TimedOut) => return Err(RpcError::new(500, tr!("ssh-timed-out"))),
@@ -966,6 +1103,11 @@ impl Backend for SystemSsh {
         self.close_masters();
         if let Ok(mut agents) = self.agents.lock() {
             agents.clear();
+        }
+        if let Ok(mut files) = self.pin_files.lock() {
+            for file in files.drain(..) {
+                let _ = fs::remove_file(file);
+            }
         }
         self.inner.finalize();
     }
@@ -1334,12 +1476,15 @@ pub(crate) fn ssh_dest(
         return Err(format!("{k} is set, which needs OpenSSH 8.4 or newer"));
     }
     // An inline key is used in place of a key file, as rclone does: the caller gives ssh
-    // the agent that holds it.
-    let without_file;
-    let params = if set("key_pem") {
+    // the agent that holds it. So is an inline certificate, in place of a certificate
+    // file: the caller gives ssh a file it writes.
+    let replaced =
+        |k: &str| (k == "key_file" && set("key_pem")) || (k == "pubkey_file" && set("pubkey"));
+    let without_file: BTreeMap<String, String>;
+    let params = if set("key_pem") || set("pubkey") {
         without_file = params
             .iter()
-            .filter(|(k, _)| *k != "key_file")
+            .filter(|(k, _)| !replaced(k))
             .map(|(k, v)| (k.clone(), v.clone()))
             .collect();
         &without_file
@@ -1355,6 +1500,11 @@ pub(crate) fn ssh_dest(
     }
     args.extend(ssh_target(params)?);
     Ok(args)
+}
+
+/// Whether the sftp option `key` is set: not empty, nor `false`.
+fn set_in(params: &BTreeMap<String, String>, key: &str) -> bool {
+    params.get(key).is_some_and(|v| !v.is_empty() && v != "false")
 }
 
 /// rclone's list of algorithm names, apart by spaces, as ssh takes it: apart by commas.
@@ -1635,6 +1785,8 @@ fn in_a_session_of_its_own(cmd: &mut Command) {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeSet;
+
     use super::*;
 
     fn params(pairs: &[(&str, &str)]) -> BTreeMap<String, String> {
@@ -1675,9 +1827,11 @@ mod tests {
         assert!(ssh_dest(&pass, true).is_ok());
         let err = ssh_dest(&pass, false).unwrap_err();
         assert!(err.contains("pass") && err.contains("8.4"), "{err}");
-        assert!(
-            ssh_dest(&params(&[("host", "box"), ("pubkey", "ssh-ed25519-cert")]), true).is_err()
-        );
+        let proxy = params(&[("host", "box"), ("socks_proxy", "localhost:1080")]);
+        assert!(ssh_dest(&proxy, true).is_err());
+        // An inline certificate goes to a file of the session's, in place of a file's.
+        let cert = params(&[("host", "box"), ("pubkey_file", "/c"), ("pubkey", "x")]);
+        assert_eq!(ssh_dest(&cert, true).unwrap(), ["box"]);
         // An inline key goes to a private agent, in place of a key file, as rclone has it.
         let inline = params(&[("host", "box"), ("key_file", "/k"), ("key_pem", "-----BEGIN")]);
         assert_eq!(ssh_dest(&inline, true).unwrap(), ["box"]);
@@ -1839,6 +1993,44 @@ mod tests {
         // The login's own server asking for something other than its password.
         assert_eq!(given("(me@box) Verification code: "), ("typed".to_owned(), Some(false), false));
         assert_eq!(given("(me@box) One-time password: "), ("typed".to_owned(), Some(false), false));
+    }
+
+    /// A host key accepted on first use joins the ones rclone.conf already pins for the
+    /// remote, as rclone keeps it; a remote given as a connection string keeps it for the
+    /// session only.
+    #[test]
+    fn a_key_accepted_on_first_use_is_pinned_in_rclone_conf() {
+        const KEPT: &str =
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIeEtDDE2xCdS0dECVGCZZ3U8YvRYrUOVF56TT5d0oo/";
+        const NEW: &str =
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID8QM4m8ICcfBlOyA91d2viKpsYAZ3pgnTEMx/AAAWxQ";
+        let fake = Arc::new(crate::rclone::FakeBackend::new(|method, _| match method {
+            "config/get" => Ok(json!({ "type": "sftp", "host_keys": KEPT })),
+            _ => Ok(json!({})),
+        }));
+        let dir = tempfile::tempdir_in("/tmp").unwrap();
+        let (mut ssh, ..) = remembering(&dir.path().join("p"));
+        ssh.inner = fake.clone();
+        let file = dir.path().join("known-1");
+        let mut pins =
+            Pins::new(file.clone(), BTreeSet::new(), true, Some("nas".to_owned())).unwrap();
+        // As ssh writes a key the user accepted.
+        fs::write(&file, format!("[box]:2222 {NEW}\n")).unwrap();
+        ssh.keep_accepted_keys(&mut pins);
+        let updates = fake.calls_to("config/update");
+        assert_eq!(updates.len(), 1);
+        assert_eq!(updates[0]["name"], "nas");
+        assert_eq!(updates[0]["parameters"]["host_keys"], format!("{NEW},{KEPT}"));
+        // Nothing new: nothing written.
+        ssh.keep_accepted_keys(&mut pins);
+        assert_eq!(fake.calls_to("config/update").len(), 1);
+        // A connection string has no rclone.conf entry to keep it in.
+        let other = dir.path().join("known-2");
+        let mut session = Pins::new(other.clone(), BTreeSet::new(), true, None).unwrap();
+        fs::write(&other, format!("box {KEPT}\n")).unwrap();
+        ssh.keep_accepted_keys(&mut session);
+        assert_eq!(fake.calls_to("config/update").len(), 1);
+        assert!(session.keys.contains(KEPT), "kept for the session");
     }
 
     /// rclone.conf's passphrase answers ssh-add's questions about a login's inline key, and
@@ -2188,6 +2380,7 @@ mod tests {
             routes: Mutex::new(HashMap::new()),
             rsync: Mutex::new(HashMap::new()),
             agents: Mutex::new(Vec::new()),
+            pin_files: Mutex::new(Vec::new()),
             next_log: AtomicU64::new(0),
         };
         let questions = Questions::default();
@@ -2210,6 +2403,7 @@ mod tests {
             accounts: vec!["me@box".to_owned()],
             key_file: Some("/k/id".to_owned()),
             fallback: None,
+            pins: None,
         };
         (ssh, login, questions, answers)
     }
@@ -2427,6 +2621,7 @@ mod tests {
             routes: Mutex::new(HashMap::new()),
             rsync: Mutex::new(HashMap::new()),
             agents: Mutex::new(Vec::new()),
+            pin_files: Mutex::new(Vec::new()),
             next_log: AtomicU64::new(0),
         };
         for fs in ["/home", "nas:x", "nas:y", ":sftp,host=box:z", ":s3,env_auth=true:b"] {

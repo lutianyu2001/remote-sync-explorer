@@ -677,3 +677,139 @@ fn an_inline_key_logs_in_through_a_private_agent() {
     }
     assert_eq!(logins(work.path()), 2, "one login for each remote");
 }
+
+/// A remote that pins its host keys (`host_keys`, `pin_host_key`) is reached through the
+/// system ssh, which checks the server against those keys alone: a pinned key lets it in
+/// without a question, another is refused rather than fallen back from, and on first use
+/// the user is asked, as about any new server.
+#[test]
+fn pinned_host_keys_are_checked_by_the_system_ssh() {
+    if !have("ssh") || !have("ssh-keygen") {
+        eprintln!("skipped: ssh or ssh-keygen not installed");
+        return;
+    }
+    let work = socket_work_dir();
+    let key = keygen(work.path());
+    let Some((_sshd, port)) = start_sshd(work.path(), &key) else {
+        eprintln!("skipped: no sshd");
+        return;
+    };
+    let user = std::env::var("USER").unwrap_or_else(|_| "root".to_owned());
+    let embedded: Arc<dyn Backend> = Arc::new(Embedded::new());
+    let askpass = PathBuf::from(env!("CARGO_BIN_EXE_rse"));
+    let ssh = Arc::new(SystemSsh::new(embedded, &work.path().join("sockets"), Some(askpass)));
+    let _close = CloseMasters(ssh.clone());
+    let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let seen = asked.clone();
+    ssh.set_prompter(Box::new(move |question| {
+        seen.lock().unwrap().push((question.confirm, question.prompt.clone()));
+        Some(SshAnswer { text: "yes".to_owned(), remember: false })
+    }));
+    let pub_key = |file: &Path| {
+        let text = fs::read_to_string(file).unwrap();
+        text.split_whitespace().take(2).collect::<Vec<_>>().join(" ")
+    };
+    let server_key = pub_key(&work.path().join("host_key.pub"));
+    let other_dir = work.path().join("other");
+    fs::create_dir(&other_dir).unwrap();
+    let other_key = pub_key(&keygen(&other_dir).with_extension("pub"));
+    let remote = |more: &str| {
+        format!(":sftp,host=127.0.0.1,port={port},user={user},key_file='{}',{more}:", key.display())
+    };
+    let server = work.path().join("server");
+    fs::create_dir_all(server.join("in")).unwrap();
+    let lists = |fs_name: &str| {
+        let listed = api::list(&*ssh, &format!("{fs_name}{}", server.display()), "").unwrap();
+        listed.into_iter().map(|i| i.name).collect::<Vec<_>>()
+    };
+
+    let right = remote(&format!("host_keys='{server_key}'"));
+    assert!(ssh.shell(&right).unwrap().is_some(), "through the system ssh");
+    assert_eq!(lists(&right), ["in"]);
+    assert!(asked.lock().unwrap().is_empty(), "a pinned key is asked about by no one");
+
+    let wrong = remote(&format!("host_keys='{other_key}'"));
+    let refused = ssh.shell(&wrong).unwrap_err();
+    assert!(refused.message.to_lowercase().contains("host key"), "{}", refused.message);
+    assert!(asked.lock().unwrap().is_empty());
+
+    let first_use = remote("pin_host_key=true");
+    assert!(ssh.shell(&first_use).unwrap().is_some());
+    assert_eq!(lists(&first_use), ["in"]);
+    let questions = asked.lock().unwrap().clone();
+    assert_eq!(questions.len(), 1, "{questions:?}");
+    assert!(questions[0].0 && questions[0].1.contains("SHA256:"), "{questions:?}");
+    assert_eq!(logins(work.path()), 2, "the refused server was never logged in to");
+}
+
+/// A remote with its certificate in rclone.conf itself (`pubkey`) logs in through the
+/// system ssh, with the certificate given to ssh in a file of the session's: with a key
+/// file, and with an inline key in a private agent.
+#[test]
+fn an_inline_certificate_logs_in_through_the_system_ssh() {
+    if !have("ssh") || !have("ssh-keygen") || !have("ssh-agent") || !have("ssh-add") {
+        eprintln!("skipped: ssh, ssh-keygen, ssh-agent or ssh-add not installed");
+        return;
+    }
+    let work = socket_work_dir();
+    // The server trusts the certificate authority's signature, and no key of its own.
+    let ca_dir = work.path().join("ca");
+    let holder_dir = work.path().join("holder");
+    fs::create_dir(&ca_dir).unwrap();
+    fs::create_dir(&holder_dir).unwrap();
+    let ca = keygen(&ca_dir);
+    let unrelated = keygen(work.path());
+    let trust = format!("TrustedUserCAKeys {}.pub\n", ca.display());
+    let Some((_sshd, port)) = start_sshd_with(work.path(), &unrelated, &trust) else {
+        eprintln!("skipped: no sshd");
+        return;
+    };
+    let user = std::env::var("USER").unwrap_or_else(|_| "root".to_owned());
+    let key = keygen(&holder_dir);
+    let signed = Command::new("ssh-keygen")
+        .args(["-q", "-s"])
+        .arg(&ca)
+        .args(["-I", "rse test", "-n", &user])
+        .arg(key.with_extension("pub"))
+        .output()
+        .unwrap();
+    assert!(signed.status.success(), "{}", String::from_utf8_lossy(&signed.stderr));
+    // Not beside the key, where ssh would find it by itself.
+    let cert_file = holder_dir.join("id_test-cert.pub");
+    let cert = fs::read_to_string(&cert_file).unwrap().trim().to_owned();
+    fs::remove_file(&cert_file).unwrap();
+
+    let embedded: Arc<dyn Backend> = Arc::new(Embedded::new());
+    let askpass = PathBuf::from(env!("CARGO_BIN_EXE_rse"));
+    let ssh = Arc::new(SystemSsh::new(embedded, &work.path().join("sockets"), Some(askpass)));
+    let _close = CloseMasters(ssh.clone());
+    ssh.set_prompter(Box::new(|question| {
+        assert!(question.confirm, "only the host key is asked about: {question:?}");
+        Some(SshAnswer { text: "yes".to_owned(), remember: false })
+    }));
+    let server = work.path().join("server");
+    fs::create_dir_all(server.join("in")).unwrap();
+    let known = work.path().join("known_hosts");
+    let remote = |more: &str| {
+        format!(
+            ":sftp,host=127.0.0.1,port={port},user={user},known_hosts_file='{}',pubkey='{cert}',{more}:",
+            known.display()
+        )
+    };
+    let pem = fs::read_to_string(&key).unwrap().replace('\n', "\\n");
+    for (fs_name, how) in [
+        (remote(&format!("key_file='{}'", key.display())), "key file"),
+        (remote(&format!("key_pem='{pem}'")), "inline key"),
+    ] {
+        assert!(ssh.shell(&fs_name).unwrap().is_some(), "{how}: through the system ssh");
+        let listed = api::list(&*ssh, &format!("{fs_name}{}", server.display()), "").unwrap();
+        assert_eq!(listed.into_iter().map(|i| i.name).collect::<Vec<_>>(), ["in"], "{how}");
+    }
+    assert_eq!(logins(work.path()), 2);
+    // What is no certificate stays with rclone's built-in ssh.
+    let not_a_cert = format!(
+        ":sftp,host=127.0.0.1,port={port},user={user},key_file='{}',pubkey='ssh-ed25519 AAAA':",
+        key.display()
+    );
+    assert_eq!(ssh.shell(&not_a_cert).unwrap(), None);
+}

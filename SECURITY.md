@@ -197,8 +197,7 @@ names.
   `known_hosts` file. The built-in ssh checks none by itself, so otherwise blocking ssh
   would get an attacker past the check. A `UserKnownHostsFile none` in the ssh config
   becomes ssh's global file, or an empty one, since rclone reads `none` as no checking.
-  A remote that pins its host keys is left to rclone, which ignores the pins once it
-  runs ssh. With `StrictHostKeyChecking no` or `accept-new` the fallback lets in a new
+  A remote that pins its host keys falls back to rclone checking those pins. With `StrictHostKeyChecking no` or `accept-new` the fallback lets in a new
   server, as OpenSSH does, and checks one listed in any file ssh reads under any name it
   knows the server by (`host`, `HostName`, `HostKeyAlias`, with the port, hashed or
   not). It decides when it falls back, since `accept-new` adds servers meanwhile, and
@@ -232,6 +231,21 @@ names.
   `key_exchange`, `macs`, `host_key_algorithms`) are passed only when each entry is a
   name of letters, digits and `-_.@` starting with a letter or digit, so that none adds
   to, removes from or reorders ssh's own list (`+`, `-`, `^`).
+- **Pinned host keys.** A remote's `host_keys` (with no `known_hosts_file`, which takes
+  precedence, as in rclone) are written, each as `algo base64` checked as rclone checks
+  it (the key's own type is the algorithm named), into a file of rse's own in the private
+  socket directory, for any name of the server, since the file is that remote's alone.
+  ssh checks the server against that file and nothing else
+  (`GlobalKnownHostsFile=/dev/null`), learns no key after logging in
+  (`UpdateHostKeys=no`), and, with `host_keys` alone, never asks
+  (`StrictHostKeyChecking=yes`) and negotiates only the pinned keys' algorithms, unless
+  the remote names its own. A server showing another key is an error, never a reason to
+  fall back. With `pin_host_key`, a key for an algorithm with none pinned is asked about
+  through the same dialog as any new server (`StrictHostKeyChecking=ask`; not before
+  OpenSSH 8.4, which cannot ask, when rclone checks the pins instead); once accepted
+  it is added to the remote's `host_keys` in rclone.conf (`config/update`), with those
+  there, up to rclone's 16. An inline certificate (`pubkey`) is written to a file of its
+  own beside them and given to ssh as `CertificateFile`, in place of `pubkey_file`.
 - **Inline keys.** A remote's `key_pem`, a private key kept in rclone.conf, is handed
   to `ssh-add -` on its standard input and goes into an `ssh-agent` rse starts for that
   remote alone: it never goes into a file. The agent's socket is in the private socket
