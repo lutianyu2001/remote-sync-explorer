@@ -21,6 +21,27 @@ env:
   VENDOR: true
 
 jobs:
+  # Whether the tag is a pre-release: one that ends in -alpha, -beta, -rc, -pre, -preview or -dev,
+  # with or without a number after it (v1.2.0-rc.1, v1.2.0-rc1; in a sidestream fork
+  # v0.8.2-mod.2-rc.1, while v0.8.2-mod.2 is a release). A pre-release is built as a release is and gets a GitHub pre-release with its files,
+  # to download and try: it goes to no registry or package repository, and starts no other workflow.
+  kind:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      prerelease: ${{ steps.kind.outputs.prerelease }}
+    steps:
+      - id: kind
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if printf '%s\n' "$TAG" | grep -Eq -- '-(alpha|beta|rc|pre|preview|dev)\.?[0-9]*$'; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # The project's ci.yml, its checks and tests: a release goes out only when they pass. Per project:
   # without a ci.yml (a fork whose tests run in build), delete this job and build's needs.
   # ./ rather than $/, which actionlint 1.7.12 does not know yet.
@@ -30,7 +51,7 @@ jobs:
   # Builds the archives from the tag, with neither a secret nor a token that can write: building runs
   # the project's code and its dependencies'.
   build:
-    needs: ci
+    needs: [kind, ci]
     strategy:
       matrix:
         # Per project: the systems the release ships for, each with the name its archive carries.
@@ -69,6 +90,20 @@ jobs:
       # Before the build, which embeds licenses.txt for rse --licenses to print.
       - name: License texts
         run: PATH="$(go env GOPATH)/bin:$PATH" scripts/third-party-licenses.sh "$RUNNER_TEMP/third-party"
+      # The package as crates.io will build it, before the checkout is written into. cargo
+      # refuses to publish a crates-io that .cargo/config.toml replaces with vendor/ without
+      # --registry crates-io, and needs the network that net.offline turns off.
+      - name: Check the crate
+        if: matrix.name == 'linux-x86_64'
+        run: cargo --config net.offline=false publish --dry-run --locked --registry crates-io -p "$CRATE"
+      # A pre-release is built with the tag's version, which .github/scripts/release-version.py
+      # writes into this checkout alone, after the dry run, which wants the tree as committed: the
+      # repository's manifest keeps the version of the release the pre-release leads to. For a
+      # release RELEASE_VERSION is empty and nothing is changed.
+      - name: Give a pre-release the tag's version
+        env:
+          RELEASE_VERSION: ${{ needs.kind.outputs.prerelease == 'true' && github.ref_name || '' }}
+        run: python3 .github/scripts/release-version.py
       # cargo auditable embeds the dependency list, so cargo audit bin can check a release.
       - name: Build
         run: |
@@ -76,12 +111,6 @@ jobs:
           cargo auditable build --release --locked
       - name: Check that rse prints its license texts
         run: scripts/check-embedded-licenses.sh target/release/rse "$RUNNER_TEMP/third-party/licenses.txt"
-      # The package as crates.io will build it, before dist/ is written into the checkout. cargo
-      # refuses to publish a crates-io that .cargo/config.toml replaces with vendor/ without
-      # --registry crates-io, and needs the network that net.offline turns off.
-      - name: Check the crate
-        if: matrix.name == 'linux-x86_64'
-        run: cargo --config net.offline=false publish --dry-run --locked --registry crates-io -p "$CRATE"
       - name: Build and pack
         env:
           NAME: ${{ matrix.name }}
@@ -102,7 +131,9 @@ jobs:
           if-no-files-found: error
 
   crates-io:
-    needs: build
+    needs: [kind, build]
+    # Not for a pre-release, nor the jobs that wait for this one.
+    if: needs.kind.outputs.prerelease != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: crates-io
@@ -138,7 +169,9 @@ jobs:
 
   # Creates the release from the archives build made, and runs none of the project's code.
   github-release:
-    needs: [build, crates-io]
+    needs: [kind, build, crates-io]
+    # Also when the jobs before it were skipped for a pre-release; never after one that failed.
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -156,8 +189,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ needs.kind.outputs.prerelease }}
         run: |
-          gh release create "$TAG" dist/* -R "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" --generate-notes
+          gh release create "$TAG" dist/* -R "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" --generate-notes --prerelease="$PRERELEASE"
           # Per project: with the security audit's verify.yml, which a release made with this
-          # token would not start on its own.
-          gh workflow run verify.yml -R "$GITHUB_REPOSITORY" --ref "$TAG"
+          # token would not start on its own. A pre-release is not audited.
+          if [ "$PRERELEASE" != true ]; then
+            gh workflow run verify.yml -R "$GITHUB_REPOSITORY" --ref "$TAG"
+          fi
