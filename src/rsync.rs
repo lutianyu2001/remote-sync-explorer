@@ -599,8 +599,10 @@ impl Running {
         stats.errors = i64::try_from(errors.len()).unwrap_or(i64::MAX);
         stats.last_error = errors.last().map(|e| (*e).clone()).unwrap_or_default();
         let result = self.exit.and_then(|(status, seen)| {
-            let read =
-                self.stopped || output.closed.iter().all(|c| *c) || seen.elapsed() > DRAIN_TIME;
+            // Also for a stopped rsync, whose own words are not needed: the processes it
+            // started end after it, and the one that receives is still keeping the partial
+            // file then.
+            let read = output.closed.iter().all(|c| *c) || seen.elapsed() > DRAIN_TIME;
             read.then(|| self.result(status, &said))
         });
         (stats, result)
@@ -641,8 +643,9 @@ impl Running {
     }
 
     /// Stops rsync with SIGTERM, on which it keeps the file it is in the middle of in
-    /// [`PARTIAL_DIR`], and waits for it to end, killing it after `STOP_TIME`. [`poll`]
-    /// then reports `Err`, unless rsync had finished already.
+    /// [`PARTIAL_DIR`], and waits for it to end, killing it after `STOP_TIME`, and then up
+    /// to `DRAIN_TIME` for the processes it started. [`poll`] then reports `Err`, unless
+    /// rsync had finished already.
     ///
     /// [`poll`]: Self::poll
     pub fn stop(&mut self) {
@@ -651,26 +654,37 @@ impl Running {
         }
         if let Ok(Some(status)) = self.child.try_wait() {
             self.exit = Some((status, Instant::now()));
-            return;
-        }
-        if !self.stopped {
-            self.stopped = true;
-            self.signal(rustix::process::Signal::TERM);
-        }
-        let deadline = self.kill_at.unwrap_or_else(|| Instant::now() + STOP_TIME);
-        let status = loop {
-            match self.child.try_wait() {
-                Ok(Some(status)) => break Some(status),
-                Ok(None) if Instant::now() < deadline => {
-                    std::thread::sleep(Duration::from_millis(20));
-                }
-                _ => {
-                    self.signal(rustix::process::Signal::KILL);
-                    break self.child.wait().ok();
-                }
+        } else {
+            if !self.stopped {
+                self.stopped = true;
+                self.signal(rustix::process::Signal::TERM);
             }
-        };
-        self.exit = status.map(|s| (s, Instant::now()));
+            let deadline = self.kill_at.unwrap_or_else(|| Instant::now() + STOP_TIME);
+            let status = loop {
+                match self.child.try_wait() {
+                    Ok(Some(status)) => break Some(status),
+                    Ok(None) if Instant::now() < deadline => {
+                        std::thread::sleep(Duration::from_millis(20));
+                    }
+                    _ => {
+                        self.signal(rustix::process::Signal::KILL);
+                        break self.child.wait().ok();
+                    }
+                }
+            };
+            self.exit = status.map(|s| (s, Instant::now()));
+        }
+        // The processes rsync started end after it, and the one that receives is still
+        // keeping the partial file: they are gone when the output they share has ended.
+        let drained = Instant::now() + DRAIN_TIME;
+        while !self.output_ended() && Instant::now() < drained {
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    }
+
+    /// Whether standard output and error were read to their end: no process holds them.
+    fn output_ended(&self) -> bool {
+        self.output.lock().map_or(true, |o| o.closed.iter().all(|c| *c))
     }
 
     /// Sends `signal` to rsync's process group; only while rsync is not yet waited for,
