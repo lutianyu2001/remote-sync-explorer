@@ -4,6 +4,7 @@
 mod dialogs;
 pub(crate) mod panes;
 mod queue;
+mod settings;
 mod term;
 pub mod text;
 
@@ -21,8 +22,9 @@ use text::width;
 
 /// The key hints, in their order on the row. A row too narrow for all of them leaves out
 /// the last of [`HINT_PRIORITY`] first.
-const HINTS: [(Action, fn() -> String); 9] = [
+const HINTS: [(Action, fn() -> String); 10] = [
     (Action::Rename, || tr!("hint-rename")),
+    (Action::Settings, || tr!("hint-settings")),
     (Action::Copy, || tr!("hint-copy")),
     (Action::Move, || tr!("hint-move")),
     (Action::Mkdir, || tr!("hint-mkdir")),
@@ -35,7 +37,7 @@ const HINTS: [(Action, fn() -> String); 9] = [
 
 /// The hints from the one kept longest to the one left out first: help, where all the
 /// others are, last of all.
-const HINT_PRIORITY: [Action; 9] = [
+const HINT_PRIORITY: [Action; 10] = [
     Action::Help,
     Action::Copy,
     Action::Move,
@@ -45,6 +47,7 @@ const HINT_PRIORITY: [Action; 9] = [
     Action::Filter,
     Action::Mkdir,
     Action::Quit,
+    Action::Settings,
 ];
 
 /// Draws the frame; returns the hit map, and where to put the hidden cursor ([`park_cursor`]),
@@ -166,6 +169,7 @@ pub fn draw_buffer(buf: &mut Buffer, area: Rect, app: &App) -> (HitMap, Option<(
             map.dialog = drawn.rect;
             map.buttons = drawn.buttons;
             map.dialog_list = drawn.list;
+            map.dialog_spots = drawn.spots;
             map.scroll_max = drawn.scroll_max;
             cursor = drawn.cursor;
         }

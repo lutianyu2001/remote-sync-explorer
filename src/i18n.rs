@@ -237,6 +237,7 @@ mod tests {
         let mut out = BTreeSet::new();
         walk(&Path::new(env!("CARGO_MANIFEST_DIR")).join("src"), &mut out);
         out.extend(crate::keymap::help_ids());
+        out.extend(crate::settings::message_ids());
         out
     }
 

@@ -24,6 +24,7 @@ marked = [{ $count } marked]
 ## Key hints at the bottom
 
 hint-rename = Rename
+hint-settings = Settings
 hint-copy = Copy
 hint-move = Move
 hint-mkdir = Mkdir
@@ -222,6 +223,71 @@ remotes-how = No remotes in rclone.conf yet: add one with `rclone config`. A ser
 errors-title = Error log, newest first  (Esc to close)
 errors-none = No errors.
 
+## The settings page
+
+settings-title = Settings
+settings-keys = Enter change · ←→ switch · Del default · Esc close
+settings-keys-typing = Enter save · Esc leave as it was
+settings-keys-choosing = ↑↓ choose · Enter take it · Esc leave as it was
+settings-saved = Saved { $key }
+settings-saved-restart = Saved { $key }: it holds from the next start of rse
+settings-failed = Not saved: { $error }
+settings-unreadable = Cannot read the settings: { $error }
+settings-no-file = there is no settings file to write (no home directory)
+settings-by-hand = { $path } is written in a way { $key } cannot be put into; change it there by hand
+settings-not-a-number = { $text } is not a number
+settings-default = default: { $value }
+settings-restart = holds from the next start
+settings-above-variable = for this run { $value }, from the environment variable { $variable }
+settings-above-command-line = for this run { $value }, from --set on the command line
+settings-on = On
+settings-off = Off
+settings-section-rclone = rclone
+settings-section-ui = Interface
+settings-section-jobs = Jobs
+settings-section-keys = Keys
+choice-ui-multi_select_modifier-ctrl = Ctrl
+choice-ui-multi_select_modifier-alt = Alt
+choice-ui-drop_action-ask = Ask
+choice-ui-drop_action-copy = Copy
+choice-ui-language-auto = System
+choice-ui-language-en = English
+choice-ui-language-zh-CN = 简体中文
+choice-jobs-engine-auto = Automatic
+choice-jobs-engine-rclone = rclone only
+setting-rclone-config-name = rclone config file
+setting-rclone-transfers-name = Parallel transfers
+setting-rclone-checkers-name = Parallel checkers
+setting-rclone-browse_threads-name = Browsing threads
+setting-rclone-system_ssh-name = Use the system's ssh
+setting-ui-left-name = Left pane starts at
+setting-ui-right-name = Right pane starts at
+setting-ui-show_hidden-name = Show hidden files
+setting-ui-mouse-name = Mouse
+setting-ui-multi_select_modifier-name = Multi-select modifier
+setting-ui-drop_action-name = Drop action
+setting-ui-language-name = Language
+setting-jobs-max_concurrent-name = Concurrent jobs
+setting-jobs-poll_ms-name = Progress interval (ms)
+setting-jobs-engine-name = Transfer engine
+setting-jobs-checksum-name = Compare by checksum
+setting-rclone-config = The rclone.conf to use; empty for rclone's own default
+setting-rclone-transfers = Files one job transfers at the same time (rclone --transfers)
+setting-rclone-checkers = Files one job compares at the same time (rclone --checkers)
+setting-rclone-browse_threads = Threads for listings and other short calls
+setting-rclone-system_ssh = Reach sftp servers through the system's ssh, with one login per server
+setting-ui-left = Where the left pane starts
+setting-ui-right = Where the right pane starts; empty for the root of the first remote
+setting-ui-show_hidden = Show dot files
+setting-ui-mouse = Use the mouse
+setting-ui-multi_select_modifier = The key held while clicking to mark several entries
+setting-ui-drop_action = What dropping dragged entries does: ask (copy, move or cancel), or copy at once
+setting-ui-language = The interface language; auto follows the system's
+setting-jobs-max_concurrent = Jobs running at the same time; the others wait
+setting-jobs-poll_ms = Milliseconds between two readings of the transfers' progress
+setting-jobs-engine = What copies and moves: auto uses rsync where it can and rclone elsewhere, rclone never rsync
+setting-jobs-checksum = Tell files apart by checksum, not by size and modification time
+
 ## Help
 
 help-title = Help  (Esc to close)
@@ -399,6 +465,7 @@ key-focus_right_address = Focus the right address bar
 key-focus_right = Focus the right pane
 key-focus_queue = Focus the transfer queue
 key-error_log = Error log (last 100)
+key-settings = Settings: change what the settings file has
 key-help = This help
 key-quit = Quit
 key-queue_cancel = Queue: cancel the job

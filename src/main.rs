@@ -405,6 +405,11 @@ fn run(cli: &Cli) -> Result<()> {
         saved,
         queue_file: queue_file.clone(),
         terminal: !cli.no_terminal,
+        settings: rse::settings::Source {
+            file: config_path,
+            overrides: cli.set.clone(),
+            environment: layeredcfg::Environment::process(),
+        },
     };
     let mut app = App::new(init, exec);
     if let Some(e) = unsaved.or(held) {
@@ -673,7 +678,7 @@ fn run_tui(
         restore_terminal();
         return Err(e).context(tr!("startup-terminal"));
     }
-    let result = event_loop(app, rx, tx);
+    let result = event_loop(app, rx, tx, mouse);
     restore_terminal();
     let _ = std::panic::take_hook();
     result
@@ -708,6 +713,7 @@ fn event_loop(
     app: &mut App,
     rx: &crossbeam_channel::Receiver<Event>,
     tx: &Sender<Event>,
+    mut mouse: bool,
 ) -> Result<()> {
     let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
     terminal.clear()?;
@@ -738,6 +744,15 @@ fn event_loop(
         }
         if app.quit == QuitState::Done {
             return Ok(());
+        }
+        // The settings page turns the mouse on and off.
+        if app.ui.mouse != mouse {
+            mouse = app.ui.mouse;
+            if mouse {
+                execute!(io::stdout(), EnableMouseCapture)?;
+            } else {
+                execute!(io::stdout(), DisableMouseCapture)?;
+            }
         }
     }
 }

@@ -433,6 +433,7 @@ for those who know it; a key the two share spans both columns.
 <tr><td>Enter or leave the transfer queue; there x cancels, r retries, c clears finished jobs</td><td>Ctrl+T</td><td>Ctrl+X J</td></tr>
 <tr><td>Terminal under the active pane, in its directory, locally or on a server reached through ssh; in the terminal, back to the panes, folding it to five lines; <code>exit</code> in it closes it (see <a href="#terminal">Terminal</a>)</td><td colspan="2">Ctrl+O</td></tr>
 <tr><td>Error log (last 100)</td><td>E</td><td>—</td></tr>
+<tr><td>Settings page: change the settings of the config file (see <a href="#configuration">Configuration</a>)</td><td>F4</td><td>—</td></tr>
 <tr><td>Help</td><td>?</td><td>F1</td></tr>
 <tr><td>Quit</td><td>F10 / q</td><td>F10</td></tr>
 </tbody>
@@ -568,6 +569,19 @@ the defaults  <  your config.toml  <  the environment (RSE_...)  <  --set on the
 A value of the environment or the command line that does not fit its setting is an
 error that names the variable or says it is the command line's.
 
+The settings page (F4) lists every setting, `[keys]` included, with the value your file
+gives it, and changes it there. A setting that is on or off or has a few values stands
+between two arrows: Left and Right, or a click on an arrow, take the value before and
+the next one (so does Space), and Enter, or a click on the setting, opens the list of
+its values to choose from. Enter or a click edits the other settings, keys as their
+names with spaces between them (`F5 c`). Del takes a setting
+out of the file, which leaves its default. A change is written to your file at once, and
+the rest of the file, comments included, stays as you wrote it; a value that does not fit
+its setting is not written. `ui.show_hidden`, `ui.mouse`, `ui.multi_select_modifier`,
+`ui.drop_action`, `ui.language`, `jobs.max_concurrent` and the keys hold at once, the
+other settings from the next start. Where the environment or `--set` sets a setting for
+this run, the page shows that value beside the file's.
+
 The settings and their defaults, as [`src/defaults.toml`](src/defaults.toml) has them,
 with `[keys]` (every action's defaults are on the help screen, `?`):
 
@@ -601,8 +615,8 @@ move = ["F6", "m"]
 # page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort,
 # sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename,
 # mkdir, delete, overwrite_mode, queue, terminal, focus_left_address,
-# focus_left, focus_right_address, focus_right, focus_queue, error_log, help,
-# quit, queue_cancel, queue_retry, queue_clear.
+# focus_left, focus_right_address, focus_right, focus_queue, error_log,
+# settings, help, quit, queue_cancel, queue_retry, queue_clear.
 # Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn, Delete.
 ```
 
@@ -760,7 +774,8 @@ cargo fmt --check
 - `cargo test` also checks that both language files define the same messages and that
   every message is used.
 
-The window frames, the arrow between windows and the scrolling text field come from
+The window frames, the arrow between windows, the scrolling text field and the lists of
+the settings page come from
 [lazyui-ratatui](https://github.com/lutianyu2001/lazyui-ratatui).
 
 ## Compatibility

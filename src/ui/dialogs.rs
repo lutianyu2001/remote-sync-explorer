@@ -20,6 +20,7 @@ pub struct Drawn {
     pub buttons: Vec<Rect>,
     pub list: Option<(Rect, usize)>,
     pub cursor: Option<(u16, u16)>,
+    pub spots: Vec<(Rect, crate::hitmap::Spot)>,
     pub scroll_max: usize,
 }
 
@@ -74,6 +75,7 @@ pub fn draw(buf: &mut Buffer, screen: Rect, app: &App, dialog: &Dialog) -> Drawn
             let lines: Vec<_> = question.lines().map(|l| plain(l.to_owned())).collect();
             boxed(buf, screen, &tr!("ssh-title"), &lines, &dialog.buttons(), Some(*focus))
         }
+        Dialog::Settings(page) => super::settings::draw(buf, screen, app, page),
         Dialog::Filter => Drawn::default(),
     }
 }
@@ -360,14 +362,14 @@ fn button_row(buf: &mut Buffer, inner: Rect, labels: &[String], focus: Option<us
     rects
 }
 
-fn centered(screen: Rect, w: u16, h: u16) -> Rect {
+pub(super) fn centered(screen: Rect, w: u16, h: u16) -> Rect {
     let w = w.min(screen.width);
     let h = h.min(screen.height);
     Rect::new(screen.x + (screen.width - w) / 2, screen.y + (screen.height - h) / 2, w, h)
 }
 
 /// Clears `rect`, draws a border with a title, and returns the inside.
-fn frame(buf: &mut Buffer, rect: Rect, title: &str) -> Rect {
+pub(super) fn frame(buf: &mut Buffer, rect: Rect, title: &str) -> Rect {
     Clear.render(rect, buf);
     let block = Block::bordered().border_type(BorderType::Rounded).title(format!(" {title} "));
     let inner = block.inner(rect);

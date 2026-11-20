@@ -303,6 +303,11 @@ T}	T{
 \fBE\fR
 T}	\(em
 T{
+设置页面：修改配置文件里的设置。
+T}	T{
+\fBF4\fR
+T}	\(em
+T{
 帮助：按当前配置列出所有按键。
 T}	T{
 \fB?\fR
@@ -375,7 +380,9 @@ checksum = false         # 按校验和比较文件
 copy = ["F5", "c"]       # 任何操作，按下面的名称
 .EE
 .PP
-操作的名称有 switch_pane, up, down, page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort, sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename, mkdir, delete, overwrite_mode, queue, terminal, focus_left_address, focus_left, focus_right_address, focus_right, focus_queue, error_log, help, quit, queue_cancel, queue_retry, queue_clear。按键写作 F5、c、E、Ctrl+U、Alt+x、Space、Enter、PgDn 或 Delete 这样。
+操作的名称有 switch_pane, up, down, page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort, sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename, mkdir, delete, overwrite_mode, queue, terminal, focus_left_address, focus_left, focus_right_address, focus_right, focus_queue, error_log, settings, help, quit, queue_cancel, queue_retry, queue_clear。按键写作 F5、c、E、Ctrl+U、Alt+x、Space、Enter、PgDn 或 Delete 这样。
+.PP
+设置页面（\fBF4\fR）列出所有设置和配置文件给它们的值，可以直接在上面修改：开关类和只有几个取值的设置，值的两侧各有一个箭头，按左右方向键或单击箭头换到前一个或后一个值（空格也换到后一个），按 Enter 或单击该设置则展开它的取值列表供选择；其余设置按 Enter 或单击进入编辑，按键写成用空格隔开的按键名。Del 把设置从文件里删掉，即恢复默认值。每次修改都立即写入配置文件，文件的其余部分（包括注释）保持原样；不符合设置的值不会写入。\fBui.show_hidden\fR、\fBui.mouse\fR、\fBui.multi_select_modifier\fR、\fBui.drop_action\fR、\fBui.language\fR、\fBjobs.max_concurrent\fR 和按键立即生效，其余设置下次启动时生效。环境变量或 \fB\-\-set\fR 为本次运行设了某项设置时，页面会在文件的值旁边显示那个值。
 .SH 经由 OpenSSH 的 SFTP
 rse 经由系统 ssh 访问 sftp 服务器，所以 \fI\(ti/.ssh/config\fR 里的设置都适用。每台服务器只登录一次，并保持这条主连接；rclone 的所有连接都经由它，所以服务器每次会话只看到一次登录。这条连接不转发 agent、X11 或端口。ssh 要的密码、密钥口令或一次性验证码在对话框里询问，对话框可以记住密码（见\fB文件\fR一节）。没有 ssh、\fBrclone.system_ssh\fR 为 false、远程需要只有 rclone 内置 ssh 才能做的事，或经由 ssh 登录失败时，改用 rclone 内置的 ssh；这时它按 ssh 的 \fIknown_hosts\fR 检查主机密钥。
 .SH 环境变量

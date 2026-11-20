@@ -19,7 +19,9 @@ use crate::rclone::RpcError;
 use crate::rclone::system_ssh::{SshAnswer, SshQuestion};
 use crate::ui::text::shown;
 
+mod settings;
 mod term;
+pub use settings::SettingsPage;
 pub use term::{TermState, Terminal};
 
 const DOUBLE_CLICK: Duration = Duration::from_millis(400);
@@ -417,6 +419,8 @@ pub enum Dialog {
     Errors {
         scroll: usize,
     },
+    /// The settings page.
+    Settings(Box<SettingsPage>),
     /// Typing a name filter for the active pane.
     Filter,
     /// A yes-or-no question of ssh's own, such as whether to trust a new host key.
@@ -438,9 +442,11 @@ impl Dialog {
             Self::Leave { .. } => vec![tr!("button-pause-and-leave"), tr!("button-stay")],
             Self::Input { .. } => vec![tr!("button-ok"), tr!("button-cancel")],
             Self::SshConfirm { .. } => vec![tr!("button-yes"), tr!("button-no")],
-            Self::Remotes { .. } | Self::Help { .. } | Self::Errors { .. } | Self::Filter => {
-                Vec::new()
-            }
+            Self::Remotes { .. }
+            | Self::Help { .. }
+            | Self::Errors { .. }
+            | Self::Settings(_)
+            | Self::Filter => Vec::new(),
         }
     }
 
@@ -612,6 +618,8 @@ pub struct AppInit {
     pub queue_file: Option<PathBuf>,
     /// Whether the terminal may be opened (`--no-terminal` turns it off).
     pub terminal: bool,
+    /// Where the settings are from, for the settings page.
+    pub settings: crate::settings::Source,
 }
 
 pub struct App {
@@ -670,6 +678,8 @@ pub struct App {
     pub terminals: [Option<Terminal>; 2],
     /// Whether the terminal may be opened at all.
     terminal_allowed: bool,
+    /// Where the settings are from, and the file the settings page writes.
+    settings: crate::settings::Source,
 }
 
 impl App {
@@ -720,6 +730,7 @@ impl App {
             engines_asked: HashSet::new(),
             terminals: [None, None],
             terminal_allowed: init.terminal,
+            settings: init.settings,
         };
         app.navigate(0, init.left);
         app.navigate(1, init.right);
@@ -1184,6 +1195,7 @@ impl App {
                     self.queue_cursor.min(self.queue.visible().len().saturating_sub(1));
             }
             Action::ErrorLog => self.dialog = Some(Dialog::Errors { scroll: 0 }),
+            Action::Settings => self.open_settings(),
             Action::Help => self.dialog = Some(Dialog::Help { scroll: 0 }),
             Action::Quit => {
                 let jobs = self.queue.interrupted_by(&[]);
@@ -1282,6 +1294,11 @@ impl App {
                 KeyCode::PageDown => *scroll = (*scroll + 10).min(self.hitmap.scroll_max),
                 _ => return,
             },
+            Dialog::Settings(page) => {
+                if !self.settings_key(page, key) {
+                    return;
+                }
+            }
             Dialog::Confirm { .. }
             | Dialog::Conflict { .. }
             | Dialog::JobConflict { .. }
@@ -1709,6 +1726,7 @@ impl App {
             Dialog::Remotes { .. }
             | Dialog::Help { .. }
             | Dialog::Errors { .. }
+            | Dialog::Settings(_)
             | Dialog::Filter => {}
         }
     }
@@ -2093,16 +2111,11 @@ impl App {
             match target {
                 Target::Button(_) if fresh => self.dialog = Some(dialog),
                 Target::Button(i) => self.press_button(dialog, i, now),
-                Target::DialogRow(i) => {
-                    if let Dialog::Remotes { filter, .. } = &dialog {
-                        if let Some((_, loc)) = self.remote_choices(filter).get(i).cloned() {
-                            self.navigate(self.active, loc);
-                        } else {
-                            self.dialog = Some(dialog);
-                        }
-                    } else {
-                        self.dialog = Some(dialog);
-                    }
+                Target::DialogRow(i) => self.click_dialog_row(dialog, i),
+                Target::DialogSpot(spot) => self.click_dialog_spot(dialog, spot),
+                // A click beside the list opened under a setting closes that list alone.
+                _ if matches!(&dialog, Dialog::Settings(page) if page.menu.is_some()) => {
+                    self.close_settings_menu(dialog);
                 }
                 // Clicking outside a drop menu or the address being edited dismisses it;
                 // other dialogs stay.
@@ -2112,6 +2125,7 @@ impl App {
                         Dialog::Drop { .. }
                             | Dialog::Help { .. }
                             | Dialog::Errors { .. }
+                            | Dialog::Settings(_)
                             | Dialog::Input { purpose: InputPurpose::Goto { .. }, .. }
                     ) => {}
                 _ => self.dialog = Some(dialog),
@@ -2173,8 +2187,42 @@ impl App {
                 self.focus = Focus::Terminal;
             }
             Target::Hint(action) => self.action(action, now),
-            Target::Button(_) | Target::DialogRow(_) | Target::Dialog | Target::Nothing => {}
+            Target::Button(_)
+            | Target::DialogRow(_)
+            | Target::DialogSpot(_)
+            | Target::Dialog
+            | Target::Nothing => {}
         }
+    }
+
+    /// A click on row `row` of the list `dialog` has: the remote picker opens that
+    /// remote, the settings page goes to that setting or changes it.
+    fn click_dialog_row(&mut self, mut dialog: Dialog, row: usize) {
+        match &mut dialog {
+            Dialog::Remotes { filter, .. } => {
+                if let Some((_, loc)) = self.remote_choices(filter).get(row).cloned() {
+                    self.navigate(self.active, loc);
+                    return;
+                }
+            }
+            Dialog::Settings(page) => page.click(row),
+            _ => {}
+        }
+        self.dialog = Some(dialog);
+    }
+
+    fn click_dialog_spot(&mut self, mut dialog: Dialog, spot: crate::hitmap::Spot) {
+        if let Dialog::Settings(page) = &mut dialog {
+            self.settings_spot(page, spot);
+        }
+        self.dialog = Some(dialog);
+    }
+
+    fn close_settings_menu(&mut self, mut dialog: Dialog) {
+        if let Dialog::Settings(page) = &mut dialog {
+            page.menu = None;
+        }
+        self.dialog = Some(dialog);
     }
 
     fn toggle_mark(&mut self, pane: PaneId, row: usize) {
@@ -2364,6 +2412,7 @@ impl App {
                     let last = choices.saturating_sub(1);
                     *cursor = if down { (*cursor + 1).min(last) } else { cursor.saturating_sub(1) };
                 }
+                Dialog::Settings(page) => page.step(if down { 1 } else { -1 }),
                 _ => {}
             }
             return;
@@ -2580,6 +2629,7 @@ fn works_in_address_bar(action: Action) -> bool {
             | Action::Refresh
             | Action::ErrorLog
             | Action::OverwriteMode
+            | Action::Settings
             | Action::Help
             | Action::Quit
     )

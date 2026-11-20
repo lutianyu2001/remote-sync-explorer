@@ -471,6 +471,11 @@ T}	T{
 \fBE\fR
 T}	\(em
 T{
+The settings page: change the settings of the config file.
+T}	T{
+\fBF4\fR
+T}	\(em
+T{
 Help: every key, as configured.
 T}	T{
 \fB?\fR
@@ -622,8 +627,29 @@ The actions are named switch_pane, up, down, page_up, page_down, home, end, ente
 parent, mark, mark_all, filter, sort, sort_reverse, toggle_hidden, goto, remote, swap,
 refresh, copy, move, rename, mkdir, delete, overwrite_mode, queue, terminal,
 focus_left_address, focus_left, focus_right_address, focus_right, focus_queue,
-error_log, help, quit, queue_cancel, queue_retry and queue_clear.
+error_log, settings, help, quit, queue_cancel, queue_retry and queue_clear.
 Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn or Delete.
+.PP
+The settings page
+.RB ( F4 )
+lists every setting with the value the config file gives it, and changes it there.
+A setting that is on or off or has a few values stands between two arrows: Left and
+Right, or a click on an arrow, take the value before and the next one (so does Space),
+and Enter, or a click on the setting, opens the list of its values to choose from.
+Enter or a click edits the other settings, keys as their names with spaces between
+them. Del takes a setting out of the file, which leaves its default.
+A change is written to the config file at once, and the rest of the file, comments
+included, stays as it was written; a value that does not fit its setting is not written.
+.BR ui.show_hidden ,
+.BR ui.mouse ,
+.BR ui.multi_select_modifier ,
+.BR ui.drop_action ,
+.BR ui.language ,
+.B jobs.max_concurrent
+and the keys hold at once, the other settings from the next start.
+Where the environment or
+.B \-\-set
+sets a setting for this run, the page shows that value beside the file's.
 .SH SFTP THROUGH OPENSSH
 rse reaches sftp servers through the system ssh, so
 .I ~/.ssh/config

@@ -18,6 +18,7 @@ pub mod keymap;
 pub mod location;
 pub mod rclone;
 pub mod rsync;
+pub mod settings;
 #[cfg(all(unix, feature = "embedded"))]
 pub mod signals;
 pub mod state;

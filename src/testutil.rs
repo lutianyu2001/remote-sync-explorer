@@ -158,6 +158,7 @@ impl Harness {
             saved: Vec::new(),
             queue_file: None,
             terminal: true,
+            settings: crate::settings::Source::none(),
         };
         let mut app = App::new(init, exec);
         app.display_tz = chrono::FixedOffset::east_opt(0);

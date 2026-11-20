@@ -21,6 +21,7 @@ marked = [已选 { $count } 项]
 ## 底部按键提示
 
 hint-rename = 重命名
+hint-settings = 设置
 hint-copy = 复制
 hint-move = 移动
 hint-mkdir = 新建
@@ -204,6 +205,71 @@ remotes-how = rclone.conf 里还没有远程：用 `rclone config` 添加。服�
 errors-title = 错误日志，最新的在前（Esc 关闭）
 errors-none = 没有错误。
 
+## 设置页面
+
+settings-title = 设置
+settings-keys = Enter 修改 · ←→ 切换 · Del 恢复默认 · Esc 关闭
+settings-keys-typing = Enter 保存 · Esc 放弃修改
+settings-keys-choosing = ↑↓ 选择 · Enter 确定 · Esc 放弃修改
+settings-saved = 已保存 { $key }
+settings-saved-restart = 已保存 { $key }：下次启动 rse 时生效
+settings-failed = 没有保存：{ $error }
+settings-unreadable = 无法读取设置：{ $error }
+settings-no-file = 没有可写的配置文件（找不到用户主目录）
+settings-by-hand = { $path } 的写法无法写入 { $key }，请直接编辑该文件
+settings-not-a-number = { $text } 不是数字
+settings-default = 默认值：{ $value }
+settings-restart = 下次启动时生效
+settings-above-variable = 本次运行为 { $value }，来自环境变量 { $variable }
+settings-above-command-line = 本次运行为 { $value }，来自命令行的 --set
+settings-on = 开
+settings-off = 关
+settings-section-rclone = rclone
+settings-section-ui = 界面
+settings-section-jobs = 任务
+settings-section-keys = 按键
+choice-ui-multi_select_modifier-ctrl = Ctrl
+choice-ui-multi_select_modifier-alt = Alt
+choice-ui-drop_action-ask = 询问
+choice-ui-drop_action-copy = 复制
+choice-ui-language-auto = 跟随系统
+choice-ui-language-en = English
+choice-ui-language-zh-CN = 简体中文
+choice-jobs-engine-auto = 自动
+choice-jobs-engine-rclone = 仅 rclone
+setting-rclone-config-name = rclone 配置文件
+setting-rclone-transfers-name = 同时传输的文件数
+setting-rclone-checkers-name = 同时比对的文件数
+setting-rclone-browse_threads-name = 浏览线程数
+setting-rclone-system_ssh-name = 使用系统 ssh
+setting-ui-left-name = 左侧窗格初始位置
+setting-ui-right-name = 右侧窗格初始位置
+setting-ui-show_hidden-name = 显示隐藏文件
+setting-ui-mouse-name = 鼠标
+setting-ui-multi_select_modifier-name = 多选修饰键
+setting-ui-drop_action-name = 拖放动作
+setting-ui-language-name = 语言
+setting-jobs-max_concurrent-name = 同时运行的任务数
+setting-jobs-poll_ms-name = 进度刷新间隔（毫秒）
+setting-jobs-engine-name = 传输引擎
+setting-jobs-checksum-name = 按校验和比较
+setting-rclone-config = 使用的 rclone.conf；留空即 rclone 的默认位置
+setting-rclone-transfers = 一个任务同时传输的文件数（rclone --transfers）
+setting-rclone-checkers = 一个任务同时比对的文件数（rclone --checkers）
+setting-rclone-browse_threads = 列目录等短操作使用的线程数
+setting-rclone-system_ssh = 通过系统的 ssh 连接 sftp 服务器，每台服务器只登录一次
+setting-ui-left = 左侧窗格的初始位置
+setting-ui-right = 右侧窗格的初始位置；留空即第一个远程的根目录
+setting-ui-show_hidden = 显示点文件
+setting-ui-mouse = 使用鼠标
+setting-ui-multi_select_modifier = 单击多选时按住的键
+setting-ui-drop_action = 拖放后的动作：ask 询问（复制、移动或取消），copy 直接复制
+setting-ui-language = 界面语言；auto 跟随系统
+setting-jobs-max_concurrent = 同时运行的任务数，其余的排队
+setting-jobs-poll_ms = 两次读取传输进度之间的毫秒数
+setting-jobs-engine = 复制和移动由谁执行：auto 能用 rsync 时用 rsync，其余用 rclone；rclone 从不用 rsync
+setting-jobs-checksum = 按校验和而不是大小和修改时间判断文件是否相同
+
 ## 帮助
 
 help-title = 帮助（Esc 关闭）
@@ -378,6 +444,7 @@ key-focus_right_address = 聚焦右侧地址栏
 key-focus_right = 聚焦右侧窗格
 key-focus_queue = 聚焦传输队列
 key-error_log = 错误日志（最近 100 条）
+key-settings = 设置：修改配置文件里的设置
 key-help = 本帮助
 key-quit = 退出
 key-queue_cancel = 队列：取消任务

@@ -304,6 +304,7 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
 <tr><td>进入或离开传输队列；在队列里 x 取消，r 重试，c 清除已完成的任务</td><td>Ctrl+T</td><td>Ctrl+X J</td></tr>
 <tr><td>在窗格下方打开终端，从窗格所在目录开始（本地或通过 ssh 连接的服务器）；在终端里则回到窗格（见<a href="#终端">终端</a>）</td><td colspan="2">Ctrl+O</td></tr>
 <tr><td>错误日志（最近 100 条）</td><td>E</td><td>—</td></tr>
+<tr><td>设置页面：修改配置文件里的设置（见<a href="#配置">配置</a>）</td><td>F4</td><td>—</td></tr>
 <tr><td>帮助</td><td>?</td><td>F1</td></tr>
 <tr><td>退出</td><td>F10 / q</td><td>F10</td></tr>
 </tbody>
@@ -371,6 +372,8 @@ Ctrl+O 会在窗格下方横跨整个宽度打开一个终端：本地磁盘上�
 
 环境变量或命令行里的值不符合它的配置项时会报错，并说明是哪个环境变量，或者是命令行上的。
 
+设置页面（F4）列出所有配置项（包括 `[keys]`）和你的文件给它们的值，可以直接在上面修改：开关类和只有几个取值的配置项，值的两侧各有一个箭头，按左右方向键或单击箭头换到前一个或后一个值（空格也换到后一个），按 Enter 或单击该配置项则展开它的取值列表供选择；其余配置项按 Enter 或单击进入编辑，按键写成用空格隔开的按键名（`F5 c`）。Del 把配置项从文件里删掉，即恢复默认值。每次修改都立即写入你的文件，文件的其余部分（包括注释）保持原样；不符合配置项的值不会写入。`ui.show_hidden`、`ui.mouse`、`ui.multi_select_modifier`、`ui.drop_action`、`ui.language`、`jobs.max_concurrent` 和按键立即生效，其余配置项下次启动时生效。环境变量或 `--set` 为本次运行设置了某个配置项时，页面会在文件的值旁边显示那个值。
+
 配置项和它们的默认值，和 [`src/defaults.toml`](../src/defaults.toml) 里的一样，再加上 `[keys]`（每个动作的默认按键在帮助界面 `?` 里）：
 
 ```toml
@@ -403,8 +406,8 @@ move = ["F6", "m"]
 # page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort,
 # sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename,
 # mkdir, delete, overwrite_mode, queue, terminal, focus_left_address,
-# focus_left, focus_right_address, focus_right, focus_queue, error_log, help,
-# quit, queue_cancel, queue_retry, queue_clear.
+# focus_left, focus_right_address, focus_right, focus_queue, error_log,
+# settings, help, quit, queue_cancel, queue_retry, queue_clear.
 # Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn, Delete.
 ```
 
@@ -472,7 +475,7 @@ cargo fmt --check
 - `tests/concurrency.rs` 检查 rclone 调用之间不会互相阻塞。
 - `cargo test` 还会检查两个语言文件定义了相同的消息，且每条消息都被用到。
 
-窗口边框、窗口之间的箭头和可滚动的文本框来自 [lazyui-ratatui](https://github.com/lutianyu2001/lazyui-ratatui)。
+窗口边框、窗口之间的箭头、可滚动的文本框和设置页面的取值列表来自 [lazyui-ratatui](https://github.com/lutianyu2001/lazyui-ratatui)。
 
 ## 兼容性
 

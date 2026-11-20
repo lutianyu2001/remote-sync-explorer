@@ -30,7 +30,7 @@ fn defaults() -> String {
 }
 
 /// A setting's value as TOML, for serde to read into `Config`.
-fn to_toml(value: layeredcfg::Value) -> toml::Value {
+pub(crate) fn to_toml(value: layeredcfg::Value) -> toml::Value {
     match value {
         layeredcfg::Value::Bool(b) => toml::Value::Boolean(b),
         layeredcfg::Value::Int(i) => toml::Value::Integer(i),
@@ -221,6 +221,19 @@ impl Config {
         overrides: &[String],
         environment: Environment,
     ) -> Result<Self> {
+        let layers = Self::layers(file, overrides, environment)?;
+        Self::from_layers(&layers, file.unwrap_or(Path::new("config.toml")))
+    }
+
+    /// The layers themselves, which also say where each setting's value is from.
+    ///
+    /// # Errors
+    /// As [`Config::load`], but for values that are no values of their settings.
+    pub(crate) fn layers(
+        file: Option<&Path>,
+        overrides: &[String],
+        environment: Environment,
+    ) -> Result<layeredcfg::Config> {
         let options = Options {
             prefix: ENV_PREFIX.to_owned(),
             user_files: file.map(Path::to_path_buf).into_iter().collect(),
@@ -236,7 +249,7 @@ impl Config {
             })?;
             layers.set(key.trim(), value.trim()).with_context(|| tr!("config-on-command-line"))?;
         }
-        Self::from_layers(&layers, file.unwrap_or(Path::new("config.toml")))
+        Ok(layers)
     }
 
     /// The settings of TOML text written as the user's file is, over the defaults, with no
@@ -254,7 +267,7 @@ impl Config {
     }
 
     /// The settings as `Config`, each value checked; a mistake says which layer has it.
-    fn from_layers(layers: &layeredcfg::Config, file: &Path) -> Result<Self> {
+    pub(crate) fn from_layers(layers: &layeredcfg::Config, file: &Path) -> Result<Self> {
         let origin = |key: &str| match layers.source(key) {
             Ok(Source::Env) => tr!("config-in-variable", variable = layers.variable(key)),
             Ok(Source::Override) => tr!("config-on-command-line"),

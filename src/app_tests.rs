@@ -2743,3 +2743,223 @@ fn only_a_refresh_asked_for_is_shown() {
     h.wait_until(|a| a.panes[0].status == PaneStatus::Ready);
     assert_eq!(h.app.panes[0].refresh, None);
 }
+
+/// The settings of a file of the test's own, with `env` as the environment.
+fn with_settings(h: &mut Harness, file: &std::path::Path, env: &[(&'static str, &'static str)]) {
+    let env = env.to_vec();
+    h.app.settings = crate::settings::Source {
+        file: Some(file.to_path_buf()),
+        overrides: Vec::new(),
+        environment: layeredcfg::Environment::new(move |name| {
+            env.iter().find(|(k, _)| name == *k).map(|(_, v)| (*v).into())
+        }),
+    };
+}
+
+fn settings_page(h: &Harness) -> &SettingsPage {
+    match &h.app.dialog {
+        Some(Dialog::Settings(page)) => page,
+        other => panic!("no settings page: {other:?}"),
+    }
+}
+
+/// Puts the settings page's cursor on `key`.
+fn to_setting(h: &mut Harness, key: &str) {
+    let Some(Dialog::Settings(page)) = &mut h.app.dialog else { panic!("no settings page") };
+    page.cursor = page.rows.iter().position(|r| r.key == key).unwrap_or_else(|| panic!("{key}"));
+    h.render();
+}
+
+#[test]
+fn the_settings_page_writes_a_change_to_the_file_and_it_holds_at_once() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("config.toml");
+    std::fs::write(&path, "# mine\n[ui]\nmouse = true  # the mouse\n").unwrap();
+    let mut h = standard();
+    with_settings(&mut h, &path, &[]);
+    assert!(!names(&h, 0).contains(&".bashrc".to_owned()));
+    h.press(KeyCode::F(4));
+    assert_eq!(settings_page(&h).cursor, 0);
+    h.press(KeyCode::Down);
+    h.press(KeyCode::Up);
+    assert_eq!(settings_page(&h).rows[0].key, "rclone.config");
+    // Enter opens the list of the setting's values, the cursor on the one it has, joined
+    // to the setting's row: the arrows beside the value give way to one pointing down.
+    to_setting(&mut h, "ui.show_hidden");
+    assert!(h.render().contains("show_hidden              ◂ Off ▸  false"), "{}", h.render());
+    h.press(KeyCode::Enter);
+    assert_eq!(settings_page(&h).menu, Some(1));
+    let screen = h.render().to_owned();
+    assert!(screen.contains("show_hidden           ╭  ▾  Off  false ╮"), "{screen}");
+    assert!(
+        screen.contains("│ ( ) On   true  │") && screen.contains("│ (*) Off  false │"),
+        "{screen}"
+    );
+    // The page's cursor stays where it is while the list is open; Esc closes the list.
+    h.press(KeyCode::Down);
+    assert_eq!(settings_page(&h).menu, Some(1));
+    h.press(KeyCode::Esc);
+    assert_eq!(settings_page(&h).menu, None);
+    assert_eq!(settings_page(&h).rows[settings_page(&h).cursor].key, "ui.show_hidden");
+    assert!(!path.exists() || !std::fs::read_to_string(&path).unwrap().contains("hidden"));
+    h.press(KeyCode::Enter);
+    h.press(KeyCode::Up);
+    h.press(KeyCode::Enter);
+    assert_eq!(settings_page(&h).menu, None);
+    assert_eq!(
+        std::fs::read_to_string(&path).unwrap(),
+        "# mine\n[ui]\nmouse = true  # the mouse\nshow_hidden = true\n"
+    );
+    assert!(h.app.show_hidden && names(&h, 0).contains(&".bashrc".to_owned()));
+    assert_eq!(h.app.status.as_deref(), Some("Saved ui.show_hidden"));
+    assert!(h.render().contains("show_hidden              ◂ On ▸  true"), "{}", h.render());
+    // One of a few values: Right goes on, Left back.
+    to_setting(&mut h, "ui.drop_action");
+    h.press(KeyCode::Right);
+    assert_eq!(h.app.ui.drop_action, DropAction::Copy);
+    h.press(KeyCode::Left);
+    assert_eq!(h.app.ui.drop_action, DropAction::Ask);
+    // Del takes the setting out of the file, for its default.
+    to_setting(&mut h, "ui.show_hidden");
+    h.press(KeyCode::Delete);
+    assert!(!h.app.show_hidden);
+    let text = std::fs::read_to_string(&path).unwrap();
+    assert_eq!(text, "# mine\n[ui]\nmouse = true  # the mouse\ndrop_action = \"ask\"\n");
+    // A setting read at the start says so.
+    to_setting(&mut h, "rclone.transfers");
+    h.press(KeyCode::Enter);
+    h.press_mod(KeyCode::Char('u'), KeyModifiers::CONTROL);
+    h.type_text("8");
+    h.press(KeyCode::Enter);
+    assert_eq!(
+        h.app.status.as_deref(),
+        Some("Saved rclone.transfers: it holds from the next start of rse")
+    );
+    h.press(KeyCode::Esc);
+    assert_eq!(h.app.dialog, None);
+}
+
+#[test]
+fn a_typed_value_that_is_none_of_its_setting_stays_to_be_corrected() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("rse/config.toml");
+    let mut h = standard();
+    with_settings(&mut h, &path, &[]);
+    h.press(KeyCode::F(4));
+    to_setting(&mut h, "jobs.max_concurrent");
+    h.press(KeyCode::Enter);
+    assert_eq!(settings_page(&h).edit, Some(("2".to_owned(), 1)));
+    h.press(KeyCode::Backspace);
+    h.type_text("0");
+    h.press(KeyCode::Enter);
+    assert!(settings_page(&h).edit.is_some());
+    let status = h.app.status.clone().unwrap_or_default();
+    assert!(status.starts_with("Not saved: ") && status.contains("at least 1"), "{status}");
+    assert!(!path.exists());
+    h.press(KeyCode::Backspace);
+    h.type_text("x");
+    h.press(KeyCode::Enter);
+    assert_eq!(h.app.status.as_deref(), Some("Not saved: x is not a number"));
+    h.press(KeyCode::Backspace);
+    h.type_text("3");
+    h.press(KeyCode::Enter);
+    assert_eq!(settings_page(&h).edit, None);
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "[jobs]\nmax_concurrent = 3\n");
+    // Esc leaves a value as it was.
+    h.press(KeyCode::Enter);
+    h.type_text("9");
+    h.press(KeyCode::Esc);
+    assert_eq!(settings_page(&h).edit, None);
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "[jobs]\nmax_concurrent = 3\n");
+}
+
+#[test]
+fn keys_changed_on_the_settings_page_work_at_once() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("config.toml");
+    let mut h = standard();
+    with_settings(&mut h, &path, &[]);
+    h.press(KeyCode::F(4));
+    to_setting(&mut h, "keys.help");
+    h.press(KeyCode::Enter);
+    h.type_text(" F1");
+    h.press(KeyCode::Enter);
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "[keys]\nhelp = [\"?\", \"F1\"]\n");
+    // A key another action has is refused.
+    h.press(KeyCode::Enter);
+    h.type_text(" F5");
+    h.press(KeyCode::Enter);
+    assert!(h.app.status.as_deref().is_some_and(|s| s.contains("bound to both")));
+    h.press(KeyCode::Esc);
+    // The settings key closes the page too.
+    h.press(KeyCode::F(4));
+    assert_eq!(h.app.dialog, None);
+    h.press(KeyCode::F(1));
+    assert_eq!(h.app.dialog, Some(Dialog::Help { scroll: 0 }));
+}
+
+#[test]
+fn the_settings_page_shows_what_the_environment_sets_and_takes_clicks() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("config.toml");
+    let mut h = standard();
+    with_settings(&mut h, &path, &[("RSE_UI_MOUSE", "false")]);
+    h.press(KeyCode::F(4));
+    to_setting(&mut h, "ui.mouse");
+    let screen = h.render().to_owned();
+    assert!(screen.contains("mouse                    ◂ On ▸  → Off"), "{screen}");
+    assert!(screen.contains("for this run Off, from the environment variable RSE_UI_MOUSE"));
+    // The file's value changes; this run keeps the environment's. Space takes the next
+    // value without the list.
+    h.press(KeyCode::Char(' '));
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "[ui]\nmouse = false\n");
+    h.press(KeyCode::Char(' '));
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "[ui]\nmouse = true\n");
+    assert!(!h.app.ui.mouse);
+    // A click on a setting goes to it and opens its list, a click on a choice takes it.
+    let (x, y) = h.find("show_hidden");
+    h.click(x, y);
+    assert_eq!(settings_page(&h).rows[settings_page(&h).cursor].key, "ui.show_hidden");
+    assert_eq!(settings_page(&h).menu, Some(1));
+    assert!(!h.app.show_hidden);
+    let (on_x, on_y) = h.find("( ) On");
+    h.click(on_x, on_y);
+    assert!(h.app.show_hidden && settings_page(&h).menu.is_none());
+    // The arrows beside the value take the one before and the next, without the list.
+    let arrow = x + 25;
+    assert_eq!(h.find("show_hidden              ◂ On ▸"), (x, y));
+    h.click(arrow, y);
+    assert!(!h.app.show_hidden && settings_page(&h).menu.is_none());
+    h.click(arrow + 6, y);
+    assert!(h.app.show_hidden);
+    // A click beside an open list closes the list alone, also one outside the page.
+    h.press(KeyCode::Enter);
+    h.click(0, 0);
+    assert!(settings_page(&h).menu.is_none());
+    h.click(x, y);
+    h.click(x, y + 6);
+    assert!(settings_page(&h).menu.is_none());
+    assert_eq!(settings_page(&h).rows[settings_page(&h).cursor].key, "ui.show_hidden");
+    // The wheel moves the cursor; a click outside closes the page.
+    h.mouse_at(MouseEventKind::ScrollDown, x, y, KeyModifiers::NONE, Instant::now());
+    assert_eq!(settings_page(&h).rows[settings_page(&h).cursor].key, "ui.mouse");
+    h.click(0, 0);
+    assert_eq!(h.app.dialog, None);
+}
+
+#[test]
+fn more_jobs_at_once_start_those_waiting() {
+    let mut q = Queue::new(1);
+    let t = |name: &str| Transfer {
+        kind: OpKind::Delete,
+        src_dir: home(),
+        name: name.to_owned(),
+        is_dir: false,
+        dst_dir: None,
+        size: None,
+        overwrite: false,
+    };
+    assert_eq!(q.push(vec![t("a"), t("b"), t("c")]).len(), 1);
+    assert_eq!(q.set_max_concurrent(3).len(), 2);
+    assert_eq!(q.set_max_concurrent(0).len(), 0);
+}

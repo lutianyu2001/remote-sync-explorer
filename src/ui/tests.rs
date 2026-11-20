@@ -261,3 +261,40 @@ fn help_is_always_among_the_hints() {
     let hints = screen.lines().nth(22).unwrap_or_default();
     assert!(hints.starts_with(" F2 Rename"), "{hints}");
 }
+
+#[test]
+fn settings_page() {
+    let mut h = harness(80, 24, "/home/sky/projects", projects());
+    h.press(KeyCode::F(4));
+    h.press(KeyCode::PageDown);
+    insta::assert_snapshot!("settings_page", h.render());
+    crate::i18n::set_for_this_thread(crate::config::Language::ZhCn);
+    insta::assert_snapshot!("settings_page_in_chinese", h.render());
+    // The list of a setting's values, opened under it.
+    h.press(KeyCode::Enter);
+    insta::assert_snapshot!("settings_page_with_a_list_open", h.render());
+}
+
+/// With room for it, the arrows of all values stand in two columns, each value in the
+/// middle between them.
+#[test]
+fn settings_page_on_a_wide_screen() {
+    let mut h = harness(120, 30, "/home/sky/projects", projects());
+    h.press(KeyCode::F(4));
+    insta::assert_snapshot!("settings_page_wide", h.render());
+    // A value being typed stays in the middle, where it stood, in a field as wide as the
+    // cells between the arrows, and stays in the middle as the text grows.
+    h.press(KeyCode::Down);
+    let (x, y) = h.find("4  ");
+    h.press(KeyCode::Enter);
+    assert_eq!(h.find("4  "), (x, y));
+    let (back, forward) = (h.find("◂").0, h.find("▸").0);
+    let underlined = |h: &crate::testutil::Harness, x| {
+        h.cell_modifiers(x, y).contains(ratatui::style::Modifier::UNDERLINED)
+    };
+    assert!(underlined(&h, back + 2) && underlined(&h, forward - 2));
+    assert!(!underlined(&h, back + 1) && !underlined(&h, forward - 1));
+    h.press(KeyCode::Char('2'));
+    h.press(KeyCode::Char('0'));
+    assert_eq!(h.find("420  "), (x - 1, y));
+}

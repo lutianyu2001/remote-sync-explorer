@@ -39,6 +39,8 @@ pub enum Action {
     /// Open the active pane's terminal under it, or focus it; in it, back to the panes.
     Terminal,
     ErrorLog,
+    /// Open the settings page.
+    Settings,
     Help,
     Quit,
     QueueCancel,
@@ -141,6 +143,7 @@ const BINDINGS: &[Binding] = &[
     Binding { action: Action::FocusRight, name: "focus_right", keys: &["4"], scope: Scope::Both },
     Binding { action: Action::FocusQueue, name: "focus_queue", keys: &["5"], scope: Scope::Both },
     Binding { action: Action::ErrorLog, name: "error_log", keys: &["E"], scope: Scope::Both },
+    Binding { action: Action::Settings, name: "settings", keys: &["F4"], scope: Scope::Both },
     Binding { action: Action::Help, name: "help", keys: &["?"], scope: Scope::Both },
     Binding { action: Action::Quit, name: "quit", keys: &["F10", "q"], scope: Scope::Both },
     Binding {

@@ -61,6 +61,17 @@ impl PaneArea {
     }
 }
 
+/// A place in a dialog's list that does something of its own when clicked.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Spot {
+    /// The arrow before a row's value, which takes the value before it.
+    Back(usize),
+    /// The arrow after it, which takes the next one.
+    Forward(usize),
+    /// A choice in the list opened under a row.
+    Choice(usize),
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct HitMap {
     pub panes: [PaneArea; 2],
@@ -76,6 +87,8 @@ pub struct HitMap {
     pub buttons: Vec<Rect>,
     /// A list inside a dialog (the remote picker): its area and first visible row.
     pub dialog_list: Option<(Rect, usize)>,
+    /// Places in a dialog that come before its list.
+    pub dialog_spots: Vec<(Rect, Spot)>,
     /// How far the help or error log can scroll at the current size.
     pub scroll_max: usize,
     /// The column after the message on the bottom row, where the hidden cursor waits.
@@ -123,6 +136,7 @@ pub enum Target {
     Hint(Action),
     Button(usize),
     DialogRow(usize),
+    DialogSpot(Spot),
     /// Inside a dialog, not on anything clickable.
     Dialog,
     Nothing,
@@ -134,6 +148,9 @@ impl HitMap {
         if let Some(dialog) = self.dialog {
             if let Some(i) = self.buttons.iter().position(|b| b.contains(p)) {
                 return Target::Button(i);
+            }
+            if let Some((_, spot)) = self.dialog_spots.iter().find(|(area, _)| area.contains(p)) {
+                return Target::DialogSpot(*spot);
             }
             if let Some((area, offset)) = self.dialog_list
                 && area.contains(p)

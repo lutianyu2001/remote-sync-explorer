@@ -248,6 +248,13 @@ impl Queue {
         }
     }
 
+    /// Changes how many jobs run at once: more start queued ones now, fewer let the
+    /// running ones end.
+    pub fn set_max_concurrent(&mut self, max_concurrent: usize) -> Vec<Effect> {
+        self.max_concurrent = max_concurrent.max(1);
+        self.start_ready()
+    }
+
     /// The id the next job pushed gets; the ones after it count up from there.
     pub fn next_id(&self) -> JobId {
         self.next_id

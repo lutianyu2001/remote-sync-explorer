@@ -1,0 +1,33 @@
+---
+source: src/ui/tests.rs
+expression: h.render()
+---
+╭───────╮╭─[1] Address────────────────────────────────╮╭───╮╭────────╮╭─[3] Address───────────────────────────────╮╭───╮
+│ Loc╭ Settings ──────────────────────────────────────────────────────────────────────────────────────────────────╮│ ↻ │
+╰────│ rclone  [rclone]                                                                                           │╰───╯
+╭─[2]│   rclone config file          config                         ""                                            │────╮
+│ Nam│   Parallel transfers          transfers                       4                                            │    │
+│ .. │   Parallel checkers           checkers                        8                                            │    │
+│ rse│   Browsing threads            browse_threads                  2                                            │2:00│
+│ hug│   Use the system's ssh        system_ssh               ◂     On      ▸  true                               │8:15│
+│ rep│                                                                                                            │8:15│
+│ ver│ Interface  [ui]                                                                                            │    │
+│    │   Left pane starts at         left                            ~                                            │    │
+│    │   Right pane starts at        right                          ""                                            │    │
+│    │   Show hidden files           show_hidden              ◂     Off     ▸  false                              │    │
+│    │   Mouse                       mouse                    ◂     On      ▸  true                               │    │
+│    │   Multi-select modifier       multi_select_modifier    ◂    Ctrl     ▸  ctrl                               │    │
+│    │   Drop action                 drop_action              ◂     Ask     ▸  ask                                │    │
+│    │   Language                    language                 ◂   System    ▸  auto                               │    │
+│    │                                                                                                            │    │
+│    │ Jobs  [jobs]                                                                                               │    │
+│    │   Concurrent jobs             max_concurrent                  2                                            │    │
+│    │   Progress interval (ms)      poll_ms                        500                                           │    │
+│    │────────────────────────────────────────────────────────────────────────────────────────────────────────────│    │
+│    │ rclone.config: The rclone.conf to use; empty for rclone's own default                                      │    │
+│    │                                                                                                            │    │
+╰────│ holds from the next start                                                                                  │────╯
+╭─[5]│ Enter change · ←→ switch · Del default · Esc close                                                         │────╮
+│ idl╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ F2 Rename  F4 Settings  F5 Copy  F6 Move  F7 Mkdir  F8 Delete  F9 Remote  / Filter  ? Help  F10 Quit            rclone
