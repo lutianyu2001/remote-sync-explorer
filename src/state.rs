@@ -267,7 +267,21 @@ mod tests {
         assert!(first.is_some());
         assert!(lock_queue(&path).unwrap().is_none(), "held");
         drop(first);
-        assert!(lock_queue(&path).unwrap().is_some(), "free again");
+        assert!(lock_when_free(&path).is_some(), "free again");
+    }
+
+    /// The lock, waited for: a child that another test's thread starts holds a copy of the
+    /// lock file from its fork until it becomes its program, and the lock with it, after
+    /// the file here is dropped.
+    fn lock_when_free(path: &Path) -> Option<fs::File> {
+        let end = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        loop {
+            let lock = lock_queue(path).unwrap();
+            if lock.is_some() || std::time::Instant::now() >= end {
+                return lock;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
     }
 
     #[test]
