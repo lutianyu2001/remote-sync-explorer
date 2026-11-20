@@ -29,7 +29,7 @@ pub fn height(app: &App, screen_height: u16) -> u16 {
     jobs + 3
 }
 
-/// Draws the transfer window, labelled (`[5] Transfers`) in its top right corner: counts
+/// Draws the transfer window, labelled (`[5] Transfers`) in its top left corner: counts
 /// on the first row, then one job per row: the jobs of the endpoints
 /// the panes show.
 pub fn draw(buf: &mut Buffer, area: Rect, app: &App) -> Vec<(u16, usize, u16)> {

@@ -727,9 +727,9 @@ dependencies = [
 
 [[package]]
 name = "lazyui-ratatui"
-version = "0.1.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cda7f71c39ddf4c940981bfa50f5154e5d6756e7dcce49353826cbfa886124f"
+checksum = "8973cffacbcc708ee28c2d3a635a2fc1ebf66d11246458fc537f8b2d9c35fd17"
 dependencies = [
  "ratatui",
  "unicode-segmentation",

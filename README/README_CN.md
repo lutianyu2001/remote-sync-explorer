@@ -280,7 +280,7 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
 </thead>
 <tbody>
 <tr><td>切换窗格</td><td colspan="2">Tab</td></tr>
-<tr><td>聚焦窗口：左地址栏 / 左窗格 / 右地址栏 / 右窗格 / Transfers（按键显示在各窗口的右上角；窗格按显示的内容命名为 Local 或 Remote）</td><td>1 / 2 / 3 / 4 / 5</td><td>—</td></tr>
+<tr><td>聚焦窗口：左地址栏 / 左窗格 / 右地址栏 / 右窗格 / Transfers（按键显示在各窗口的左上角；窗格按显示的内容命名为 Local 或 Remote）</td><td>1 / 2 / 3 / 4 / 5</td><td>—</td></tr>
 <tr><td>移动光标</td><td>↑ ↓ / j k、PgUp PgDn、Home End</td><td>↑ ↓、PgUp PgDn、Home End</td></tr>
 <tr><td>打开目录</td><td>Enter / l</td><td>Enter</td></tr>
 <tr><td>上级目录（光标落在刚离开的目录上）</td><td>Backspace / h</td><td>Ctrl+PgUp</td></tr>

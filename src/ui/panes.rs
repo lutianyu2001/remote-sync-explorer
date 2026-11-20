@@ -56,7 +56,7 @@ pub const SPINNER: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦"
 /// button box, the window Go to edits the address in (while it does), then the entries
 /// (`[2] Local`, with `[2 marked]` in the bottom right corner) under a row of column
 /// headers, which sort the entries. Windows are labelled in
-/// their top right corner; the boxes beside the address bar have no key, as they can't
+/// their top left corner; the boxes beside the address bar have no key, as they can't
 /// be focused.
 pub fn draw(buf: &mut Buffer, area: Rect, app: &App, id: PaneId) -> PaneArea {
     let pane = &app.panes[id];

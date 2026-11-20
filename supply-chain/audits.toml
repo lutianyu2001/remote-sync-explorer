@@ -370,7 +370,7 @@ version = "0.2.1"
 [[audits.lazyui-ratatui]]
 who = "Tianyu (Sky) Lu <tianyu@lu.fm>"
 criteria = "safe-to-deploy"
-version = "0.1.0"
+version = "0.3.0"
 
 [[audits.libc]]
 who = "Tianyu (Sky) Lu <tianyu@lu.fm>"

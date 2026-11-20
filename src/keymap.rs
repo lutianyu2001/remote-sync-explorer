@@ -44,7 +44,7 @@ pub enum Action {
     QueueCancel,
     QueueRetry,
     QueueClear,
-    /// Focus a window: its key is shown in the window's top right corner.
+    /// Focus a window: its key is shown in the window's top left corner.
     FocusLeftAddress,
     FocusLeft,
     FocusRightAddress,

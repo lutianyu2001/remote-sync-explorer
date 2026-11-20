@@ -620,9 +620,9 @@ fn ssh_passwords_can_be_remembered() {
 fn number_keys_focus_the_windows_named_in_their_corners() {
     let mut h = standard();
     let lines: Vec<&str> = h.screen.lines().collect();
-    assert!(lines[0].contains("[1] Address─╮") && lines[0].contains("[3] Address─╮"));
-    assert!(lines[3].contains("[2] Local─╮") && lines[3].ends_with("[4] Remote─╮"));
-    assert!(h.screen.contains("[5] Transfers─╮"), "{}", h.screen);
+    assert!(lines[0].contains("╭─[1] Address─") && lines[0].contains("╭─[3] Address─"));
+    assert!(lines[3].starts_with("╭─[2] Local─") && lines[3].contains("╭─[4] Remote─"));
+    assert!(h.screen.contains("╭─[5] Transfers─"), "{}", h.screen);
     h.press(KeyCode::Char('4'));
     assert_eq!((h.app.active, h.app.focus), (1, Focus::Panes));
     h.press(KeyCode::Char('5'));

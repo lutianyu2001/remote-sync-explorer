@@ -409,7 +409,7 @@ for those who know it; a key the two share spans both columns.
 </thead>
 <tbody>
 <tr><td>Switch panes</td><td colspan="2">Tab</td></tr>
-<tr><td>Focus a window: left address bar / left pane / right address bar / right pane / Transfers (the key is shown in each window's top right corner; a pane is named Local or Remote after what it shows)</td><td>1 / 2 / 3 / 4 / 5</td><td>—</td></tr>
+<tr><td>Focus a window: left address bar / left pane / right address bar / right pane / Transfers (the key is shown in each window's top left corner; a pane is named Local or Remote after what it shows)</td><td>1 / 2 / 3 / 4 / 5</td><td>—</td></tr>
 <tr><td>Move the cursor</td><td>↑ ↓ / j k, PgUp PgDn, Home End</td><td>↑ ↓, PgUp PgDn, Home End</td></tr>
 <tr><td>Open directory</td><td>Enter / l</td><td>Enter</td></tr>
 <tr><td>Parent directory (the cursor lands on the one you left)</td><td>Backspace / h</td><td>Ctrl+PgUp</td></tr>
