@@ -1,8 +1,9 @@
 //! Which program carries out a copy or move: rsync between the local disk and an sftp
 //! server reached through the system ssh that has an `rsync` of its own, when the local one
 //! is rsync 3.1 or newer ([`rsync::usable`]); the machine's own `rm` and `mv` for a delete or
-//! a move inside the local disk or one such server ([`hostops`]); rclone for everything else
-//! (other remotes, two servers, a server rclone's built-in ssh reaches).
+//! a move inside the local disk or one such server, and its `cp` for a copy inside such a
+//! server ([`hostops`]); rclone for everything else (other remotes, two servers, a server
+//! rclone's built-in ssh reaches).
 
 use std::ffi::OsString;
 use std::sync::Arc;
@@ -85,10 +86,11 @@ impl Engines {
 
     /// The command that carries `t` out on the machine it happens on, and the command that
     /// runs it there: a delete, or a move to a name not taken, on the local disk or on a
-    /// server reached through the system ssh that has sh. `None` leaves `t` to the other
-    /// engines: with rclone chosen for everything, for a copy, between two machines, or
-    /// for a move onto what the user chose to replace (which rclone merges). May open the
-    /// master connection to the server.
+    /// server reached through the system ssh that has sh, and on such a server a copy to
+    /// a name not taken too. `None` leaves `t` to the other engines: with rclone chosen
+    /// for everything, between two machines, for a copy inside the local disk, or for a
+    /// move or copy onto what may be there ([`Transfer::overwrite`]), which rclone merges.
+    /// May open the master connection to the server.
     pub fn host_command(&self, t: &Transfer) -> Option<(Vec<String>, String)> {
         if self.choice != EngineChoice::Auto || t.name.is_empty() {
             return None;
@@ -103,6 +105,13 @@ impl Engines {
             (OpKind::Delete, _) => HostOp::Delete(entry(&t.src_dir)),
             (OpKind::Move, Some(dst)) if dst.fs == t.src_dir.fs && !t.overwrite => {
                 HostOp::Move { from: entry(&t.src_dir), to: entry(dst) }
+            }
+            // Not on the local disk, where rclone copies without a detour, shows how far
+            // it is, and clones the file where the disk can.
+            (OpKind::Copy, Some(dst))
+                if dst.fs == t.src_dir.fs && !t.overwrite && !t.src_dir.is_local() =>
+            {
+                HostOp::Copy { from: entry(&t.src_dir), to: entry(dst) }
             }
             _ => return None,
         };
@@ -202,7 +211,8 @@ mod tests {
         let (_, command) =
             e.host_command(&transfer(OpKind::Move, "tmp/x", there.clone(), false)).unwrap();
         assert!(command.ends_with(r#"exec mv -- "$s" "$d"'"#), "{command}");
-        // Not a copy, a move onto what is to be replaced, or one to another machine.
+        // Not a copy, which is the machine's own only on a server, a move onto what is to
+        // be replaced, or one to another machine.
         assert_eq!(e.host_command(&transfer(OpKind::Copy, "tmp/x", there.clone(), false)), None);
         assert_eq!(e.host_command(&transfer(OpKind::Move, "tmp/x", there.clone(), true)), None);
         let nas = Some(Location::new("nas:", "x"));

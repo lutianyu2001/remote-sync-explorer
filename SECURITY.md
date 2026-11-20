@@ -306,6 +306,17 @@ names.
   program can still create it, as with any `mv`. The command's input is held open by rse,
   and a watcher in the script ends `rm` or `mv` when it closes, so stopping the job stops
   the work on the server too; what was deleted or moved by then stays so.
+  A copy to a name not taken inside one such remote (never inside the local disk) is the
+  server's own `cp -RPp`, by a script held to the same rules. It copies links as links,
+  never what they lead to, and writes under the name `.rse-copy.<the script's process
+  number>` in the target's directory, which it renames to the target only once `cp` has
+  succeeded and the script has seen again that the target does not exist; as with `mv`,
+  another program can still create it between that look and the rename. Failed or
+  stopped, the script removes that one name, which it built itself from the target's
+  directory and never from an empty value. Stopping ends the script's whole process
+  group, which sshd gives it alone. A job goes to `rm`, `mv` or `cp` only when rse has
+  just seen its target free: one the user chose to overwrite, one started in overwrite
+  mode and one going on after a pause stay with rclone.
 - **Following the terminal.** Only while the user has tied a pane and its terminal
   together (off at every start): after a line typed into that terminal, rse asks where
   its shell is with a fixed script (`ps`, `readlink /proc/<pid>/cwd`, `lsof`), run through

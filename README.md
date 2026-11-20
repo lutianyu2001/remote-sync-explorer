@@ -86,7 +86,9 @@ chance. Good designs, it seems, think alike. Not every key is the same, though:
   system ssh that has `rsync` (delta transfer, through the same login), rclone for
   everything else. A delete, or a move to a name not taken, inside the local disk or one
   such server is that machine's own `rm -rf` or `mv`, one command instead of rclone's
-  round trip for every file. The bottom row names the engine of copies between the two panes.
+  round trip for every file. A copy to a name not taken inside one such server is its own
+  `cp`, which stays on the server, where rclone would download every file and upload it
+  again. The bottom row names the engine of copies between the two panes.
 - **Resumed transfers**: a stopped file goes on from where it stopped, with rsync, and
   with rclone when the target is the local disk or an sftp server reached through the
   system ssh (downloads to the local disk resume from any remote). Identical files are
@@ -573,6 +575,10 @@ servers, for when no shell should be opened from rse.
   own files and directories of those names; delete them if you give the transfer up. A
   target that cannot resume (S3 and other cloud storage, or sftp through rclone's
   built-in ssh) is left without a partial file.
+- A copy inside a server by its own `cp` is made under the name `.rse-copy.<number>`
+  beside its target and renamed once it is whole, so the target never holds half a copy.
+  Cancelled, paused or failed, it is removed, and a retry starts over. It copies links as
+  links and keeps times and permissions.
 - On macOS, rclone clones files that are copied within one APFS volume instead of
   copying their bytes, so such copies finish at once.
 
@@ -633,7 +639,7 @@ language = "auto"               # "en", "zh-CN", or "auto": Chinese for a zh* lo
 [jobs]
 max_concurrent = 2              # jobs running at once; the rest wait
 poll_ms = 500                   # progress refresh
-engine = "auto"                 # or "rclone": never rsync, nor the machine's rm and mv
+engine = "auto"                 # or "rclone": never rsync, nor the machine's rm, mv and cp
 checksum = false                # tell files apart by checksum, not size and time
 
 [keys]

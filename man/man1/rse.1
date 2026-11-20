@@ -161,6 +161,12 @@ the system ssh is carried out by that machine's own
 or
 .BR mv ,
 which takes one command where rclone would ask the server about every file.
+A copy to a name not taken inside one such server is carried out by its own
+.BR cp ,
+where rclone would download every file and upload it again.
+The copy is made under the name
+.BI .rse\-copy. number
+beside its target and renamed once it is whole; cancelled, paused or failed, it is removed.
 .TP
 .B the message line
 at the bottom: what the last action said (\(lqnothing selected\(rq, an error),
@@ -649,7 +655,7 @@ language = "auto"        # "en", "zh\-CN", or the system's
 [jobs]
 max_concurrent = 2       # jobs running at once
 poll_ms = 500            # progress refresh
-engine = "auto"          # or "rclone": never rsync, nor rm and mv
+engine = "auto"          # or "rclone": never rsync, nor rm, mv and cp
 checksum = false         # compare files by checksum
 
 [keys]

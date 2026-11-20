@@ -446,8 +446,8 @@ fn the_job_worker_chooses_rsync(ssh: &Arc<SystemSsh>, fs_name: &str, local: &Pat
     assert_eq!(fs::read_to_string(server.join("by-job/one file.txt")).unwrap(), "local file");
 }
 
-/// A delete and a move inside the server are the server's own `rm` and `mv`, run through
-/// the master connection, whatever the names.
+/// A delete, a move and a copy inside the server are the server's own `rm`, `mv` and `cp`,
+/// run through the master connection, whatever the names.
 fn the_server_deletes_and_moves_what_is_on_it(ssh: &Arc<SystemSsh>, fs_name: &str, server: &Path) {
     let name = "it's a $HOME `tree` -rf";
     fs::create_dir_all(server.join("ops/old").join(name).join("deep")).unwrap();
@@ -483,6 +483,14 @@ fn the_server_deletes_and_moves_what_is_on_it(ssh: &Arc<SystemSsh>, fs_name: &st
     finish(1, entry(OpKind::Move, "ops/old", Some("ops/new")));
     assert!(server.join("ops/new").join(name).join("deep/file").exists());
     assert!(!server.join("ops/old").join(name).exists());
+    finish(3, entry(OpKind::Copy, "ops/new", Some("ops/old")));
+    assert_eq!(
+        fs::read_to_string(server.join("ops/old").join(name).join("deep/file")).unwrap(),
+        "x"
+    );
+    assert!(server.join("ops/new").join(name).join("deep/file").exists());
+    assert_eq!(fs::read_dir(server.join("ops/old")).unwrap().count(), 1, "only the copy");
+    fs::remove_dir_all(server.join("ops/old").join(name)).unwrap();
     finish(2, entry(OpKind::Delete, "ops/new", None));
     assert!(!server.join("ops/new").join(name).exists());
     assert!(server.join("ops/new").exists() && server.join("ops/old").exists());

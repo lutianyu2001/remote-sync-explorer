@@ -319,7 +319,7 @@ fn job_worker(
 
 /// Starts `transfer`, and tells which engine runs it and whether a stop keeps the file
 /// under way: rsync's partial files always do, rclone's copy where the target allows
-/// it, and a delete loses nothing.
+/// it, a delete loses nothing, and the machine's own copy starts over.
 fn start(
     backend: &dyn Backend,
     engines: &Engines,
@@ -331,7 +331,8 @@ fn start(
         let run = hostops::Running::spawn(&run, &command)
             .map(|run| Active::Host { run: Box::new(run) })
             .map_err(|e| tr!("host-not-started", error = e.to_string()));
-        return (run, (Engine::Host, true));
+        // A stopped copy is removed; a delete or a move keeps what it did.
+        return (run, (Engine::Host, transfer.kind != OpKind::Copy));
     }
     if let Some(args) = engines.rsync_args(&transfer) {
         let run = Running::spawn(args)

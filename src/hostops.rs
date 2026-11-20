@@ -1,7 +1,9 @@
-//! Deletes and moves inside one machine, carried out by that machine's own `rm` and `mv`:
-//! on the local disk, or on a server reached through the system ssh, over the master
-//! connection rse already holds. rclone would list a directory and delete it file by file,
-//! each a round trip to the server; `rm -rf` on the server takes one.
+//! Deletes, moves and copies inside one machine, carried out by that machine's own `rm`,
+//! `mv` and `cp`: on the local disk, or on a server reached through the system ssh, over
+//! the master connection rse already holds. rclone would list a directory and delete it
+//! file by file, each a round trip to the server, where `rm -rf` on the server takes one;
+//! and it would copy inside a server by downloading every file and uploading it again,
+//! since sftp has no copy of its own.
 //!
 //! The command is an sh script handed to the login shell as `exec /bin/sh -c '…'`, which
 //! every common one (sh, bash, zsh, fish, tcsh) passes on unchanged: the script holds no
@@ -9,8 +11,12 @@
 //! escapes, so any name passes.
 //!
 //! Stopping: rse keeps the command's standard input open. A watcher in the script reads it
-//! and ends `rm` or `mv` when it closes, which is when the ssh that carries the command is
-//! stopped, so the work on the server stops with it.
+//! and ends `rm`, `mv` or `cp` when it closes, which is when the ssh that carries the
+//! command is stopped, so the work on the server stops with it.
+//!
+//! A copy is made under another name beside its target ([`COPY_TEMP`] and the script's
+//! process number) and renamed once it is whole; stopped or failed, it is removed. So the
+//! target's name never holds half a copy.
 
 use std::collections::HashMap;
 use std::fmt::Write as _;
@@ -33,6 +39,8 @@ const PROBE_TIME: Duration = Duration::from_secs(10);
 const PROBE: &str = "rse-sh";
 /// What is kept of what a command said.
 const SAID_MAX: usize = 16 * 1024;
+/// Starts the name a copy has, in its target's directory, until it is whole.
+pub const COPY_TEMP: &str = ".rse-copy.";
 
 /// What the machine is asked to do.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -41,6 +49,9 @@ pub enum Op {
     Delete(ShellDir),
     /// Rename the entry `from` to `to`, which must not exist.
     Move { from: ShellDir, to: ShellDir },
+    /// Copy the entry `from`, with all it holds, to `to`, which must not exist. Links are
+    /// copied as links; times and permissions are kept.
+    Copy { from: ShellDir, to: ShellDir },
 }
 
 /// Sets the shell variable `name` to the path of `dir`, spelt in octal. The `x` keeps a
@@ -88,6 +99,34 @@ pub fn command(op: &Op) -> Option<String> {
             // `mv` would put the entry inside a directory of the target's name.
             script.push_str(
                 r#"if test -e "$d" || test -L "$d"; then echo "mv: the target exists" >&2; exit 1; fi; exec mv -- "$s" "$d""#,
+            );
+        }
+        Op::Copy { from, to } => {
+            if !named(from) || !named(to) {
+                return None;
+            }
+            // Not the watcher of the others: `cp` cannot take this shell's place, which
+            // has the copy to rename or remove after it. Here the watcher ends the whole
+            // process group, which this shell leads, started by sshd or by `Running`: `cp`
+            // ends, and the shell's `stop` removes what it copied.
+            script.clear();
+            script.push_str("exec 3<&0; ");
+            assign(&mut script, "s", from);
+            assign(&mut script, "d", to);
+            let _ = write!(
+                script,
+                concat!(
+                    r#"if test -e "$d" || test -L "$d"; then echo "cp: the target exists" >&2; exit 1; fi; "#,
+                    r#"t="${{d%/*}}/{temp}$$"; "#,
+                    r#"stop() {{ trap "" TERM HUP INT; rm -rf -- "$t"; exit 143; }}; trap stop TERM HUP INT; "#,
+                    r"( read x <&3; kill -s TERM -- -$$ || kill $$ ) >/dev/null 2>&1 & ",
+                    r#"cp -RPp -- "$s" "$t"; r=$?; "#,
+                    // Again, as `mv` would put the copy inside a directory that came since.
+                    r#"if test $r -eq 0; then if test -e "$d" || test -L "$d"; then echo "cp: the target exists" >&2; r=1; "#,
+                    r#"else mv -- "$t" "$d"; r=$?; fi; fi; "#,
+                    r#"test $r -eq 0 || rm -rf -- "$t"; exit $r"#,
+                ),
+                temp = COPY_TEMP
             );
         }
     }
@@ -340,7 +379,11 @@ mod tests {
     #[test]
     fn the_script_keeps_to_what_every_login_shell_passes_on() {
         let dir = ShellDir::Absolute("/tmp/it's a \\ ! name".to_owned());
-        for op in [Op::Delete(dir.clone()), Op::Move { from: dir.clone(), to: dir.clone() }] {
+        for op in [
+            Op::Delete(dir.clone()),
+            Op::Move { from: dir.clone(), to: dir.clone() },
+            Op::Copy { from: dir.clone(), to: dir.clone() },
+        ] {
             let command = command(&op).unwrap();
             let script = command.strip_prefix("exec /bin/sh -c '").unwrap();
             let script = script.strip_suffix('\'').unwrap();
@@ -360,7 +403,9 @@ mod tests {
         let named = ShellDir::Absolute("/a".to_owned());
         let home = ShellDir::Home(String::new());
         assert_eq!(command(&Op::Move { from: named.clone(), to: home.clone() }), None);
-        assert_eq!(command(&Op::Move { from: home, to: named }), None);
+        assert_eq!(command(&Op::Move { from: home.clone(), to: named.clone() }), None);
+        assert_eq!(command(&Op::Copy { from: named.clone(), to: home.clone() }), None);
+        assert_eq!(command(&Op::Copy { from: home, to: named }), None);
     }
 
     #[test]
@@ -410,6 +455,139 @@ mod tests {
             Op::Move { from: absolute(&a.join("dangling")), to: absolute(&b.join("dangling")) };
         assert!(run(&op).is_err());
         assert!(a.join("dangling").exists());
+    }
+
+    /// What a directory holds under a name that starts as an unfinished copy's does.
+    fn unfinished(dir: &Path) -> Vec<String> {
+        let names = fs::read_dir(dir).unwrap().map(|e| e.unwrap().file_name());
+        names
+            .map(|n| n.to_string_lossy().into_owned())
+            .filter(|n| n.starts_with(COPY_TEMP))
+            .collect()
+    }
+
+    #[test]
+    fn entries_of_any_name_are_copied_whole_but_never_onto_another() {
+        use std::os::unix::fs::{MetadataExt, PermissionsExt};
+        let tmp = tempfile::tempdir().unwrap();
+        let (a, b) = (tmp.path().join("a"), tmp.path().join("b"));
+        fs::create_dir_all(&a).unwrap();
+        fs::create_dir_all(&b).unwrap();
+        for name in NAMES {
+            let from = a.join(name);
+            fs::create_dir_all(from.join("in/deep")).unwrap();
+            fs::write(from.join("in/deep/file"), "content").unwrap();
+            fs::set_permissions(from.join("in/deep/file"), fs::Permissions::from_mode(0o640))
+                .unwrap();
+            // A link stays a link, also one that leads nowhere.
+            std::os::unix::fs::symlink("in/deep/file", from.join("link")).unwrap();
+            std::os::unix::fs::symlink("nowhere", from.join("dangling")).unwrap();
+            let old = std::time::SystemTime::UNIX_EPOCH + Duration::from_secs(1_000_000_000);
+            fs::File::open(from.join("in/deep/file")).unwrap().set_modified(old).unwrap();
+            let op = Op::Copy { from: absolute(&from), to: absolute(&b.join(name)) };
+            run(&op).unwrap();
+            let to = b.join(name);
+            assert_eq!(fs::read_to_string(to.join("in/deep/file")).unwrap(), "content", "{name:?}");
+            let (was, is) = (
+                fs::metadata(from.join("in/deep/file")).unwrap(),
+                fs::metadata(to.join("in/deep/file")).unwrap(),
+            );
+            assert_eq!((was.mtime(), was.mode()), (is.mtime(), is.mode()), "{name:?}");
+            assert_eq!(fs::read_link(to.join("link")).unwrap(), Path::new("in/deep/file"));
+            assert_eq!(fs::read_link(to.join("dangling")).unwrap(), Path::new("nowhere"));
+            assert!(from.join("in/deep/file").exists(), "the source stays: {name:?}");
+            // Again, with the target there: refused, and nothing put inside it.
+            let error = run(&op).unwrap_err();
+            assert_eq!(error, "cp: the target exists", "{name:?}");
+            assert!(!to.join(name).exists(), "{name:?}");
+            assert_eq!(unfinished(&b), Vec::<String>::new(), "{name:?}");
+        }
+        // A file, and a link, which is copied and not what it leads to.
+        fs::write(a.join("file"), "x").unwrap();
+        std::os::unix::fs::symlink("file", a.join("to file")).unwrap();
+        for name in ["file", "to file"] {
+            run(&Op::Copy { from: absolute(&a.join(name)), to: absolute(&b.join(name)) }).unwrap();
+        }
+        assert_eq!(fs::read_to_string(b.join("file")).unwrap(), "x");
+        assert_eq!(fs::read_link(b.join("to file")).unwrap(), Path::new("file"));
+        // A link that leads nowhere is a target all the same.
+        std::os::unix::fs::symlink("nowhere", b.join("taken")).unwrap();
+        fs::write(a.join("taken"), "x").unwrap();
+        let op = Op::Copy { from: absolute(&a.join("taken")), to: absolute(&b.join("taken")) };
+        assert!(run(&op).is_err());
+        assert_eq!(fs::read_link(b.join("taken")).unwrap(), Path::new("nowhere"));
+    }
+
+    /// What cannot be copied whole is not left half copied.
+    #[test]
+    fn a_copy_that_fails_leaves_nothing() {
+        let tmp = tempfile::tempdir().unwrap();
+        let (a, b) = (tmp.path().join("a"), tmp.path().join("b"));
+        fs::create_dir_all(a.join("in")).unwrap();
+        fs::create_dir_all(&b).unwrap();
+        fs::write(a.join("in/readable"), "x").unwrap();
+        let error =
+            run(&Op::Copy { from: absolute(&a.join("missing")), to: absolute(&b.join("missing")) })
+                .unwrap_err();
+        assert!(error.contains("missing"), "{error}");
+        assert_eq!(fs::read_dir(&b).unwrap().count(), 0);
+    }
+
+    /// The command of a copy of `a/dir` to `b/dir` under `tmp`, with a `cp` that makes the
+    /// copy's first directory and then takes a minute.
+    fn slow_copy(tmp: &Path) -> String {
+        fs::create_dir_all(tmp.join("a/dir")).unwrap();
+        fs::create_dir_all(tmp.join("b")).unwrap();
+        let op = Op::Copy { from: absolute(&tmp.join("a/dir")), to: absolute(&tmp.join("b/dir")) };
+        let command = command(&op).unwrap();
+        let cp = r#"cp -RPp -- "$s" "$t""#;
+        assert!(command.contains(cp));
+        command.replace(cp, r#"{ mkdir "$t"; sleep 60; }"#)
+    }
+
+    fn until(what: &str, mut done: impl FnMut() -> bool) {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while !done() {
+            assert!(Instant::now() < deadline, "{what}");
+            std::thread::sleep(Duration::from_millis(10));
+        }
+    }
+
+    /// A stopped copy is taken away, and its target never appears.
+    #[test]
+    fn a_stopped_copy_leaves_nothing() {
+        let tmp = tempfile::tempdir().unwrap();
+        let b = tmp.path().join("b");
+        let mut run = Running::spawn(&sh(), &slow_copy(tmp.path())).unwrap();
+        until("the copy did not start", || unfinished(&b).len() == 1);
+        let begun = Instant::now();
+        run.terminate();
+        assert_eq!(finish(run), Err(tr!("host-stopped")));
+        assert!(begun.elapsed() < Duration::from_secs(30), "waited for the copy");
+        assert_eq!(fs::read_dir(&b).unwrap().count(), 0);
+    }
+
+    /// Closing the input, which is all a stopped ssh does to the server's side, ends the
+    /// copy there and takes away what it made.
+    #[test]
+    fn a_copy_ends_and_is_taken_away_when_its_input_closes() {
+        let tmp = tempfile::tempdir().unwrap();
+        let b = tmp.path().join("b");
+        // The leader of its process group, as sshd starts a command.
+        let mut child = Command::new("/bin/sh")
+            .arg("-c")
+            .arg(slow_copy(tmp.path()))
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .process_group(0)
+            .spawn()
+            .unwrap();
+        until("the copy did not start", || unfinished(&b).len() == 1);
+        assert!(child.try_wait().unwrap().is_none(), "ended with its input open");
+        drop(child.stdin.take());
+        until("still running with its input closed", || child.try_wait().unwrap().is_some());
+        assert_eq!(fs::read_dir(&b).unwrap().count(), 0);
     }
 
     #[test]

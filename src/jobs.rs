@@ -51,7 +51,9 @@ pub struct Transfer {
     /// Bytes, when known from the listing (files only).
     pub size: Option<i64>,
     /// The user chose to replace what the target has of this name, so the job starts
-    /// without the target being checked again.
+    /// without the target being checked again. Also set in the transfer handed over at a
+    /// start that no check of the target came before, which may have the name too then:
+    /// in overwrite mode, and when a job goes on after a pause.
     pub overwrite: bool,
 }
 
@@ -60,7 +62,7 @@ pub struct Transfer {
 pub enum Engine {
     Rclone,
     Rsync,
-    /// The machine's own `rm` and `mv` (see [`crate::hostops`]).
+    /// The machine's own `rm`, `mv` and `cp` (see [`crate::hostops`]).
     Host,
 }
 
@@ -394,7 +396,8 @@ impl Queue {
                     job.check += 1;
                     out.push(Effect::Check { id: job.id, check: job.check, dir: dir.clone() });
                 }
-                _ => out.push(start(job)),
+                // Not checked, so the target may have the name.
+                _ => out.push(start(job, false)),
             }
             if job.state.is_active() {
                 free -= 1;
@@ -423,9 +426,11 @@ impl Queue {
     /// cancelled since, changes nothing.
     pub fn checked(&mut self, id: JobId, check: u64, result: Result<(), String>) -> Vec<Effect> {
         let mut out = Vec::new();
+        let overwrite = self.overwrite;
         if let Some(job) = self.jobs.iter_mut().find(|j| j.id == id && j.is_checking(check)) {
             match result {
-                Ok(()) => out.push(start(job)),
+                // In overwrite mode `Ok` is also the answer when the name is there.
+                Ok(()) => out.push(start(job, !overwrite)),
                 Err(e) => {
                     job.state = JobState::Failed(e.clone());
                     let touched = job.transfer.dst_dir.iter().cloned().collect();
@@ -587,13 +592,17 @@ impl Queue {
     }
 }
 
-/// Hands a job to rclone, or fails it when there is no call to make.
-fn start(job: &mut Job) -> Effect {
+/// Hands a job over to be carried out, or fails it when there is no call to make. `free`
+/// says its target was just seen without an entry of its name; otherwise the transfer
+/// handed over says that it may replace one, which the job itself does not come to say.
+fn start(job: &mut Job, free: bool) -> Effect {
     match job.transfer.rc_call() {
         Ok((method, params)) => {
             job.state = JobState::Running;
             job.started = true;
-            Effect::Start { id: job.id, transfer: Box::new(job.transfer.clone()), method, params }
+            let mut transfer = Box::new(job.transfer.clone());
+            transfer.overwrite |= !free;
+            Effect::Start { id: job.id, transfer, method, params }
         }
         Err(e) => {
             job.state = JobState::Failed(e.clone());
@@ -875,6 +884,37 @@ mod tests {
         let mut q = Queue::new(1);
         q.overwrite = true;
         assert!(matches!(q.push(vec![checked_copy("a")])[..], [Effect::Start { id: 1, .. }]));
+    }
+
+    /// Whether the transfer handed over by the one start among `effects` may replace what
+    /// its target has.
+    fn may_replace(effects: &[Effect]) -> bool {
+        let [Effect::Start { transfer, .. }] = effects else { panic!("{effects:?}") };
+        transfer.overwrite
+    }
+
+    /// Only a start right after its target was seen free says that nothing is replaced:
+    /// not one in overwrite mode, checked or not, nor one that goes on after a pause.
+    #[test]
+    fn a_start_without_a_free_target_seen_may_replace() {
+        let mut q = Queue::new(1);
+        q.push(vec![checked_copy("a")]);
+        assert!(!may_replace(&q.checked(1, 1, Ok(()))));
+        // Paused and going on: what it wrote before may be there.
+        q.set_shown(shown(&["/"]));
+        q.apply(vec![snap(1, Some(Err("stopped".into())))]);
+        assert!(may_replace(&q.set_shown(shown(&["/", "nas:"]))));
+        // The job itself is as the user left it, and is checked again when retried.
+        assert!(!q.jobs[0].transfer.overwrite);
+
+        let mut q = Queue::new(1);
+        q.overwrite = true;
+        assert!(may_replace(&q.push(vec![checked_copy("a")])));
+        // Overwrite mode came on while the target was being checked.
+        let mut q = Queue::new(1);
+        q.push(vec![checked_copy("a")]);
+        q.overwrite = true;
+        assert!(may_replace(&q.checked(1, 1, Ok(()))));
     }
 
     /// Cancelling a checking job makes room for the next. The answer to its check changes
