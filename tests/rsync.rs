@@ -603,3 +603,77 @@ fn a_tree_on_a_server_without_a_shell_is_removed_over_sftp() {
     assert!(server.join("kept").exists(), "what the link led to stays");
     assert_eq!(logins(work.path()), 1, "through the one login");
 }
+
+/// A remote whose key is in rclone.conf itself (`key_pem`) logs in through the system
+/// ssh, with the key put into a private ssh-agent from memory: never into a file. A key
+/// with a passphrase is asked about as a key file's is.
+#[test]
+fn an_inline_key_logs_in_through_a_private_agent() {
+    if !have("ssh") || !have("ssh-keygen") || !have("ssh-agent") || !have("ssh-add") {
+        eprintln!("skipped: ssh, ssh-keygen, ssh-agent or ssh-add not installed");
+        return;
+    }
+    let work = socket_work_dir();
+    let key = keygen(work.path());
+    let Some((_sshd, port)) = start_sshd(work.path(), &key) else {
+        eprintln!("skipped: no sshd");
+        return;
+    };
+    // The same key, with a passphrase, as a second copy.
+    let locked = work.path().join("id_locked");
+    fs::copy(&key, &locked).unwrap();
+    let changed = Command::new("ssh-keygen")
+        .args(["-q", "-p", "-P", "", "-N", "phrase", "-f"])
+        .arg(&locked)
+        .output()
+        .unwrap();
+    assert!(changed.status.success(), "{}", String::from_utf8_lossy(&changed.stderr));
+    let user = std::env::var("USER").unwrap_or_else(|_| "root".to_owned());
+    let sockets = work.path().join("sockets");
+    let embedded: Arc<dyn Backend> = Arc::new(Embedded::new());
+    let askpass = PathBuf::from(env!("CARGO_BIN_EXE_rse"));
+    let ssh = Arc::new(SystemSsh::new(embedded, &sockets, Some(askpass)));
+    let _close = CloseMasters(ssh.clone());
+    let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let seen = asked.clone();
+    ssh.set_prompter(Box::new(move |question| {
+        seen.lock().unwrap().push(question.prompt.clone());
+        let text = if question.confirm { "yes" } else { "phrase" };
+        Some(SshAnswer { text: text.to_owned(), remember: false })
+    }));
+    let server = work.path().join("server");
+    fs::create_dir_all(server.join("in")).unwrap();
+    fs::write(server.join("in/file"), "x").unwrap();
+    // As rclone keeps it: the key's line breaks as \n, in quotes.
+    let inline = |file: &Path, port_name: &str| {
+        let pem = fs::read_to_string(file).unwrap().replace('\n', "\\n");
+        format!(
+            ":sftp,host=127.0.0.1,port={port},user={user},known_hosts_file='{}',key_pem='{pem}',\
+             shell_type=unix,description={port_name}:",
+            work.path().join("known_hosts").display()
+        )
+    };
+    for (file, name) in [(&key, "plain"), (&locked, "locked")] {
+        let fs_name = inline(file, name);
+        assert!(ssh.shell(&fs_name).unwrap().is_some(), "{name}: through the system ssh");
+        let listed = api::list(&*ssh, &format!("{fs_name}{}", server.display()), "").unwrap();
+        assert_eq!(listed.into_iter().map(|i| i.name).collect::<Vec<_>>(), ["in"], "{name}");
+    }
+    let prompts = asked.lock().unwrap().clone();
+    let passphrases = prompts.iter().filter(|p| p.contains("(stdin)")).count();
+    assert_eq!(passphrases, 1, "only the locked key's passphrase is asked for: {prompts:?}");
+    // The agents' sockets and public keys are there; no file holds a private key.
+    let names: Vec<String> = fs::read_dir(&sockets)
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(names.iter().filter(|n| n.starts_with("agent-")).count(), 4, "{names:?}");
+    for entry in fs::read_dir(&sockets).unwrap() {
+        let path = entry.unwrap().path();
+        if path.is_file() {
+            let text = fs::read(&path).unwrap();
+            assert!(!String::from_utf8_lossy(&text).contains("PRIVATE KEY"), "{}", path.display());
+        }
+    }
+    assert_eq!(logins(work.path()), 2, "one login for each remote");
+}

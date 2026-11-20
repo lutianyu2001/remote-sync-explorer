@@ -142,7 +142,7 @@ of 2026-11-02.
 
 | Area | What was audited | Extent |
 |---|---|---|
-| Threat model | Every place where input from outside, or a secret, reaches rse, reviewed by hand, with each decision written down | 18 decisions in SECURITY.md: where passwords go, host keys (also after falling back to rclone's built-in ssh), what a server can make ssh do, options slipped into ssh, `--rcd` over plain http, file permissions, names and text from servers on screen, overwrites, rsync's command line, resumed files, the saved queue |
+| Threat model | Every place where input from outside, or a secret, reaches rse, reviewed by hand, with each decision written down | 22 decisions in SECURITY.md: where passwords go, host keys (also after falling back to rclone's built-in ssh), what a server can make ssh do, options slipped into ssh, inline keys in a private ssh-agent, `--rcd` over plain http, file permissions, names and text from servers on screen, overwrites, rsync's command line, the machine's own `rm`, `mv` and `cp`, resumed files, the saved queue |
 | `unsafe` code | rse forbids `unsafe` except in functions that allow it by name; each file with `unsafe` has a review, done again whenever the file changes | 15 blocks, each a call that has no safe form (into librclone, `setlocale`, `sigaction`, signal-hook-registry, `pre_exec`), each with the reason it is sound; reviewed by ten independent reviewers ([`audit/reviews/`](audit/reviews/)), no undefined behaviour found |
 | AddressSanitizer | The integration tests, which call into librclone, built with AddressSanitizer, which detects invalid memory accesses and leaks at run time | 8 test programs, no error (2026-11-09) |
 | Dependencies | Sources, licenses, known vulnerabilities, abandoned and yanked crates (cargo-deny); an audit of every crate (cargo-vet); builds offline from checksummed sources | 220 crates audited: audits imported from Mozilla, Google and the Bytecode Alliance, and 189 of our own; no exemptions. Vulnerabilities are looked up again daily |
@@ -710,9 +710,12 @@ does, with its built-in ssh; to have it use OpenSSH there too, give that sftp re
 the algorithms it names (`ciphers`, `key_exchange`, `macs`, `host_key_algorithms`). A remote
 with its own `ssh = …` line is left as it is. A `host` or `user` that starts with `-`
 uses rclone's built-in ssh, since the system `ssh` would read it as an option. So does
-a remote with options only the built-in ssh honours, such as `key_pem`, `use_insecure_cipher` or a
+a remote with options only the built-in ssh honours, such as `use_insecure_cipher` or a
 proxy, still checking host keys against `known_hosts` as ssh would, and one that pins
-its host keys (`host_keys`, `pin_host_key`), which rclone then checks. A
+its host keys (`host_keys`, `pin_host_key`), which rclone then checks. A key kept in
+`rclone.conf` itself (`key_pem`) goes into an `ssh-agent` of rse's own, from memory and
+never into a file, which only that remote's ssh uses and which ends with rse; a
+passphrase for it is asked for as a key file's is. A
 `known_hosts_file` of the remote's own is the file ssh checks; a server not in it is
 asked about as below, where rclone itself would refuse it.
 
@@ -770,8 +773,8 @@ settings) when:
 
 - there is no `ssh` program, or `system_ssh = false` is set under `[rclone]` in rse's
   config;
-- the remote needs something only the built-in ssh can do: an inline key (`key_pem`), a
-  proxy or `use_insecure_cipher`;
+- the remote needs something only the built-in ssh can do: a proxy or
+  `use_insecure_cipher`, or an inline key (`key_pem`) when there is no `ssh-agent`;
 - logging in through the system ssh fails, for example with a refused key. The built-in
   ssh then checks the host key against ssh's `known_hosts` file (unless the remote sets
   `known_hosts_file`), so a server ssh has never accepted is refused rather than

@@ -89,7 +89,7 @@ rse 经手密码、ssh 登录和远端服务器上的文件，所以它的代码
 
 | 方面 | 审计了什么 | 范围 |
 |---|---|---|
-| 威胁模型 | 外来输入或机密进入 rse 的每一处都人工审查过，每个决定都写了下来 | SECURITY.md 里的 18 条决定：密码交给谁、主机密钥（包括退回 rclone 内置 ssh 之后）、服务器能让 ssh 做什么、混进 ssh 的选项、`--rcd` 走明文 http、文件权限、服务器给的文件名和文字怎么显示、覆盖文件、rsync 的命令行、续传的文件、保存的队列 |
+| 威胁模型 | 外来输入或机密进入 rse 的每一处都人工审查过，每个决定都写了下来 | SECURITY.md 里的 22 条决定：密码交给谁、主机密钥（包括退回 rclone 内置 ssh 之后）、服务器能让 ssh 做什么、混进 ssh 的选项、私有 ssh-agent 里的内联密钥、`--rcd` 走明文 http、文件权限、服务器给的文件名和文字怎么显示、覆盖文件、rsync 的命令行、机器自己的 `rm`、`mv` 和 `cp`、续传的文件、保存的队列 |
 | `unsafe` 代码 | rse 禁止 `unsafe`，只有点名允许的函数例外；每个有 `unsafe` 的文件都有评审，文件一改就重新评审 | 15 处，每处都是没有安全写法的调用（librclone、`setlocale`、`sigaction`、signal-hook-registry、`pre_exec`），旁边写着为什么是安全的；十位独立评审看过（[`audit/reviews/`](../audit/reviews/)），没有发现未定义行为 |
 | AddressSanitizer | 调用 librclone 的集成测试用 AddressSanitizer 构建，运行时检测非法内存访问和泄漏 | 8 个测试程序，没有错误（2026-11-09） |
 | 依赖 | 来源、许可证、已知漏洞、作者放弃的和被撤回的 crate（cargo-deny）；每个 crate 都有审计记录（cargo-vet）；从校验过的源码离线构建 | 220 个 crate 审计过：从 Mozilla、Google 和 Bytecode Alliance 导入的审计，加上我们自己的 189 条；没有豁免。漏洞每天重新查 |
@@ -435,7 +435,7 @@ rse 支持英文和简体中文：`[ui]` 里的 `language` 选择其一，`auto`
 
 rse 默认通过系统的 `ssh` 连接 sftp 服务器，所以 `~/.ssh/config` 里的一切都会生效（主机别名、ProxyJump、密钥……）。第一次使用某台服务器前，它会登录一次并保持这个 OpenSSH 主连接，rclone 建立的所有连接都经由它。因此服务器在一次会话里只看到一次登录，而不是 rclone 的每个并行连接各登录一次，这样 fail2ban 之类的工具就不会封禁你。同一服务器上同一账户的所有远程和地址共用这个连接，rse 退出时关闭，否则在最后一次使用 15 分钟后结束。同一账户但设置不同的远程（例如各自有 `known_hosts_file`）各用各的连接。不管 `~/.ssh/config` 怎么设置，这些连接都不转发 agent、X11 和端口，也不执行本地或远程命令，和 OpenSSH 自己的 sftp 一样；只有[终端](#终端)会在服务器上执行命令，即你的登录 shell，它同样什么都不转发。
 
-这适用于 `sftp://` 和 `me@box:` 地址、`:sftp,…` 连接字符串，以及 `rclone.conf` 里的 sftp 远程。经由其他远程访问的 sftp 远程（例如套在它上面的 `crypt`、`alias` 或 `union`）照 rclone 一贯的做法由它自己用内置的 ssh 打开；想让这一层也用 OpenSSH，就给那个 sftp 远程配上它自己的 `ssh = …`。远程的 `host`、`user`、`port`、`key_file`、`pubkey_file` 和 `known_hosts_file` 会转成 ssh 选项，它指定的算法（`ciphers`、`key_exchange`、`macs`、`host_key_algorithms`）也一样。自带 `ssh = …` 设置的远程保持原样。以 `-` 开头的 `host` 或 `user` 改用 rclone 内置的 ssh，因为系统 `ssh` 会把它当成选项。设置了只有内置 ssh 才支持的选项（例如 `key_pem`、`use_insecure_cipher` 或代理）的远程也改用内置 ssh，仍像 ssh 一样按 `known_hosts` 校验主机密钥；固定了主机密钥（`host_keys`、`pin_host_key`）的远程同样改用内置 ssh，由 rclone 校验。远程自己的 `known_hosts_file` 就是 ssh 校验用的文件；服务器不在其中时会像下文那样询问你，而 rclone 自己会直接拒绝。
+这适用于 `sftp://` 和 `me@box:` 地址、`:sftp,…` 连接字符串，以及 `rclone.conf` 里的 sftp 远程。经由其他远程访问的 sftp 远程（例如套在它上面的 `crypt`、`alias` 或 `union`）照 rclone 一贯的做法由它自己用内置的 ssh 打开；想让这一层也用 OpenSSH，就给那个 sftp 远程配上它自己的 `ssh = …`。远程的 `host`、`user`、`port`、`key_file`、`pubkey_file` 和 `known_hosts_file` 会转成 ssh 选项，它指定的算法（`ciphers`、`key_exchange`、`macs`、`host_key_algorithms`）也一样。自带 `ssh = …` 设置的远程保持原样。以 `-` 开头的 `host` 或 `user` 改用 rclone 内置的 ssh，因为系统 `ssh` 会把它当成选项。设置了只有内置 ssh 才支持的选项（例如 `use_insecure_cipher` 或代理）的远程也改用内置 ssh，仍像 ssh 一样按 `known_hosts` 校验主机密钥；固定了主机密钥（`host_keys`、`pin_host_key`）的远程同样改用内置 ssh，由 rclone 校验。直接写在 `rclone.conf` 里的密钥（`key_pem`）从内存交给 rse 自己起的 `ssh-agent`，从不写进文件；只有这个远程的 ssh 用它，rse 结束时它也结束；它的口令和密钥文件的口令一样询问。远程自己的 `known_hosts_file` 就是 ssh 校验用的文件；服务器不在其中时会像下文那样询问你，而 rclone 自己会直接拒绝。
 
 登录可能需要密码、密钥口令或一次性验证码。`rclone.conf` 里保存的密码（`pass`）或密钥口令（`key_file_pass`）会直接交给 ssh，不再询问；其他内容会在对话框里询问，例如 `me@box's password:` 或验证码。不是用 `rclone obscure` 生成的 `pass` 或 `key_file_pass`（例如写成了明文）不会被使用：rse 会改为询问，并在对话框下方的窗口里说明原因；服务器拒绝了 `pass`、或 `key_file_pass` 解不开私钥时也一样。这需要 OpenSSH 8.4 或更新版本（`ssh -V`）；版本更旧时，需要密码的远程会像以前一样使用 rclone 内置的 ssh。`rclone.conf` 里的密码和口令以及记住的密码，只回答 ssh 自己针对该账户或该远程 `key_file` 的提问：跳板机的提问、服务器要求输入密钥口令的提问都会交给你回答，你在那里输入的内容也不会被记住。登录如果两分钟没有进展（不算你作答的时间），会被放弃。
 
@@ -463,7 +463,7 @@ rse --forget-password <user>@<host>
 在以下情况下，会改用 rclone 内置的 ssh（每个连接各登录一次，使用 rclone 自己的设置）：
 
 - 没有 `ssh` 程序，或在 rse 配置的 `[rclone]` 下设置了 `system_ssh = false`；
-- 远程需要只有内置 ssh 才能做到的东西：内联密钥（`key_pem`）、代理或 `use_insecure_cipher`；
+- 远程需要只有内置 ssh 才能做到的东西：代理或 `use_insecure_cipher`，或者没有 `ssh-agent` 时的内联密钥（`key_pem`）；
 - 通过系统 ssh 登录失败，例如密钥被拒绝。这时内置 ssh 会用 ssh 的 `known_hosts` 文件检查主机密钥（除非远程设置了 `known_hosts_file`），所以 ssh 从未接受过的服务器会被拒绝，而不是被信任。你的 ssh 配置里 `StrictHostKeyChecking` 为 `no` 或 `accept-new` 时，新服务器像 OpenSSH 那样放行；只要 ssh 读的任何一个文件里、以 ssh 认得的任何名字列着这台服务器，它就必须出示其中记录的密钥。密钥变了一律拒绝（OpenSSH 在 `no` 下会继续，只是关掉密码登录）。rse 判断不了时（文件路径里有 `%`、或设置了 `KnownHostsCommand`）就校验。
 
 原因会写入 rclone 日志。有两种失败直接报错，不会退回：主机密钥与已知的不同（内置 ssh 不检查主机密钥），以及取消了询问（内置 ssh 只会再次失败）。没见过的服务器会连同其密钥指纹一起显示给你，只有你回答“是”才会加入 `known_hosts`（默认是“否”）；你的 ssh 配置里设置的 `StrictHostKeyChecking` 照常生效。如果你的 ssh 配置已经设置了 `ControlMaster` 和 `ControlPath`，rse 会使用它们；否则它的 socket 放在 `$XDG_RUNTIME_DIR/rse`（其他用户无法在里面创建任何东西），没有这个目录的系统（例如 macOS）放在 `/tmp/rse-<uid>`。这个目录无法使用时（例如被其他用户抢先创建），sftp 会像上面那样改用 rclone 内置的 ssh，仍然校验主机密钥，rse 启动时会说明原因。使用 `--rcd` 时以上都不适用：那个 rclone 运行在它自己的机器上。

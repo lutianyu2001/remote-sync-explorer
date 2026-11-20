@@ -21,9 +21,11 @@
 //! for this server's account or `key_file`, never to one a server words, which OpenSSH
 //! marks with a `(user@host)` prefix, nor to a jump host's.
 //!
+//! An inline key (`key_pem`) goes into a private ssh-agent ([`crate::librse::agent`]),
+//! from memory, never into a file, and the ssh commands of that remote log in with it.
+//!
 //! rclone's built-in ssh stays in use when there is no `ssh` program, or when the remote's
-//! settings have no ssh equivalent (an inline key, a proxy, …, or a password before
-//! OpenSSH 8.4). When the master connection cannot be opened, the built-in ssh is used
+//! settings have no ssh equivalent (a proxy, …, or a password before OpenSSH 8.4). When the master connection cannot be opened, the built-in ssh is used
 //! too, but checking the host key against ssh's `known_hosts` file: by itself it checks
 //! none, so an attacker could otherwise block ssh to get past the check. A changed host
 //! key or a cancelled login is an error instead, since falling back would only fail again.
@@ -46,6 +48,7 @@ use serde_json::{Value, json};
 use super::backend::{Backend, RpcError};
 use super::obscure::reveal;
 use super::ssh_passwords::PasswordFile;
+use crate::librse::agent::{self, Agent};
 use crate::location::remote_colon;
 use crate::rsync::RsyncRemote;
 use crate::terminal::ShellTarget;
@@ -65,12 +68,13 @@ const PROBE_TIME: Duration = Duration::from_secs(15);
 /// sftp options the system ssh takes over. rclone still reads some of them when it runs
 /// ssh (the key file, failing on one with a passphrase) and warns about others, so they
 /// are left out of the fs sent to rclone, or blanked when rclone.conf sets them.
-const SSH_TAKES_OVER: [&str; 10] = [
+const SSH_TAKES_OVER: [&str; 11] = [
     "host",
     "user",
     "port",
     "pass",
     "key_file",
+    "key_pem",
     "key_file_pass",
     "pubkey_file",
     "known_hosts_file",
@@ -83,15 +87,8 @@ const NEED_ASKPASS: [&str; 3] = ["pass", "key_file_pass", "ask_password"];
 
 /// sftp options that only the built-in ssh can honour. Pinned host keys are among them:
 /// rclone ignores them once it runs ssh.
-const BUILTIN_ONLY: [&str; 7] = [
-    "host_keys",
-    "pin_host_key",
-    "key_pem",
-    "pubkey",
-    "socks_proxy",
-    "http_proxy",
-    "use_insecure_cipher",
-];
+const BUILTIN_ONLY: [&str; 6] =
+    ["host_keys", "pin_host_key", "pubkey", "socks_proxy", "http_proxy", "use_insecure_cipher"];
 
 /// sftp options that list algorithms, with the ssh option that takes the same names
 /// (those of the protocol), separated by commas where rclone has spaces.
@@ -180,6 +177,8 @@ pub struct SystemSsh {
     /// Whether each server has rsync, by the ssh command that reaches it; `None` until
     /// known.
     rsync: Mutex<HashMap<Vec<String>, Probe>>,
+    /// The private agents of the remotes with an inline key, ended with rse.
+    agents: Mutex<Vec<Agent>>,
     next_log: AtomicU64,
 }
 
@@ -347,6 +346,7 @@ impl SystemSsh {
             save_errors: Mutex::new(HashMap::new()),
             routes: Mutex::new(HashMap::new()),
             rsync: Mutex::new(HashMap::new()),
+            agents: Mutex::new(Vec::new()),
             next_log: AtomicU64::new(0),
         }
     }
@@ -491,11 +491,27 @@ impl SystemSsh {
                 return Ok(fallback.map_or(Route::Builtin, |keys| keys.route()));
             }
         };
+        let mut dest = dest;
         let effective = ssh_config(&dest);
         let fallback = host_key_fallback(name, &params, &effective);
         let Some(dir) = &self.socket_dir else {
             // Nowhere private for ssh's sockets and logs: as when the system ssh fails.
             return Ok(fallback.map_or(Route::Builtin, |keys| keys.route()));
+        };
+        // An inline key, logged in with from a private agent.
+        let pem = params.get("key_pem").filter(|k| !k.is_empty());
+        let agent = match pem.map(|kept| self.start_agent(dir, kept)) {
+            None => None,
+            Some(Ok((agent, key))) => {
+                // Before the server and account, which ssh reads last.
+                let at = dest.len().saturating_sub(1);
+                dest.splice(at..at, agent.ssh_options());
+                Some((agent, key))
+            }
+            Some(Err(why)) => {
+                note(&format!("{}: using rclone's built-in ssh: {why}", redacted(name)));
+                return Ok(fallback.map_or(Route::Builtin, |keys| keys.route()));
+            }
         };
         let own_sharing = effective.get("controlmaster").is_some_and(|v| v != "false")
             && effective.get("controlpath").is_some_and(|v| v != "none");
@@ -521,10 +537,67 @@ impl SystemSsh {
             password_key,
             fs_name,
             accounts: accounts(&effective),
-            key_file: params.get("key_file").filter(|k| !k.is_empty()).map(|k| expand_home(k)),
+            key_file: if pem.is_some() {
+                Some(STDIN_KEY.to_owned())
+            } else {
+                params.get("key_file").filter(|k| !k.is_empty()).map(|k| expand_home(k))
+            },
             fallback,
         };
+        if let Some((agent, key)) = agent {
+            if let Err(why) = self.add_key(&agent, &key, &login)? {
+                note(&format!("{}: using rclone's built-in ssh: {why}", redacted(name)));
+                return Ok(login.fallback());
+            }
+            self.agents.lock().map_err(|_| poisoned())?.push(agent);
+        }
         Ok(if self.connect(name, &mut login)? { Route::Ssh(login) } else { login.fallback() })
+    }
+
+    /// A private agent for the inline key `kept` (rclone's `key_pem`), and the key's
+    /// text; or why there is none.
+    fn start_agent(&self, dir: &Path, kept: &str) -> Result<(Agent, String), String> {
+        let key = agent::pem_text(kept).ok_or("key_pem is not a key as rclone keeps one")?;
+        let n = self.next_log.fetch_add(1, Ordering::SeqCst);
+        let socket = dir.join(format!("agent-{}-{n}", std::process::id()));
+        let agent = Agent::start(socket).map_err(|e| format!("no private ssh-agent: {e}"))?;
+        Ok((agent, key))
+    }
+
+    /// Puts `key` into `agent`, asking for its passphrase as ssh asks for a key file's:
+    /// from rclone.conf's `key_file_pass`, then the user. `Ok(Err(why))` when it cannot
+    /// be, so that the built-in ssh is used; an error when the user gave the login up.
+    fn add_key(
+        &self,
+        agent: &Agent,
+        key: &str,
+        login: &Login,
+    ) -> Result<Result<(), String>, RpcError> {
+        let mut cmd = agent.add_command();
+        let status = match (&self.askpass, &self.socket_dir) {
+            (Some(program), Some(dir)) => {
+                let n = self.next_log.fetch_add(1, Ordering::SeqCst);
+                let socket = dir.join(format!("ask-{}-{n}", std::process::id()));
+                let mut asked = self.asking(login);
+                let input = Some(key.as_bytes());
+                let status =
+                    self.run_with_askpass(&mut cmd, program, &socket, login, &mut asked, input);
+                let _ = fs::remove_file(&socket);
+                if asked.cancelled {
+                    return Err(RpcError::new(500, tr!("ssh-cancelled")));
+                }
+                status
+            }
+            // Before OpenSSH 8.4: a key with a passphrase cannot be put in.
+            _ => self.run_until(&mut cmd, Some(key.as_bytes())),
+        };
+        Ok(match status {
+            Ok(s) if s.success() => {
+                agent.keep_public_key().map_err(|e| format!("the private ssh-agent: {e}"))
+            }
+            Ok(_) => Err("ssh-add did not take key_pem".to_owned()),
+            Err(e) => Err(format!("cannot run ssh-add: {e}")),
+        })
     }
 
     /// Makes sure the master connection is up. `Ok(false)`: it cannot be, so use the
@@ -605,11 +678,12 @@ impl SystemSsh {
                 let socket = dir.join(format!("ask-{}-{n}", std::process::id()));
                 asked = self.asking(login);
                 asked.log = Some(log.clone());
-                let status = self.run_with_askpass(&mut cmd, program, &socket, login, &mut asked);
+                let status =
+                    self.run_with_askpass(&mut cmd, program, &socket, login, &mut asked, None);
                 let _ = fs::remove_file(&socket);
                 status
             }
-            None => self.run_until(cmd.arg("-o").arg("BatchMode=yes")),
+            None => self.run_until(cmd.arg("-o").arg("BatchMode=yes"), None),
         };
         let message = fs::read_to_string(&log).unwrap_or_default();
         let _ = fs::remove_file(&log);
@@ -690,6 +764,7 @@ impl SystemSsh {
         socket: &Path,
         login: &Login,
         asked: &mut Asked,
+        input: Option<&[u8]>,
     ) -> std::io::Result<std::process::ExitStatus> {
         let listener = UnixListener::bind(socket).and_then(|l| {
             l.set_nonblocking(true)?;
@@ -699,7 +774,7 @@ impl SystemSsh {
             .env("SSH_ASKPASS_REQUIRE", "force")
             .env(ASKPASS_ENV, socket);
         in_a_session_of_its_own(cmd);
-        let mut child = cmd.spawn()?;
+        let mut child = spawn_with_input(cmd, input)?;
         // A server that stalls must not hold this remote, and a worker, for good.
         let mut deadline = Instant::now() + self.login_time;
         loop {
@@ -732,8 +807,12 @@ impl SystemSsh {
     }
 
     /// Runs `cmd`, a login that asks nothing, to its end, or ends it after `login_time`.
-    fn run_until(&self, cmd: &mut Command) -> std::io::Result<std::process::ExitStatus> {
-        let mut child = cmd.spawn()?;
+    fn run_until(
+        &self,
+        cmd: &mut Command,
+        input: Option<&[u8]>,
+    ) -> std::io::Result<std::process::ExitStatus> {
+        let mut child = spawn_with_input(cmd, input)?;
         let deadline = Instant::now() + self.login_time;
         loop {
             if let Some(status) = child.try_wait()? {
@@ -885,6 +964,9 @@ impl Backend for SystemSsh {
 
     fn finalize(&self) {
         self.close_masters();
+        if let Ok(mut agents) = self.agents.lock() {
+            agents.clear();
+        }
         self.inner.finalize();
     }
 
@@ -1166,9 +1248,37 @@ pub(crate) fn is_confirmation(prompt: &str) -> bool {
 }
 
 /// The key file in ssh's own `Enter passphrase for key '/k':`; never in a server's words,
-/// which start with `(`.
+/// which start with `(`. [`STDIN_KEY`] for ssh-add's questions about the inline key it
+/// reads from its standard input.
 pub(crate) fn passphrase_key(prompt: &str) -> Option<&str> {
+    let end = prompt.trim_end();
+    if end == "Enter passphrase for (stdin):" || end == "Bad passphrase, try again for (stdin):" {
+        return Some(STDIN_KEY);
+    }
     prompt.strip_prefix("Enter passphrase for key '")?.trim_end().strip_suffix("':")
+}
+
+/// How ssh-add names the key it reads from its standard input: an inline key's.
+const STDIN_KEY: &str = "(stdin)";
+
+/// Starts `cmd`, with `input` on its standard input, which is then closed.
+fn spawn_with_input(
+    cmd: &mut Command,
+    input: Option<&[u8]>,
+) -> std::io::Result<std::process::Child> {
+    if input.is_some() {
+        cmd.stdin(Stdio::piped());
+    }
+    let mut child = cmd.spawn()?;
+    if let (Some(input), Some(mut stdin)) = (input, child.stdin.take()) {
+        // A key is far less than a pipe holds, so this does not wait for the reader.
+        if let Err(e) = stdin.write_all(input) {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(e);
+        }
+    }
+    Ok(child)
 }
 
 /// Whether ssh names key `file` as `shown`, which it cuts at 100 bytes.
@@ -1223,6 +1333,19 @@ pub(crate) fn ssh_dest(
     if !askpass && let Some(k) = NEED_ASKPASS.iter().find(|k| set(k)) {
         return Err(format!("{k} is set, which needs OpenSSH 8.4 or newer"));
     }
+    // An inline key is used in place of a key file, as rclone does: the caller gives ssh
+    // the agent that holds it.
+    let without_file;
+    let params = if set("key_pem") {
+        without_file = params
+            .iter()
+            .filter(|(k, _)| *k != "key_file")
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
+        &without_file
+    } else {
+        params
+    };
     let mut args = Vec::new();
     for (key, option) in ALGORITHMS {
         if let Some(list) = get(key) {
@@ -1552,7 +1675,12 @@ mod tests {
         assert!(ssh_dest(&pass, true).is_ok());
         let err = ssh_dest(&pass, false).unwrap_err();
         assert!(err.contains("pass") && err.contains("8.4"), "{err}");
-        assert!(ssh_dest(&params(&[("host", "box"), ("key_pem", "-----BEGIN")]), true).is_err());
+        assert!(
+            ssh_dest(&params(&[("host", "box"), ("pubkey", "ssh-ed25519-cert")]), true).is_err()
+        );
+        // An inline key goes to a private agent, in place of a key file, as rclone has it.
+        let inline = params(&[("host", "box"), ("key_file", "/k"), ("key_pem", "-----BEGIN")]);
+        assert_eq!(ssh_dest(&inline, true).unwrap(), ["box"]);
         assert!(
             ssh_dest(&params(&[("host", "box"), ("use_insecure_cipher", "false")]), true).is_ok()
         );
@@ -1705,9 +1833,35 @@ mod tests {
         assert_eq!(given(server), ("typed".to_owned(), Some(false), false));
         let other_key = "Enter passphrase for key '/k/other': ";
         assert_eq!(given(other_key), ("typed".to_owned(), Some(false), false));
+        // ssh-add's question about an inline key is not this key file's.
+        let inline = "Enter passphrase for (stdin): ";
+        assert_eq!(given(inline), ("typed".to_owned(), Some(false), false));
         // The login's own server asking for something other than its password.
         assert_eq!(given("(me@box) Verification code: "), ("typed".to_owned(), Some(false), false));
         assert_eq!(given("(me@box) One-time password: "), ("typed".to_owned(), Some(false), false));
+    }
+
+    /// rclone.conf's passphrase answers ssh-add's questions about a login's inline key, and
+    /// once only: asked again, it was wrong, and the user is asked, being told so.
+    #[test]
+    fn the_passphrase_of_an_inline_key_answers_ssh_add() {
+        let dir = tempfile::tempdir().unwrap();
+        let (ssh, mut login, questions, answers) = remembering(&dir.path().join("p"));
+        login.key_file = Some(STDIN_KEY.to_owned());
+        login.secrets.passphrase = Some("phrase".to_owned());
+        let mut asked = ssh.asking(&login);
+        let first = askpass(&ssh, &login, &mut asked, "Enter passphrase for (stdin): ");
+        assert_eq!(first.as_deref(), Some("phrase"));
+        assert!(questions.lock().unwrap().is_empty());
+        answers.lock().unwrap().push(answer("typed", true));
+        let again = askpass(&ssh, &login, &mut asked, "Bad passphrase, try again for (stdin): ");
+        assert_eq!(again.as_deref(), Some("typed"));
+        let question = questions.lock().unwrap().pop().unwrap();
+        assert!(!question.can_remember);
+        assert!(question.notice.is_some_and(|n| n.contains(&login.remote)), "told it was wrong");
+        // Not a server's words, nor a key file's question.
+        assert_eq!(passphrase_key("(me@box) Enter passphrase for (stdin): "), None);
+        assert_eq!(passphrase_key("Enter passphrase for key '(stdin)': "), Some(STDIN_KEY));
     }
 
     /// A remembered password, like one from rclone.conf, answers only the password question
@@ -1971,7 +2125,7 @@ mod tests {
         let socket = dir.path().join("ask.sock");
         let program = Path::new("/bin/false");
         let result =
-            ssh.run_with_askpass(&mut stall, program, &socket, &login, &mut Asked::default());
+            ssh.run_with_askpass(&mut stall, program, &socket, &login, &mut Asked::default(), None);
         assert_eq!(result.unwrap_err().kind(), std::io::ErrorKind::TimedOut);
         assert!(started.elapsed() < Duration::from_secs(10), "{:?}", started.elapsed());
     }
@@ -2033,6 +2187,7 @@ mod tests {
             save_errors: Mutex::new(HashMap::new()),
             routes: Mutex::new(HashMap::new()),
             rsync: Mutex::new(HashMap::new()),
+            agents: Mutex::new(Vec::new()),
             next_log: AtomicU64::new(0),
         };
         let questions = Questions::default();
@@ -2223,11 +2378,12 @@ mod tests {
             ("type", "sftp"),
             ("host", "box"),
             ("key_file", "/k"),
+            ("key_pem", "-----BEGIN"),
             ("md5sum_command", "md5"),
         ]);
         assert_eq!(
             ssh_fs_name("nas,shell_type=unix,user=x", &conf, "ssh box"),
-            "nas,shell_type=unix,host='',key_file='',ssh='ssh box'"
+            "nas,shell_type=unix,host='',key_file='',key_pem='',ssh='ssh box'"
         );
         let typed = params(&[("host", "box"), ("key_use_agent", "true"), ("shell_type", "unix")]);
         assert_eq!(
@@ -2270,6 +2426,7 @@ mod tests {
             save_errors: Mutex::new(HashMap::new()),
             routes: Mutex::new(HashMap::new()),
             rsync: Mutex::new(HashMap::new()),
+            agents: Mutex::new(Vec::new()),
             next_log: AtomicU64::new(0),
         };
         for fs in ["/home", "nas:x", "nas:y", ":sftp,host=box:z", ":s3,env_auth=true:b"] {

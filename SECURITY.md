@@ -228,7 +228,22 @@ names.
 - **New host keys.** rse never tells ssh to accept a new host key by itself: ssh's own
   question, with the key's fingerprint, is shown in a dialog whose default is No.
 - **ssh arguments.** A `host` or `user` starting with `-`, or any ssh setting holding a
-  control character, is never passed to the system ssh.
+  control character, is never passed to the system ssh. Algorithm lists (`ciphers`,
+  `key_exchange`, `macs`, `host_key_algorithms`) are passed only when each entry is a
+  name of letters, digits and `-_.@` starting with a letter or digit, so that none adds
+  to, removes from or reorders ssh's own list (`+`, `-`, `^`).
+- **Inline keys.** A remote's `key_pem`, a private key kept in rclone.conf, is handed
+  to `ssh-add -` on its standard input and goes into an `ssh-agent` rse starts for that
+  remote alone: it never goes into a file. The agent's socket is in the private socket
+  directory, its path refused when ssh would read it otherwise (a `%`, `${`, quote or
+  white space in it); only that remote's ssh commands are told of it (`IdentityAgent`),
+  and they offer its key alone (`IdentitiesOnly`, with the public half, written next to
+  the socket, as the identity). The agent runs `cat` on a pipe from rse as its command,
+  so it ends within ten seconds of rse ending, also when rse is killed; ending normally,
+  rse removes its socket at once. ssh-add's question for the key's passphrase is
+  answered as ssh's question for a key file's: rclone.conf's `key_file_pass` once, then
+  the user. Anything running as the user that finds the socket can have the agent sign
+  with the key, as with the user's own agent; it cannot read the key out.
 - **`--rcd`** refuses plain `http://` to anything but this machine, and requests to this
   machine never go through a proxy from `HTTP_PROXY` and the like, which would carry them
   on in clear; no redirect is followed. The password can come from `RCLONE_RC_PASS`,

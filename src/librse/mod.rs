@@ -5,6 +5,7 @@
 //! A library within rse, kept so that it could leave: nothing here knows of rclone, of
 //! rse's places or of its messages, and nothing here uses another module of rse.
 //!
+//! - [`agent`]: a private ssh-agent, for an inline key the system ssh is to log in with.
 //! - [`shell`]: a machine as a shell reaches it, and its directories.
 //! - [`command`]: the command lines, and one at work.
 //! - [`rsync`]: rsync's command line, and rsync at work with its progress read.
@@ -13,6 +14,7 @@
 
 use std::fmt;
 
+pub mod agent;
 pub mod command;
 pub mod rsync;
 pub mod sftp;
