@@ -84,7 +84,9 @@ chance. Good designs, it seems, think alike. Not every key is the same, though:
   transfer starts, and two transfers never write one file at once.
 - **Two engines**: rsync between the local disk and an sftp server reached through the
   system ssh that has `rsync` (delta transfer, through the same login), rclone for
-  everything else. The bottom row names the engine of copies between the two panes.
+  everything else. A delete, or a move to a name not taken, inside the local disk or one
+  such server is that machine's own `rm -rf` or `mv`, one command instead of rclone's
+  round trip for every file. The bottom row names the engine of copies between the two panes.
 - **Resumed transfers**: a stopped file goes on from where it stopped, with rsync, and
   with rclone when the target is the local disk or an sftp server reached through the
   system ssh (downloads to the local disk resume from any remote). Identical files are
@@ -611,7 +613,7 @@ language = "auto"               # "en", "zh-CN", or "auto": Chinese for a zh* lo
 [jobs]
 max_concurrent = 2              # jobs running at once; the rest wait
 poll_ms = 500                   # progress refresh
-engine = "auto"                 # or "rclone": never rsync
+engine = "auto"                 # or "rclone": never rsync, nor the machine's rm and mv
 checksum = false                # tell files apart by checksum, not size and time
 
 [keys]

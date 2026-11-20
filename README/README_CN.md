@@ -65,7 +65,7 @@ remote-sync-explorer（命令为 `rse`）是一个双栏终端文件管理器，
 - **远程**：浏览本地磁盘和 `rclone.conf` 里的所有远程，不需要往 rclone 配置里额外添加任何东西。
 - **按地址打开服务器**：`sftp://`、scp 风格的 `me@box:/path`、`ftp://`、`smb://` 和 `webdav://` 无需在 `rclone.conf` 里配置远程即可打开。
 - **文件操作**：复制、移动、删除、重命名、新建目录。移动和删除总会先确认，拖放也一样。覆盖已有文件前会询问，除非开启了覆写模式：加入队列时和每个传输开始前都会检查目标，两个传输也不会同时写同一个文件。
-- **两种传输后端**：本地磁盘和经系统 ssh 连接、装了 `rsync` 的 sftp 服务器之间用 rsync（增量传输，走同一个登录），其余都用 rclone。底栏显示两个窗格之间复制用的后端。
+- **两种传输后端**：本地磁盘和经系统 ssh 连接、装了 `rsync` 的 sftp 服务器之间用 rsync（增量传输，走同一个登录），其余都用 rclone。底栏显示两个窗格之间复制用的后端。在本地磁盘内部、或同一台这样的服务器内部删除，或者移动到一个没被占用的名字，用的是那台机器自己的 `rm -rf` 或 `mv`：一条命令，而不是 rclone 那样每个文件往返一次。
 - **续传**：停下的文件会从停下的地方接着传。rsync 总是这样；rclone 在目标是本地磁盘或经系统 ssh 连接的 sftp 服务器时也是这样（下载到本地磁盘时，任何远程都能续传）。相同的文件会跳过。
 - **传输队列**：多个任务并发执行，显示已传字节、速度和剩余时间，可以逐个取消或重试。两个窗格显示着任务的两头时（删除只需要它删除的那一头），任务才运行；在窗格里打开别的地方会暂停它，回来后接着跑。没完成的任务会保留到下次启动。如果有不能续传的传输正在跑，离开或退出前会先列出哪些文件要从头重传。
 - **鼠标**：单击、双击、滚轮、滚动条，Ctrl+单击或右键标记，Alt+单击标记一段，拖动来复制或移动。
@@ -397,7 +397,7 @@ language = "auto"               # "en", "zh-CN", or "auto": Chinese for a zh* lo
 [jobs]
 max_concurrent = 2              # jobs running at once; the rest wait
 poll_ms = 500                   # progress refresh
-engine = "auto"                 # or "rclone": never rsync
+engine = "auto"                 # or "rclone": never rsync, nor the machine's rm and mv
 checksum = false                # tell files apart by checksum, not size and time
 
 [keys]

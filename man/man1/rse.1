@@ -153,6 +153,12 @@ At its right end, in reverse video, the engine a copy between the two panes woul
 .B rsync
 or
 .BR rclone .
+A delete, or a move to a name not taken, inside the local disk or one server reached through
+the system ssh is carried out by that machine's own
+.B rm \-rf
+or
+.BR mv ,
+which takes one command where rclone would ask the server about every file.
 .TP
 .B the message line
 at the bottom: what the last action said (\(lqnothing selected\(rq, an error),
@@ -621,7 +627,7 @@ language = "auto"        # "en", "zh\-CN", or the system's
 [jobs]
 max_concurrent = 2       # jobs running at once
 poll_ms = 500            # progress refresh
-engine = "auto"          # or "rclone": never rsync
+engine = "auto"          # or "rclone": never rsync, nor rm and mv
 checksum = false         # compare files by checksum
 
 [keys]

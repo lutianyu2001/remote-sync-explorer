@@ -17,6 +17,7 @@ use serde_json::{Value, json};
 
 use crate::engine::Engines;
 use crate::event::{BrowseOp, Entry, Event, JobId, JobSnapshot, ReqId};
+use crate::hostops;
 use crate::jobs::{Engine, OpKind, Transfer};
 use crate::location::{Location, endpoint_key};
 use crate::rclone::api::{self, Stats};
@@ -247,6 +248,7 @@ fn is_not_found(e: &RpcError) -> bool {
 
 enum Active {
     Rclone { rc_id: i64, stop_sent: bool },
+    Host { run: Box<hostops::Running> },
     Rsync { run: Box<Running>, transfer: Transfer },
 }
 
@@ -284,6 +286,7 @@ fn job_worker(
                     *stop_sent = true;
                 }
                 Some(Active::Rsync { run, .. }) => run.terminate(),
+                Some(Active::Host { run }) => run.terminate(),
                 None => {}
             },
             Err(RecvTimeoutError::Timeout) => {
@@ -304,6 +307,7 @@ fn job_worker(
                             let _ = api::job_stop(backend, *rc_id);
                         }
                         Active::Rsync { run, .. } => run.stop(),
+                        Active::Host { run } => run.stop(),
                         Active::Rclone { .. } => {}
                     }
                 }
@@ -323,6 +327,12 @@ fn start(
     method: &str,
     mut params: Value,
 ) -> (Result<Active, String>, (Engine, bool)) {
+    if let Some((run, command)) = engines.host_command(&transfer) {
+        let run = hostops::Running::spawn(&run, &command)
+            .map(|run| Active::Host { run: Box::new(run) })
+            .map_err(|e| tr!("host-not-started", error = e.to_string()));
+        return (run, (Engine::Host, true));
+    }
     if let Some(args) = engines.rsync_args(&transfer) {
         let run = Running::spawn(args)
             .map(|run| Active::Rsync { run: Box::new(run), transfer })
@@ -358,6 +368,7 @@ fn poll_jobs(backend: &dyn Backend, active: &mut BTreeMap<JobId, Active>) -> Vec
     for (&id, job) in active.iter_mut() {
         let (stats, finished) = match job {
             Active::Rclone { rc_id, .. } => poll_rclone(backend, *rc_id),
+            Active::Host { run } => (Stats::default(), run.poll()),
             Active::Rsync { run, transfer } => {
                 let (stats, finished) = run.poll();
                 let finished = match finished {
@@ -478,6 +489,55 @@ mod tests {
         assert!(matches!(recv(&rx), Event::Listed { generation: 2, .. }));
         exec.shutdown();
         assert_eq!(b.calls_to("operations/list").len(), 1);
+    }
+
+    /// A delete and a move inside the local disk go to the disk's own rm and mv, and
+    /// rclone hears of neither.
+    #[test]
+    fn deletes_and_moves_inside_the_local_disk_run_as_its_own_commands() {
+        use crate::config::EngineChoice;
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().to_str().unwrap().trim_start_matches('/').to_owned();
+        std::fs::create_dir_all(tmp.path().join("old/in/deep")).unwrap();
+        std::fs::create_dir_all(tmp.path().join("from/dir/in")).unwrap();
+        std::fs::create_dir_all(tmp.path().join("to")).unwrap();
+        let b = Arc::new(FakeBackend::new(|_, _| Ok(json!({}))));
+        let (tx, rx) = unbounded();
+        let engines = Engines::new(None, EngineChoice::Auto, false);
+        let exec = Exec::spawn_with(b.clone(), tx, 1, Duration::from_millis(20), engines);
+        let entry = |kind, dir: &str, name: &str, dst: Option<&str>| Transfer {
+            kind,
+            src_dir: Location::new("/", format!("{root}/{dir}")),
+            name: name.into(),
+            is_dir: true,
+            dst_dir: dst.map(|d| Location::new("/", format!("{root}/{d}"))),
+            size: None,
+            overwrite: false,
+        };
+        let finished = |id| loop {
+            match rx.recv_timeout(Duration::from_secs(20)).expect("event") {
+                Event::JobStarted { id: started, engine, .. } if started == id => {
+                    assert_eq!(engine, Engine::Host);
+                }
+                Event::Jobs(snaps) => {
+                    if let Some(end) = snaps.into_iter().find_map(|s| s.finished) {
+                        return end;
+                    }
+                }
+                _ => {}
+            }
+        };
+        exec.submit(1, entry(OpKind::Delete, "", "old", None), "operations/purge", json!({}));
+        assert_eq!(finished(1), Ok(()));
+        assert!(!tmp.path().join("old").exists());
+        exec.submit(2, entry(OpKind::Move, "from", "dir", Some("to")), api::COPY, json!({}));
+        assert_eq!(finished(2), Ok(()));
+        assert!(tmp.path().join("to/dir/in").is_dir() && !tmp.path().join("from/dir").exists());
+        // What is not there to move is an error, in the command's own words.
+        exec.submit(3, entry(OpKind::Move, "from", "dir", Some("to")), api::COPY, json!({}));
+        assert!(finished(3).is_err());
+        exec.shutdown();
+        assert!(b.calls_to("operations/purge").is_empty() && b.calls_to(api::COPY).is_empty());
     }
 
     #[test]

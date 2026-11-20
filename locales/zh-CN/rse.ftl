@@ -410,6 +410,10 @@ rsync-stopped = rsync 已停止；传到一半的文件已保留，下次运行�
 rsync-not-started = 无法启动 rsync：{ $error }
 rsync-exit = rsync 失败（退出码 { $code }）
 rsync-signal = rsync 被信号 { $signal } 终止
+host-stopped = 没做完就被停止了；已经删除或移动的部分保持现状
+host-not-started = 无法启动命令：{ $error }
+host-exit = 命令失败（退出码 { $code }）
+host-signal = 命令被信号 { $signal } 终止
 internal-lock = 内部锁已损坏
 
 ## 按键（帮助页），每个动作一条

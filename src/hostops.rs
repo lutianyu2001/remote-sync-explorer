@@ -1,0 +1,489 @@
+//! Deletes and moves inside one machine, carried out by that machine's own `rm` and `mv`:
+//! on the local disk, or on a server reached through the system ssh, over the master
+//! connection rse already holds. rclone would list a directory and delete it file by file,
+//! each a round trip to the server; `rm -rf` on the server takes one.
+//!
+//! The command is an sh script handed to the login shell as `exec /bin/sh -c '…'`, which
+//! every common one (sh, bash, zsh, fish, tcsh) passes on unchanged: the script holds no
+//! single quote, no `!`, and no backslash but before a digit. Paths are spelt in octal
+//! escapes, so any name passes.
+//!
+//! Stopping: rse keeps the command's standard input open. A watcher in the script reads it
+//! and ends `rm` or `mv` when it closes, which is when the ssh that carries the command is
+//! stopped, so the work on the server stops with it.
+
+use std::collections::HashMap;
+use std::fmt::Write as _;
+use std::io::{self, Read};
+use std::os::unix::process::CommandExt;
+use std::process::{Child, ChildStdin, Command, ExitStatus, Stdio};
+use std::sync::{Arc, Mutex};
+use std::thread::JoinHandle;
+use std::time::{Duration, Instant};
+
+use crate::terminal::ShellDir;
+
+/// How long a command asked to stop may take before it is killed.
+const STOP_TIME: Duration = Duration::from_secs(10);
+/// How long what a command said is waited for after it ended.
+const DRAIN_TIME: Duration = Duration::from_secs(1);
+/// How long a server may take to say whether it has sh.
+const PROBE_TIME: Duration = Duration::from_secs(10);
+/// What a server with sh answers the probe.
+const PROBE: &str = "rse-sh";
+/// What is kept of what a command said.
+const SAID_MAX: usize = 16 * 1024;
+
+/// What the machine is asked to do.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Op {
+    /// Remove the entry, with all it holds.
+    Delete(ShellDir),
+    /// Rename the entry `from` to `to`, which must not exist.
+    Move { from: ShellDir, to: ShellDir },
+}
+
+/// Sets the shell variable `name` to the path of `dir`, spelt in octal. The `x` keeps a
+/// name ending in a line break whole through `$(…)`.
+fn assign(script: &mut String, name: &str, dir: &ShellDir) {
+    let (path, home) = match dir {
+        ShellDir::Absolute(path) => (path, ""),
+        ShellDir::Home(path) => (path, "$HOME/"),
+    };
+    let mut octal = String::new();
+    for b in path.bytes() {
+        let _ = write!(octal, "\\0{b:03o}");
+    }
+    let _ = write!(
+        script,
+        r#"{name}=$(printf "%b" "{octal}"; echo x); {name}="{home}${{{name}%x}}"; "#
+    );
+}
+
+/// The command line that carries `op` out, for a login shell. `None` for a path that names
+/// nothing, which `rm -rf` must never be given.
+pub fn command(op: &Op) -> Option<String> {
+    let named = |dir: &ShellDir| match dir {
+        ShellDir::Absolute(path) => !path.trim_matches('/').is_empty(),
+        ShellDir::Home(path) => !path.is_empty(),
+    };
+    // The watcher: when standard input closes, it ends the command, which `exec` has put
+    // in this shell's place, so that `$$` is its pid. It holds none of the command's
+    // output, and so keeps no connection open once the command is done.
+    let mut script = String::from(r"exec 3<&0; ( read x <&3; kill $$ ) >/dev/null 2>&1 & ");
+    match op {
+        Op::Delete(entry) => {
+            if !named(entry) {
+                return None;
+            }
+            assign(&mut script, "s", entry);
+            script.push_str(r#"exec rm -rf -- "$s""#);
+        }
+        Op::Move { from, to } => {
+            if !named(from) || !named(to) {
+                return None;
+            }
+            assign(&mut script, "s", from);
+            assign(&mut script, "d", to);
+            // `mv` would put the entry inside a directory of the target's name.
+            script.push_str(
+                r#"if test -e "$d" || test -L "$d"; then echo "mv: the target exists" >&2; exit 1; fi; exec mv -- "$s" "$d""#,
+            );
+        }
+    }
+    Some(format!("exec /bin/sh -c '{script}'"))
+}
+
+/// Which machines have sh, by the command that runs a command line on them.
+#[derive(Debug, Default)]
+pub struct Hosts {
+    known: Mutex<HashMap<Vec<String>, bool>>,
+}
+
+impl Hosts {
+    /// Whether the machine that `run` reaches has `/bin/sh`, asked once. A machine that
+    /// does not answer is asked again the next time.
+    pub fn has_sh(&self, run: &[String]) -> bool {
+        if let Some(known) = self.known.lock().ok().and_then(|known| known.get(run).copied()) {
+            return known;
+        }
+        let Some(answer) = probe(run) else { return false };
+        if let Ok(mut known) = self.known.lock() {
+            known.insert(run.to_vec(), answer);
+        }
+        answer
+    }
+}
+
+/// Asks the machine `run` reaches for sh; `None` when it does not answer in time.
+fn probe(run: &[String]) -> Option<bool> {
+    let (program, args) = run.split_first()?;
+    let mut child = Command::new(program)
+        .args(args)
+        .arg(format!("exec /bin/sh -c 'echo {PROBE}'"))
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .ok()?;
+    let deadline = Instant::now() + PROBE_TIME;
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => break,
+            Ok(None) if Instant::now() < deadline => std::thread::sleep(Duration::from_millis(20)),
+            _ => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return None;
+            }
+        }
+    }
+    let mut out = String::new();
+    child.stdout.take()?.read_to_string(&mut out).ok()?;
+    Some(out.trim() == PROBE)
+}
+
+/// A command at work on its machine. Dropping it stops the command.
+pub struct Running {
+    child: Child,
+    /// Held open while the command runs: closing it is what stops the command's work on
+    /// a server.
+    stdin: Option<ChildStdin>,
+    said: Arc<Mutex<Vec<u8>>>,
+    reader: Option<JoinHandle<()>>,
+    /// How the command ended, and when that was seen.
+    exit: Option<(ExitStatus, Instant)>,
+    stopped: bool,
+    kill_at: Option<Instant>,
+}
+
+impl Running {
+    /// Starts `command` with `run`, the command that runs a command line on the machine.
+    ///
+    /// # Errors
+    /// Fails when the program of `run` cannot be started.
+    pub fn spawn(run: &[String], command: &str) -> io::Result<Self> {
+        let (program, args) = run.split_first().ok_or(io::ErrorKind::InvalidInput)?;
+        let mut child = Command::new(program)
+            .args(args)
+            .arg(command)
+            // Messages as they are read here.
+            .env("LC_ALL", "C")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
+            // A process group of its own: the terminal's signals stay away from it, and
+            // stopping reaches all it started.
+            .process_group(0)
+            .spawn()?;
+        let said = Arc::new(Mutex::new(Vec::new()));
+        let reader = child.stderr.take().and_then(|mut pipe| {
+            let said = said.clone();
+            std::thread::Builder::new()
+                .name("host command output".to_owned())
+                .spawn(move || {
+                    let mut buf = [0u8; 4096];
+                    while let Ok(n) = pipe.read(&mut buf) {
+                        let Ok(mut said) = said.lock() else { return };
+                        if n == 0 {
+                            return;
+                        }
+                        let room = SAID_MAX.saturating_sub(said.len());
+                        said.extend_from_slice(&buf[..n.min(room)]);
+                    }
+                })
+                .ok()
+        });
+        let stdin = child.stdin.take();
+        Ok(Self { child, stdin, said, reader, exit: None, stopped: false, kill_at: None })
+    }
+
+    /// How the command ended, once it has and what it said is read.
+    pub fn poll(&mut self) -> Option<Result<(), String>> {
+        if self.exit.is_none() {
+            match self.child.try_wait() {
+                Ok(Some(status)) => {
+                    self.exit = Some((status, Instant::now()));
+                    // The watcher, left reading it, ends too.
+                    self.stdin = None;
+                }
+                _ if self.kill_at.is_some_and(|at| Instant::now() >= at) => {
+                    self.signal(rustix::process::Signal::KILL);
+                    self.kill_at = None;
+                }
+                _ => {}
+            }
+        }
+        let (status, seen) = self.exit?;
+        let read = self.reader.as_ref().is_none_or(JoinHandle::is_finished);
+        if !read && !self.stopped && seen.elapsed() < DRAIN_TIME {
+            return None;
+        }
+        Some(self.result(status))
+    }
+
+    fn result(&self, status: ExitStatus) -> Result<(), String> {
+        use std::os::unix::process::ExitStatusExt;
+        // Finished before the stop reached it: done all the same.
+        if status.success() {
+            return Ok(());
+        }
+        if self.stopped {
+            return Err(tr!("host-stopped"));
+        }
+        let said = self.said.lock().map(|said| String::from_utf8_lossy(&said).trim().to_owned());
+        match (said, status.code()) {
+            (Ok(said), _) if !said.is_empty() => Err(said),
+            (_, Some(code)) => Err(tr!("host-exit", code = code.to_string())),
+            (_, None) => {
+                Err(tr!("host-signal", signal = status.signal().unwrap_or_default().to_string()))
+            }
+        }
+    }
+
+    /// Asks the command to stop, without waiting: [`poll`](Self::poll) kills it if it is
+    /// still running `STOP_TIME` later.
+    pub fn terminate(&mut self) {
+        if self.exit.is_some() || self.stopped {
+            return;
+        }
+        self.stopped = true;
+        // First what stops the work on a server, then the processes here.
+        self.stdin = None;
+        self.signal(rustix::process::Signal::TERM);
+        self.kill_at = Some(Instant::now() + STOP_TIME);
+    }
+
+    /// Stops the command and waits for it to end, killing it after `STOP_TIME`.
+    pub fn stop(&mut self) {
+        if self.exit.is_some() {
+            return;
+        }
+        self.terminate();
+        let deadline = self.kill_at.unwrap_or_else(|| Instant::now() + STOP_TIME);
+        let status = loop {
+            match self.child.try_wait() {
+                Ok(Some(status)) => break Some(status),
+                Ok(None) if Instant::now() < deadline => {
+                    std::thread::sleep(Duration::from_millis(20));
+                }
+                _ => {
+                    self.signal(rustix::process::Signal::KILL);
+                    break self.child.wait().ok();
+                }
+            }
+        };
+        self.exit = status.map(|s| (s, Instant::now()));
+    }
+
+    /// Sends `signal` to the command's process group; only while the command is not yet
+    /// waited for, when the group's number cannot be another's.
+    fn signal(&self, signal: rustix::process::Signal) {
+        use rustix::process::{Pid, kill_process_group};
+        if self.exit.is_none() {
+            let _ = kill_process_group(Pid::from_child(&self.child), signal);
+        }
+    }
+}
+
+impl Drop for Running {
+    fn drop(&mut self) {
+        self.stop();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+    use std::os::unix::ffi::OsStrExt;
+    use std::path::Path;
+
+    use super::*;
+
+    fn sh() -> Vec<String> {
+        vec!["/bin/sh".to_owned(), "-c".to_owned()]
+    }
+
+    fn absolute(path: &Path) -> ShellDir {
+        ShellDir::Absolute(String::from_utf8(path.as_os_str().as_bytes().to_vec()).unwrap())
+    }
+
+    fn finish(mut run: Running) -> Result<(), String> {
+        let deadline = Instant::now() + Duration::from_secs(20);
+        loop {
+            if let Some(result) = run.poll() {
+                return result;
+            }
+            assert!(Instant::now() < deadline, "the command did not end");
+            std::thread::sleep(Duration::from_millis(10));
+        }
+    }
+
+    fn run(op: &Op) -> Result<(), String> {
+        finish(Running::spawn(&sh(), &command(op).unwrap()).unwrap())
+    }
+
+    /// Names a shell would read otherwise than as they are.
+    const NAMES: &[&str] = &[
+        "plain",
+        "two words",
+        "-rf",
+        "quote'd \"twice\"",
+        "$HOME `id` $(id)",
+        "back\\slash\\0101",
+        "line\nbreak\n",
+        "star * ? [a]",
+        "中文 名字",
+        "!bang ~tilde #hash ;semi &amp |pipe",
+    ];
+
+    #[test]
+    fn the_script_keeps_to_what_every_login_shell_passes_on() {
+        let dir = ShellDir::Absolute("/tmp/it's a \\ ! name".to_owned());
+        for op in [Op::Delete(dir.clone()), Op::Move { from: dir.clone(), to: dir.clone() }] {
+            let command = command(&op).unwrap();
+            let script = command.strip_prefix("exec /bin/sh -c '").unwrap();
+            let script = script.strip_suffix('\'').unwrap();
+            assert!(!script.contains('\'') && !script.contains('!'), "{script}");
+            let after: Vec<char> =
+                script.split('\\').skip(1).filter_map(|s| s.chars().next()).collect();
+            assert!(after.iter().all(char::is_ascii_digit), "{script}");
+        }
+    }
+
+    #[test]
+    fn a_path_that_names_nothing_gets_no_command() {
+        for dir in ["", "/", "//"] {
+            assert_eq!(command(&Op::Delete(ShellDir::Absolute(dir.to_owned()))), None, "{dir:?}");
+        }
+        assert_eq!(command(&Op::Delete(ShellDir::Home(String::new()))), None);
+        let named = ShellDir::Absolute("/a".to_owned());
+        let home = ShellDir::Home(String::new());
+        assert_eq!(command(&Op::Move { from: named.clone(), to: home.clone() }), None);
+        assert_eq!(command(&Op::Move { from: home, to: named }), None);
+    }
+
+    #[test]
+    fn entries_of_any_name_are_deleted_with_all_they_hold() {
+        let tmp = tempfile::tempdir().unwrap();
+        for name in NAMES {
+            let entry = tmp.path().join(name);
+            fs::create_dir_all(entry.join("deep/er")).unwrap();
+            fs::write(entry.join("deep/er/file"), "x").unwrap();
+            fs::write(tmp.path().join("kept"), "x").unwrap();
+            run(&Op::Delete(absolute(&entry))).unwrap();
+            assert!(!entry.exists(), "{name:?}");
+            assert!(tmp.path().join("kept").exists(), "{name:?}");
+        }
+        // A file, a link (not what it leads to), and what is not there.
+        let (file, link) = (tmp.path().join("file"), tmp.path().join("link"));
+        fs::write(&file, "x").unwrap();
+        std::os::unix::fs::symlink(tmp.path().join("kept"), &link).unwrap();
+        for entry in [&file, &link, &tmp.path().join("missing")] {
+            run(&Op::Delete(absolute(entry))).unwrap();
+            assert!(fs::symlink_metadata(entry).is_err());
+        }
+        assert!(tmp.path().join("kept").exists());
+    }
+
+    #[test]
+    fn entries_of_any_name_are_moved_but_never_onto_another() {
+        let tmp = tempfile::tempdir().unwrap();
+        let (a, b) = (tmp.path().join("a"), tmp.path().join("b"));
+        fs::create_dir_all(&a).unwrap();
+        fs::create_dir_all(&b).unwrap();
+        for name in NAMES {
+            fs::create_dir_all(a.join(name).join("in")).unwrap();
+            let op = Op::Move { from: absolute(&a.join(name)), to: absolute(&b.join(name)) };
+            run(&op).unwrap();
+            assert!(!a.join(name).exists() && b.join(name).join("in").is_dir(), "{name:?}");
+            // Again, with the target there: refused, and nothing put inside it.
+            fs::create_dir_all(a.join(name)).unwrap();
+            let error = run(&op).unwrap_err();
+            assert_eq!(error, "mv: the target exists", "{name:?}");
+            assert!(a.join(name).exists() && !b.join(name).join(name).exists(), "{name:?}");
+        }
+        // A link that leads nowhere is a target all the same.
+        std::os::unix::fs::symlink("nowhere", b.join("dangling")).unwrap();
+        fs::write(a.join("dangling"), "x").unwrap();
+        let op =
+            Op::Move { from: absolute(&a.join("dangling")), to: absolute(&b.join("dangling")) };
+        assert!(run(&op).is_err());
+        assert!(a.join("dangling").exists());
+    }
+
+    #[test]
+    fn a_path_in_the_login_directory_starts_there() {
+        let tmp = tempfile::tempdir().unwrap();
+        fs::create_dir_all(tmp.path().join("old/in")).unwrap();
+        let command = command(&Op::Delete(ShellDir::Home("old".to_owned()))).unwrap();
+        // Its input held open, as `Running` holds it.
+        let mut child = Command::new("/bin/sh")
+            .arg("-c")
+            .arg(command)
+            .env("HOME", tmp.path())
+            .stdin(Stdio::piped())
+            .spawn()
+            .unwrap();
+        // Not `wait`, which closes the input first.
+        let status = loop {
+            match child.try_wait().unwrap() {
+                Some(status) => break status,
+                None => std::thread::sleep(Duration::from_millis(10)),
+            }
+        };
+        assert!(status.success());
+        assert!(!tmp.path().join("old").exists());
+    }
+
+    #[test]
+    fn what_the_command_says_is_the_error() {
+        let tmp = tempfile::tempdir().unwrap();
+        let from = absolute(&tmp.path().join("missing"));
+        let error = run(&Op::Move { from, to: absolute(&tmp.path().join("b")) }).unwrap_err();
+        assert!(error.contains("missing"), "{error}");
+    }
+
+    /// Closing the command's input, which is all a stopped ssh does to the server's side,
+    /// ends the command there.
+    #[test]
+    fn a_command_ends_when_its_input_closes() {
+        let script = command(&Op::Delete(ShellDir::Absolute("/nonexistent/x".to_owned())))
+            .unwrap()
+            .replace(r#"exec rm -rf -- "$s""#, "exec sleep 60");
+        let mut child = Command::new("/bin/sh")
+            .arg("-c")
+            .arg(script)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap();
+        std::thread::sleep(Duration::from_millis(200));
+        assert!(child.try_wait().unwrap().is_none(), "ended with its input open");
+        drop(child.stdin.take());
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while child.try_wait().unwrap().is_none() {
+            assert!(Instant::now() < deadline, "still running with its input closed");
+            std::thread::sleep(Duration::from_millis(10));
+        }
+    }
+
+    #[test]
+    fn a_stopped_command_says_so() {
+        let mut run = Running::spawn(&sh(), "exec sleep 60").unwrap();
+        run.terminate();
+        assert_eq!(finish(run), Err(tr!("host-stopped")));
+    }
+
+    #[test]
+    fn a_machine_is_asked_once_whether_it_has_sh() {
+        let hosts = Hosts::default();
+        assert!(hosts.has_sh(&sh()));
+        assert!(hosts.has_sh(&sh()));
+        // One whose shell runs nothing as sh would.
+        let other = vec!["/bin/sh".to_owned(), "-c".to_owned(), "true".to_owned()];
+        assert!(!hosts.has_sh(&other));
+        assert!(!hosts.has_sh(&["/nonexistent/program".to_owned()]));
+    }
+}

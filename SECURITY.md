@@ -293,6 +293,19 @@ names.
   name rsync would read otherwise than ssh does, as a local path or another server, is
   left to rclone. A file rsync is stopped in the middle of is kept in `.rse-partial/`
   beside its target, and rclone's `*.rse-partial` files are never copied as the user's.
+- **The machine's own `rm` and `mv`** carry out a delete, and a move to a name not taken,
+  inside the local disk or one sftp remote reached through the system ssh, when the
+  machine has `/bin/sh` (asked once, through the master connection); with
+  `jobs.engine = "rclone"` they never run. The command is a fixed sh script handed to the
+  login shell as `exec /bin/sh -c '…'`, with no single quote, `!` or backslash but before
+  a digit in it, so sh, bash, zsh, fish and tcsh pass it on unchanged; the paths are spelt
+  in octal escapes and reach `rm` and `mv` after `--`, as one argument each, so no name is
+  read as an option, a second command or another path. A path that names nothing (the
+  root, the login directory) gets no command. `mv` runs only after the script has seen
+  that the target does not exist, link or not; between that look and the move another
+  program can still create it, as with any `mv`. The command's input is held open by rse,
+  and a watcher in the script ends `rm` or `mv` when it closes, so stopping the job stops
+  the work on the server too; what was deleted or moved by then stays so.
 - **The saved queue.** Unfinished jobs are kept in `$XDG_STATE_HOME/rse/queue.json`
   (else `~/.local/state/rse/`), in a directory created `0700`, written `0600` to a new
   file then renamed over the old one. A server opened by address is saved without its

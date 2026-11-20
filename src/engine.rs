@@ -1,12 +1,14 @@
 //! Which program carries out a copy or move: rsync between the local disk and an sftp
 //! server reached through the system ssh that has an `rsync` of its own, when the local one
-//! is rsync 3.1 or newer ([`rsync::usable`]); rclone for everything else (other remotes,
-//! two servers, a server rclone's built-in ssh reaches).
+//! is rsync 3.1 or newer ([`rsync::usable`]); the machine's own `rm` and `mv` for a delete or
+//! a move inside the local disk or one such server ([`hostops`]); rclone for everything else
+//! (other remotes, two servers, a server rclone's built-in ssh reaches).
 
 use std::ffi::OsString;
 use std::sync::Arc;
 
 use crate::config::EngineChoice;
+use crate::hostops::{self, Hosts, Op as HostOp};
 use crate::jobs::{Engine, OpKind, Transfer};
 use crate::location::Location;
 use crate::rclone::RpcError;
@@ -23,6 +25,8 @@ pub struct Engines {
     pub checksum: bool,
     /// Whether terminals may run on servers; off, [`Self::shell`] reaches none.
     pub terminal: bool,
+    /// The machines known to have sh, for [`Self::host_command`].
+    hosts: Hosts,
     /// Tests: terminals run sh here instead of ssh.
     #[cfg(test)]
     pub local_shell: Option<ShellTarget>,
@@ -36,6 +40,7 @@ impl Default for Engines {
             choice: EngineChoice::Rclone,
             checksum: false,
             terminal: true,
+            hosts: Hosts::default(),
             #[cfg(test)]
             local_shell: None,
         }
@@ -49,6 +54,7 @@ impl Engines {
             choice,
             checksum,
             terminal: true,
+            hosts: Hosts::default(),
             #[cfg(test)]
             local_shell: None,
         }
@@ -75,6 +81,33 @@ impl Engines {
             Some(ssh) => ssh.shell(&loc.fs),
             None => Ok(None),
         }
+    }
+
+    /// The command that carries `t` out on the machine it happens on, and the command that
+    /// runs it there: a delete, or a move to a name not taken, on the local disk or on a
+    /// server reached through the system ssh that has sh. `None` leaves `t` to the other
+    /// engines: with rclone chosen for everything, for a copy, between two machines, or
+    /// for a move onto what the user chose to replace (which rclone merges). May open the
+    /// master connection to the server.
+    pub fn host_command(&self, t: &Transfer) -> Option<(Vec<String>, String)> {
+        if self.choice != EngineChoice::Auto || t.name.is_empty() {
+            return None;
+        }
+        let target = if t.src_dir.is_local() {
+            ShellTarget::local(&t.src_dir.fs)
+        } else {
+            self.ssh.as_ref()?.shell(&t.src_dir.fs).ok().flatten()?
+        };
+        let entry = |dir: &Location| target.dir(&dir.join(&t.name).path);
+        let op = match (t.kind, &t.dst_dir) {
+            (OpKind::Delete, _) => HostOp::Delete(entry(&t.src_dir)),
+            (OpKind::Move, Some(dst)) if dst.fs == t.src_dir.fs && !t.overwrite => {
+                HostOp::Move { from: entry(&t.src_dir), to: entry(dst) }
+            }
+            _ => return None,
+        };
+        let command = hostops::command(&op)?;
+        self.hosts.has_sh(&target.run).then_some((target.run, command))
     }
 
     /// The engine of copies and moves between `a` and `b`, either way. May open the
@@ -143,6 +176,47 @@ mod tests {
             overwrite: false,
         };
         assert_eq!(e.rsync_args(&t), None);
+    }
+
+    fn transfer(kind: OpKind, src: &str, dst: Option<Location>, overwrite: bool) -> Transfer {
+        Transfer {
+            kind,
+            src_dir: Location::new("/", src),
+            name: "a b".into(),
+            is_dir: true,
+            dst_dir: dst,
+            size: None,
+            overwrite,
+        }
+    }
+
+    /// A delete, and a move to a free name, inside the local disk are the disk's own to do.
+    #[test]
+    fn deletes_and_moves_inside_the_local_disk_run_there() {
+        let e = Engines::new(None, EngineChoice::Auto, false);
+        let (run, command) =
+            e.host_command(&transfer(OpKind::Delete, "tmp/x", None, false)).unwrap();
+        assert_eq!(run, ["/bin/sh", "-c"]);
+        assert!(command.ends_with(r#"exec rm -rf -- "$s"'"#), "{command}");
+        let there = Some(Location::new("/", "tmp/y"));
+        let (_, command) =
+            e.host_command(&transfer(OpKind::Move, "tmp/x", there.clone(), false)).unwrap();
+        assert!(command.ends_with(r#"exec mv -- "$s" "$d"'"#), "{command}");
+        // Not a copy, a move onto what is to be replaced, or one to another machine.
+        assert_eq!(e.host_command(&transfer(OpKind::Copy, "tmp/x", there.clone(), false)), None);
+        assert_eq!(e.host_command(&transfer(OpKind::Move, "tmp/x", there.clone(), true)), None);
+        let nas = Some(Location::new("nas:", "x"));
+        assert_eq!(e.host_command(&transfer(OpKind::Move, "tmp/x", nas, false)), None);
+        // Nor on a remote the system ssh does not reach, nor with rclone chosen for all.
+        let mut remote = transfer(OpKind::Delete, "x", None, false);
+        remote.src_dir = Location::new("nas:", "x");
+        assert_eq!(e.host_command(&remote), None);
+        let rclone = Engines::new(None, EngineChoice::Rclone, false);
+        assert_eq!(rclone.host_command(&transfer(OpKind::Delete, "tmp/x", None, false)), None);
+        assert_eq!(
+            Engines::default().host_command(&transfer(OpKind::Delete, "x", None, false)),
+            None
+        );
     }
 
     /// Turned off, terminals reach no server, whatever else could reach it.

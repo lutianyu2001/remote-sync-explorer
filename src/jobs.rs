@@ -60,6 +60,8 @@ pub struct Transfer {
 pub enum Engine {
     Rclone,
     Rsync,
+    /// The machine's own `rm` and `mv` (see [`crate::hostops`]).
+    Host,
 }
 
 impl Engine {
@@ -67,6 +69,7 @@ impl Engine {
         match self {
             Self::Rclone => "rclone",
             Self::Rsync => "rsync",
+            Self::Host => "sh",
         }
     }
 }

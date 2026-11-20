@@ -13,6 +13,7 @@ pub mod exec;
 #[cfg(fuzzing)]
 pub mod fuzz;
 pub mod hitmap;
+pub mod hostops;
 pub mod jobs;
 pub mod keymap;
 pub mod location;

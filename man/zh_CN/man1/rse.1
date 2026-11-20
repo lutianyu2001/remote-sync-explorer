@@ -51,7 +51,7 @@ rse \- remote-sync-explorer，本地磁盘、服务器与 rclone 远程的双栏
 （\fB[5]\fR）：正在进行和等待的任务数，然后每个任务一行。
 .TP
 \fB按键提示\fR
-最常用的按键；点击即执行。最右端反色显示两个窗格之间复制时会用的引擎：\fBrsync\fR 或 \fBrclone\fR。
+最常用的按键；点击即执行。最右端反色显示两个窗格之间复制时会用的引擎：\fBrsync\fR 或 \fBrclone\fR。在本地磁盘内部、或同一台经由系统 ssh 访问的服务器内部删除，或者移动到一个没被占用的名字，用的是那台机器自己的 \fBrm \-rf\fR 或 \fBmv\fR：一条命令，而不是 rclone 那样逐个文件询问服务器。
 .TP
 \fB消息行\fR
 在最底部：上一个操作的结果（“未选择任何项”、错误），几秒后或按键、点击后消失，错误留得更久。刚加入队列的任务如果在这段时间内都结束了，消息会换成结果。输入法在这里显示正在输入的内容。
@@ -373,7 +373,7 @@ language = "auto"        # "en"、"zh\-CN"，或跟随系统
 [jobs]
 max_concurrent = 2       # 同时运行的任务数
 poll_ms = 500            # 进度刷新间隔
-engine = "auto"          # 或 "rclone"：不用 rsync
+engine = "auto"          # 或 "rclone"：不用 rsync，也不用机器自己的 rm 和 mv
 checksum = false         # 按校验和比较文件
 
 [keys]

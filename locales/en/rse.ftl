@@ -431,6 +431,10 @@ rsync-stopped = rsync was stopped; the file it was in the middle of is kept, and
 rsync-not-started = rsync could not be started: { $error }
 rsync-exit = rsync failed (exit code { $code })
 rsync-signal = rsync was ended by signal { $signal }
+host-stopped = stopped before it was done; what was already deleted or moved stays so
+host-not-started = the command could not be started: { $error }
+host-exit = the command failed (exit code { $code })
+host-signal = the command was ended by signal { $signal }
 internal-lock = internal lock poisoned
 
 ## Key bindings (the help screen), one per action in the keymap

@@ -267,6 +267,7 @@ fn rsync_through_the_master_connection() {
     moves(&remote, &local, &server);
     relative_paths(&ssh, &fs_name, &remote, &local, &server);
     the_job_worker_chooses_rsync(&ssh, &fs_name, &local, &server);
+    the_server_deletes_and_moves_what_is_on_it(&ssh, &fs_name, &server);
     assert_eq!(logins(work.path()), 1, "every transfer through the one login");
 }
 
@@ -443,4 +444,47 @@ fn the_job_worker_chooses_rsync(ssh: &Arc<SystemSsh>, fs_name: &str, local: &Pat
     exec.shutdown();
     assert_eq!((engine, finished), (Some(Engine::Rsync), Some(Ok(()))));
     assert_eq!(fs::read_to_string(server.join("by-job/one file.txt")).unwrap(), "local file");
+}
+
+/// A delete and a move inside the server are the server's own `rm` and `mv`, run through
+/// the master connection, whatever the names.
+fn the_server_deletes_and_moves_what_is_on_it(ssh: &Arc<SystemSsh>, fs_name: &str, server: &Path) {
+    let name = "it's a $HOME `tree` -rf";
+    fs::create_dir_all(server.join("ops/old").join(name).join("deep")).unwrap();
+    fs::write(server.join("ops/old").join(name).join("deep/file"), "x").unwrap();
+    fs::create_dir_all(server.join("ops/new")).unwrap();
+    let engines = Engines::new(Some(ssh.clone()), EngineChoice::Auto, false);
+    let (tx, rx) = unbounded();
+    let exec = Exec::spawn_with(ssh.clone(), tx, 1, Duration::from_millis(50), engines);
+    let at = |dir: &str| Location::new(fs_name, server.join(dir).to_str().unwrap());
+    let finish = |id, transfer: Transfer| {
+        let (method, params) = transfer.rc_call().unwrap();
+        exec.submit(id, transfer, method, params);
+        let deadline = Instant::now() + Duration::from_secs(30);
+        let (mut engine, mut finished) = (None, None);
+        while finished.is_none() && Instant::now() < deadline {
+            match rx.recv_timeout(Duration::from_millis(200)) {
+                Ok(Event::JobStarted { engine: e, .. }) => engine = Some(e),
+                Ok(Event::Jobs(snaps)) => finished.clone_from(&snaps[0].finished),
+                _ => {}
+            }
+        }
+        assert_eq!((engine, finished), (Some(Engine::Host), Some(Ok(()))));
+    };
+    let entry = |kind, dir: &str, dst: Option<&str>| Transfer {
+        kind,
+        src_dir: at(dir),
+        name: name.to_owned(),
+        is_dir: true,
+        dst_dir: dst.map(at),
+        size: None,
+        overwrite: false,
+    };
+    finish(1, entry(OpKind::Move, "ops/old", Some("ops/new")));
+    assert!(server.join("ops/new").join(name).join("deep/file").exists());
+    assert!(!server.join("ops/old").join(name).exists());
+    finish(2, entry(OpKind::Delete, "ops/new", None));
+    assert!(!server.join("ops/new").join(name).exists());
+    assert!(server.join("ops/new").exists() && server.join("ops/old").exists());
+    exec.shutdown();
 }
