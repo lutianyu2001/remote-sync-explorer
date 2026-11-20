@@ -16,7 +16,7 @@ const THIRD_PARTY: &str = include_str!(concat!(env!("OUT_DIR"), "/third-party-li
 // Per project: where a development build's reader finds the texts.
 const ELSEWHERE: &str = "This is a development build, which carries no third-party license \
 texts: a release build prints them here, and each release archive holds them in \
-third-party/. They are the licenses of the dependencies in Cargo.lock and librse/go.sum.";
+third-party/. They are the licenses of the dependencies in Cargo.lock and librclone-rse/go.sum.";
 
 /// Shows the texts: in a pager when standard output is a terminal, as `git log` and `man`
 /// do, else written out as they are. The third-party texts come last and unchanged, so

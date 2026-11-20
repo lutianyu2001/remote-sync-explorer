@@ -119,7 +119,7 @@ pub fn move_dir_params(src_fs: &str, dst_fs: &str) -> Value {
     json!({ "srcFs": src_fs, "dstFs": dst_fs, "createEmptySrcDirs": true, "deleteEmptySrcDirs": true })
 }
 
-/// rse's own copy and move (`librse/resume`): it skips files the target already has, and
+/// rse's own copy and move (`librclone-rse/resume`): it skips files the target already has, and
 /// resumes a file a stopped or failed job left half done where the target allows it (see
 /// [`resumable`]). Runs as a job, like `sync/copy`, with stats in [`job_group`].
 pub const COPY: &str = "rse/copy";

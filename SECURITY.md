@@ -17,7 +17,7 @@ a known vulnerability in it; nothing is updated without the user's choice.
 | Review | Every Rust file with `unsafe` has a review in `audit/reviews/` whose sha256 matches the file as it is | `cargo xtask review` |
 | AddressSanitizer | The integration tests, which call into librclone, built with AddressSanitizer: invalid memory accesses and leaks at run time (Linux) | `cargo xtask asan` |
 | Unit and integration tests | Exhaustive checks of the parsers on short inputs; ssh logins against a private `sshd` | `cargo test` |
-| Go vet and tests | rse's own rc calls in `librse/` (resumed transfers), against the local backend and an sftp server in the test binary | `cd librse && go vet ./... && go test ./...` |
+| Go vet and tests | rse's own rc calls in `librclone-rse/` (resumed transfers), against the local backend and an sftp server in the test binary | `cd librclone-rse && go vet ./... && go test ./...` |
 | Fuzzing | The parsers of untrusted text (below), against panics, hangs and broken invariants; `fuzz/` is a workspace of its own | `cargo xtask fuzz` |
 | Kani | Proofs for every input: mouse hit-testing never overflows (3 s, 105 MiB); key names are never cut inside a character, up to 7 bytes (75 s, 1008 MiB) | `cargo xtask kani` |
 | Miri | Undefined behaviour in the tests of the pure modules, dependencies included | `cargo xtask miri` |

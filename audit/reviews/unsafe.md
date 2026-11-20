@@ -14,7 +14,7 @@ rse's `unsafe` code is calls with no safe form: into librclone (`src/rclone/ffi.
 `bind_textdomain_codeset` (`src/i18n.rs`), `sigaction` and signal-hook-registry's `register` (`src/signals.rs`), and
 two `CommandExt::pre_exec` closures (`src/rclone/system_ssh.rs`, `src/terminal.rs`); `src/main.rs` calls the one
 `unsafe fn`, and places a constructor with `#[unsafe(link_section)]`. Each reviewer checked every block and
-`// SAFETY:` comment against the sources: librse/main.go and rclone v1.75.2's librclone, the Go 1.27.3 runtime (cgo
+`// SAFETY:` comment against the sources: librclone-rse/main.go and rclone v1.75.2's librclone, the Go 1.27.3 runtime (cgo
 calls, package initialisation, signal handling), glibc 2.39's headers and manual pages, POSIX, std's process code
 and the vendored rustix 1.1.5, crossterm 0.29.0, signal-hook-registry 1.4.8, rpassword 7.5.4 and ureq 3.5.0, and
 for macOS Apple's Libc-1752.120.2 and xnu-12377.121.6; and the build's checks of the hand-written declarations.

@@ -155,8 +155,8 @@ What this does not show:
 - 60 of the 128 crates in the default build use `unsafe` code. That code rests on its
   authors and on the audits above, not on rse's tests, Miri or Kani.
 - The rclone compiled into rse is Go code, which none of these checks covers but for
-  rse's own rc calls in `librse/`, which `go vet` and `go test` check; Go checks its
-  modules against `librse/go.sum` when it downloads them.
+  rse's own rc calls in `librclone-rse/`, which `go vet` and `go test` check; Go checks its
+  modules against `librclone-rse/go.sum` when it downloads them.
 - Kani proves a property only up to its bound, and fuzzing tries samples. Not proved: the
   decoding of obscured passwords, and the readers of addresses, ssh options, connection
   strings and the config file; tests of every short input and fuzzing check them.
@@ -186,7 +186,7 @@ What this does not show:
    cargo install --locked rse
    ```
 
-The first build compiles rclone, with rse's own additions from `librse/`, which takes a
+The first build compiles rclone, with rse's own additions from `librclone-rse/`, which takes a
 minute or more. The binary is around 90–115 MB because it contains all of rclone. The
 build checks `librclone.h` against the hand-written bindings and fails if rclone ever
 changes the four exported functions; on glibc, it checks the one libintl function rse
@@ -203,7 +203,7 @@ Build-time environment variables, for either way of building:
 
 | Variable | Effect |
 |----------|--------|
-| `RSE_RCLONE_VERSION` | Build against another rclone version (default: the `v1.75.2` that `librse/go.mod` pins); Go downloads it |
+| `RSE_RCLONE_VERSION` | Build against another rclone version (default: the `v1.75.2` that `librclone-rse/go.mod` pins); Go downloads it |
 | `RSE_LIBRCLONE_DIR` | Directory with a prebuilt `librclone.a` and `librclone.h`; skips the Go build entirely (offline builds, packaging) |
 | `GO` | The Go binary to use |
 | `GOTOOLCHAIN` | Passed to Go as is; when unset, rse sets it to `local` so an old Go fails clearly instead of downloading a toolchain |
@@ -796,7 +796,7 @@ its own machine.
 cargo test                       # unit, snapshot and integration tests
 cargo clippy --all-targets       # pedantic, unwrap_used and expect_used are errors
 cargo fmt --check
-(cd librse && go vet ./... && go test ./...)   # rse's own rc calls, built into librclone
+(cd librclone-rse && go vet ./... && go test ./...)   # rse's own rc calls, built into librclone
 ```
 
 - Unit tests drive the interface logic with a fake backend; screen snapshots are kept

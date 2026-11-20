@@ -33,7 +33,7 @@ RUST_FEATURE_FLAGS=""
 # Per project: the directory of each Go main package compiled into the release (go-licenses
 # reads that package and what it imports, not the rest of its module; for cmd/<x>, that
 # directory), relative to the repository's root, separated by spaces; empty without Go.
-GO_MODULES="librse"
+GO_MODULES="librclone-rse"
 # Per project: the module path of the project's own Go code, which is under the project's
 # license and left out; empty without Go.
 OWN_GO="github.com/lutianyu2001/remote-sync-explorer"

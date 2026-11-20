@@ -103,7 +103,7 @@ rse 经手密码、ssh 登录和远端服务器上的文件，所以它的代码
 
 - Rust 排除的是 rse 自己代码里的内存错误，不排除逻辑错误；逻辑错误靠审查和测试去找。
 - 默认构建的 128 个 crate 里有 60 个用了 `unsafe` 代码。这些代码靠的是它们的作者和上面的审计，不在 rse 的测试、Miri 和 Kani 的范围内。
-- 编译进 rse 的 rclone 是 Go 代码，上面的审计都不覆盖它，只有 `librse/` 里 rse 自己的 rc 调用有 `go vet` 和 `go test` 检查；Go 下载模块时会按 `librse/go.sum` 校验。
+- 编译进 rse 的 rclone 是 Go 代码，上面的审计都不覆盖它，只有 `librclone-rse/` 里 rse 自己的 rc 调用有 `go vet` 和 `go test` 检查；Go 下载模块时会按 `librclone-rse/go.sum` 校验。
 - Kani 只在界限以内证明，fuzz 只是抽样。没有证明的：混淆密码的解码，以及地址、ssh 选项、连接字符串和配置文件的读取；它们由所有短输入的测试和 fuzz 检查。
 
 ## 前置要求
@@ -127,7 +127,7 @@ rse 经手密码、ssh 登录和远端服务器上的文件，所以它的代码
    cargo install --locked rse
    ```
 
-首次构建会编译 rclone 和 `librse/` 里 rse 自己加的部分，需要一分钟以上。因为包含了整个 rclone，二进制文件约 90–115 MB。构建时会用 `librclone.h` 核对手写的绑定，rclone 导出的四个函数一旦变化，构建就会失败；在 glibc 上，rse 手写声明的那个 libintl 函数也会这样核对。
+首次构建会编译 rclone 和 `librclone-rse/` 里 rse 自己加的部分，需要一分钟以上。因为包含了整个 rclone，二进制文件约 90–115 MB。构建时会用 `librclone.h` 核对手写的绑定，rclone 导出的四个函数一旦变化，构建就会失败；在 glibc 上，rse 手写声明的那个 libintl 函数也会这样核对。
 
 ### 从源码构建
 
@@ -140,7 +140,7 @@ cargo build --release --locked
 
 | 变量 | 作用 |
 |----------|--------|
-| `RSE_RCLONE_VERSION` | 换用其他 rclone 版本构建（默认是 `librse/go.mod` 固定的 `v1.75.2`）；Go 会下载它 |
+| `RSE_RCLONE_VERSION` | 换用其他 rclone 版本构建（默认是 `librclone-rse/go.mod` 固定的 `v1.75.2`）；Go 会下载它 |
 | `RSE_LIBRCLONE_DIR` | 存放预先构建好的 `librclone.a` 和 `librclone.h` 的目录；完全跳过 Go 构建（离线构建、打包） |
 | `GO` | 使用的 Go 程序 |
 | `GOTOOLCHAIN` | 原样传给 Go；未设置时 rse 将其设为 `local`，这样 Go 版本过旧时会直接报错，而不是去下载工具链 |
@@ -474,7 +474,7 @@ rse --forget-password <user>@<host>
 cargo test                       # unit, snapshot and integration tests
 cargo clippy --all-targets       # pedantic, unwrap_used and expect_used are errors
 cargo fmt --check
-(cd librse && go vet ./... && go test ./...)   # rse's own rc calls, built into librclone
+(cd librclone-rse && go vet ./... && go test ./...)   # rse's own rc calls, built into librclone
 ```
 
 - 单元测试用假的后端驱动界面逻辑；界面快照用 [insta](https://insta.rs) 保存（有意修改后运行 `cargo insta review`）。

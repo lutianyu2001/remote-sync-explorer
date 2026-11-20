@@ -27,7 +27,7 @@
   cp Cargo.lock fuzz/ && cargo --config net.offline=false vendor --versioned-dirs --sync fuzz/Cargo.toml vendor
   ```
 - The Rust side ends there. The default build also compiles rclone with Go, from the
-  module in `librse/`: librclone's four C functions, as rclone builds them, and rse's
+  module in `librclone-rse/`: librclone's four C functions, as rclone builds them, and rse's
   own rc calls (see SECURITY.md). Its `go.mod` pins rclone (build.rs checks that it is
   the version build.rs names) and its committed `go.sum` holds the checksums of every
   module, so Go downloads exactly those from the Go module proxy on the first build,
@@ -46,16 +46,16 @@
   `scripts/third-party-licenses.sh` from the same lock files as the build, and checks the
   program prints them (`scripts/check-embedded-licenses.sh`). Other builds print a note.
 - A release archive also holds them in `third-party/` (`licenses.txt`,
-  `rust-licenses.html`, `GPL-3.0.txt`, `go/librse/` and the list `go-licenses.csv`).
+  `rust-licenses.html`, `GPL-3.0.txt`, `go/librclone-rse/` and the list `go-licenses.csv`).
 - Go links everything statically, and a few of the modules rclone brings in ask more of a
   binary than their license texts:
   - `github.com/cloudsoda/sddl`, under LGPL-3.0, comes in through rclone's SMB backend.
     The LGPL lets users run rse with a modified version of it: its source is in
-    `third-party/go/librse/github.com/cloudsoda/sddl/`, and rse's own source is public,
+    `third-party/go/librclone-rse/github.com/cloudsoda/sddl/`, and rse's own source is public,
     so rse can be rebuilt with a modified copy, for example through a `replace`
-    directive in `librse/go.mod`.
+    directive in `librclone-rse/go.mod`.
   - `github.com/hashicorp/errwrap`, `go-cleanhttp`, `go-multierror`, `go-retryablehttp`
-    and `go-uuid`, under MPL-2.0: their source is in `third-party/go/librse/` as well.
+    and `go-uuid`, under MPL-2.0: their source is in `third-party/go/librclone-rse/` as well.
 
 ## Audit
 

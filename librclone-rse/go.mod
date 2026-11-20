@@ -1,4 +1,4 @@
-module github.com/lutianyu2001/remote-sync-explorer/librse
+module github.com/lutianyu2001/remote-sync-explorer/librclone-rse
 
 go 1.26.0
 

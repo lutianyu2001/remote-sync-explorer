@@ -1,9 +1,9 @@
-//! Builds librclone as a static C archive from the Go module in `librse/`: rclone at a
-//! pinned version, with rse's own rc calls added (see `librse/main.go`).
+//! Builds librclone as a static C archive from the Go module in `librclone-rse/`: rclone at a
+//! pinned version, with rse's own rc calls added (see `librclone-rse/main.go`).
 //!
 //! Environment:
 //! - `RSE_RCLONE_VERSION` overrides the pinned rclone version: Go fetches it, in a copy
-//!   of `librse/go.mod` in `OUT_DIR`.
+//!   of `librclone-rse/go.mod` in `OUT_DIR`.
 //! - `RSE_LIBRCLONE_DIR` points at a directory that already holds `librclone.a` and
 //!   `librclone.h`; the Go build is skipped entirely.
 //! - `GO` names the Go binary (default `go` from `PATH`).
@@ -25,14 +25,14 @@ use std::process::{Command, Stdio};
 use proc_macro2::{Delimiter, Group, TokenStream, TokenTree};
 
 /// The rclone version this release of remote-sync-explorer is built and tested against.
-/// `librse/go.mod` requires the same.
+/// `librclone-rse/go.mod` requires the same.
 const RCLONE_VERSION: &str = "v1.75.2";
 
 /// Bump when the go build flags change, so cached libraries are rebuilt.
 const STAMP_REV: u32 = 4;
 
 /// The Go module librclone is built from, in the package.
-const LIBRSE: &str = "librse";
+const GO_MODULE: &str = "librclone-rse";
 
 /// The declarations `src/rclone/ffi.rs` writes by hand. `librclone.h` must contain
 /// exactly these, otherwise the build fails.
@@ -115,7 +115,7 @@ fn main() {
     check_sources();
     third_party_licenses();
     // A directory: cargo looks at every file in it.
-    println!("cargo:rerun-if-changed={LIBRSE}");
+    println!("cargo:rerun-if-changed={GO_MODULE}");
     println!("cargo:rerun-if-env-changed=RSE_RCLONE_VERSION");
     println!("cargo:rerun-if-env-changed=RSE_LIBRCLONE_DIR");
     println!("cargo:rerun-if-env-changed=GO");
@@ -242,11 +242,11 @@ fn target_cc(goos: &str, goarch: &str) -> Option<String> {
 /// same version and sources for the same target.
 fn build_librclone(version: &str, target: &GoTarget) -> PathBuf {
     let out_dir = PathBuf::from(env_or_panic("OUT_DIR"));
-    let src = PathBuf::from(env_or_panic("CARGO_MANIFEST_DIR")).join(LIBRSE);
+    let src = PathBuf::from(env_or_panic("CARGO_MANIFEST_DIR")).join(GO_MODULE);
     let pinned = go_mod_rclone(&src);
     assert!(
         pinned == RCLONE_VERSION,
-        "{LIBRSE}/go.mod requires rclone {pinned}, build.rs pins {RCLONE_VERSION}"
+        "{GO_MODULE}/go.mod requires rclone {pinned}, build.rs pins {RCLONE_VERSION}"
     );
     let dir = out_dir.join(format!("librclone-{version}"));
     let stamp = dir.join("stamp");
@@ -272,14 +272,14 @@ fn build_librclone(version: &str, target: &GoTarget) -> PathBuf {
     fs::create_dir_all(&dir).unwrap_or_else(|e| panic!("cannot create {}: {e}", dir.display()));
 
     let go = env::var("GO").unwrap_or_else(|_| "go".to_owned());
-    // The pinned version builds from librse/go.sum as it is; another one from a copy,
+    // The pinned version builds from librclone-rse/go.sum as it is; another one from a copy,
     // so that the package itself is never written to.
     let mut module_flags = vec!["-mod=readonly".to_owned()];
     if version != RCLONE_VERSION {
         let modfile = dir.join("go.mod");
         for name in ["go.mod", "go.sum"] {
             fs::copy(src.join(name), dir.join(name))
-                .unwrap_or_else(|e| panic!("cannot copy {LIBRSE}/{name}: {e}"));
+                .unwrap_or_else(|e| panic!("cannot copy {GO_MODULE}/{name}: {e}"));
         }
         let modfile_flag = format!("-modfile={}", modfile.display());
         let module = format!("github.com/rclone/rclone@{version}");

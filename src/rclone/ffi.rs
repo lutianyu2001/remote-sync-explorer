@@ -80,7 +80,7 @@ pub fn initialize() {
 #[cfg(all(target_os = "linux", target_env = "gnu"))]
 #[allow(unsafe_code)]
 pub fn wait_for_go() {
-    // SAFETY: RcloneFreeString is `C.free` (librse/main.go), and freeing a null pointer does
+    // SAFETY: RcloneFreeString is `C.free` (librclone-rse/main.go), and freeing a null pointer does
     // nothing (C11 7.22.3.3); as an exported function it first waits for Go's initialisation.
     unsafe { RcloneFreeString(std::ptr::null_mut()) }
 }
@@ -127,7 +127,7 @@ pub fn rpc(method: &str, input: &str) -> Result<(i32, String), CallError> {
         return Err(CallError::ShutDown);
     }
     // SAFETY: both pointers are valid NUL-terminated strings that outlive the call, and Go
-    // copies them (C.GoString, librse/main.go) and keeps neither. The lock held for reading
+    // copies them (C.GoString, librclone-rse/main.go) and keeps neither. The lock held for reading
     // keeps `finalize` from running meanwhile.
     let ret = unsafe { RcloneRPC(method.as_ptr().cast_mut(), input.as_ptr().cast_mut()) };
     drop(finalized);

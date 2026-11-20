@@ -1,12 +1,12 @@
 #!/bin/sh
-# Builds librclone.a and librclone.h into DIR from the Go module in librse/, the same
+# Builds librclone.a and librclone.h into DIR from the Go module in librclone-rse/, the same
 # way build.rs does, so that RSE_LIBRCLONE_DIR=DIR can skip the Go build (CI caching,
 # packaging, offline builds).
 #
 #   scripts/build-librclone.sh DIR [VERSION]
 #
-# VERSION defaults to RCLONE_VERSION in build.rs, which librse/go.mod pins; another one
-# is fetched into a copy of librse/go.mod, as RSE_RCLONE_VERSION does for build.rs.
+# VERSION defaults to RCLONE_VERSION in build.rs, which librclone-rse/go.mod pins; another one
+# is fetched into a copy of librclone-rse/go.mod, as RSE_RCLONE_VERSION does for build.rs.
 set -eu
 
 dir=${1:?usage: $0 DIR [VERSION]}
@@ -19,7 +19,7 @@ go=${GO:-go}
 mkdir -p "$dir"
 dir=$(cd "$dir" && pwd)
 export CGO_ENABLED=1 GOTOOLCHAIN=${GOTOOLCHAIN:-local} GOWORK=off
-cd "$here/librse"
+cd "$here/librclone-rse"
 if [ "$version" = "$pinned" ]; then
     set -- -mod=readonly
 else

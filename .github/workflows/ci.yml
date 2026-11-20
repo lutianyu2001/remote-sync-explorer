@@ -56,13 +56,13 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/librclone
-          key: librclone-${{ runner.os }}-${{ steps.rclone.outputs.version }}-${{ hashFiles('scripts/build-librclone.sh', 'librse/**') }}
+          key: librclone-${{ runner.os }}-${{ steps.rclone.outputs.version }}-${{ hashFiles('scripts/build-librclone.sh', 'librclone-rse/**') }}
       - name: Build librclone
         if: steps.librclone.outputs.cache-hit != 'true'
         run: scripts/build-librclone.sh ~/librclone
       # rse's own rc calls, which the archive adds to rclone's.
-      - name: Go checks and tests of librse
-        working-directory: librse
+      - name: Go checks and tests of librclone-rse
+        working-directory: librclone-rse
         run: |
           test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
           go vet ./...
