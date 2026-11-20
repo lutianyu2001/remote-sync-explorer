@@ -26,6 +26,7 @@ transfers go on from where they stopped wherever the target allows it.
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
+- [Which Program Does What](#which-program-does-what)
 - [Configuration](#configuration)
 - [Languages](#languages)
 - [SFTP Through OpenSSH](#sftp-through-openssh)
@@ -590,6 +591,49 @@ servers, for when no shell should be opened from rse.
   links and keeps times and permissions.
 - On macOS, rclone clones files that are copied within one APFS volume instead of
   copying their bytes, so such copies finish at once.
+
+## Which Program Does What
+
+sftp, and rclone working through it, have two slow habits that this routing is there to
+avoid:
+
+- **A round trip per file**: rclone deletes, and compares before a merge, with a request
+  per file that waits for the server's answer (a few at once, one per connection), so a
+  tree of many small files takes about as many round trips as it has files.
+- **Downloading and uploading again**: sftp has no copy, so rclone copies a file inside
+  one server by downloading it to this machine and uploading it back.
+
+So wherever the machine that holds the files can do the job itself, it does: one command
+(`rm -rf`, `mv`, `cp`, its own rsync) instead of a request per file, and the data never
+leaves the server. Every job goes to the first program in this table that can carry it
+out. "A server"
+means an sftp server reached through the system ssh (see
+[SFTP Through OpenSSH](#sftp-through-openssh)); rse asks it once whether it has `sh`
+and an rsync it can use. "A free name" is a target nothing is at yet; a move onto what
+is there, or one in overwrite mode, merges instead.
+
+| Job | Where | Carried out by |
+|---|---|---|
+| Copy, move | Between the local disk and a server with rsync, when the local rsync is 3.1 or newer | rsync, through the server's login |
+| Copy | Inside a server with rsync 3.1 or newer | The server's rsync; nothing leaves the server |
+| Move onto what is there | Inside a server with rsync 3.1 or newer | The server's rsync |
+| Delete | On the local disk, or a server with `sh` | The machine's `rm -rf`, one command |
+| Move to a free name | Inside the local disk, or inside a server with `sh` | The machine's `mv`, one command |
+| Copy to a free name | Inside a server with `sh` but no usable rsync | The server's `cp`, without progress |
+| Copy, move onto what is there | Inside a server with `sh` but no usable rsync | rclone, comparing file by file; each file it copies is copied by the server's `cp` |
+| Delete | On a server without `sh` (an sftp-only account) | rse's own sftp, up to 64 requests under way at once |
+| Rename, new directory | Anywhere | rclone, one request: on the local disk and on any sftp server, one rename or one mkdir there, whatever the size of the directory |
+| Anything else | Copies inside the local disk, other remotes, two different servers, servers on rclone's built-in ssh, a server without `sh` (except deletes) | rclone |
+
+With `engine = "rclone"` under `[jobs]`, rclone carries out every job, and the
+machine's `rm`, `mv` and `cp` and rse's own sftp are never used. The bottom row of the
+screen names the program that copies between the two panes.
+
+How a server is logged in to decides which rows can apply: one reached through rclone's
+built-in ssh is "Anything else" for every job, so a copy inside it is downloaded and
+uploaded again and a delete is one round trip per file. rse uses the system ssh for an
+sftp server unless [one of the reasons for falling back](#fallback-to-rclones-built-in-ssh)
+applies.
 
 ## Configuration
 
