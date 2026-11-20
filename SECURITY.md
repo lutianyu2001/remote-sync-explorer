@@ -317,6 +317,15 @@ names.
   program can still create it, as with any `mv`. The command's input is held open by rse,
   and a watcher in the script ends `rm` or `mv` when it closes, so stopping the job stops
   the work on the server too; what was deleted or moved by then stays so.
+  On such a remote without `/bin/sh` (an account let in for sftp only), a delete is
+  carried out over sftp by rse itself, in a session of its own through the same master
+  connection, with many requests under way at once. It takes nothing the server lists
+  on trust: an entry called a directory is asked about again with `lstat`, which follows
+  no link, before it is listed, so a link is removed and never what it leads to; a
+  listed name that is not one path component (empty, `.`, `..`, with a `/` or a NUL) ends
+  the removal, so nothing outside the entry is reached; and a path that names nothing
+  (the root, the login directory) is never removed. A packet longer than 4 MiB ends it
+  too.
   A copy inside one such remote (never inside the local disk), and a move there onto what
   the user chose to replace, are the server's own rsync when `rsync --version` there names
   rsync 3.1 or newer (asked once): the command line rse builds for rsync between two

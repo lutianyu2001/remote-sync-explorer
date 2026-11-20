@@ -62,6 +62,11 @@ impl Drop for Sshd {
 
 /// A private sshd; with sftp when there is an sftp-server.
 fn start_sshd(dir: &Path, client_key: &Path) -> Option<(Sshd, u16)> {
+    start_sshd_with(dir, client_key, "")
+}
+
+/// A private sshd with `more` lines in its configuration.
+fn start_sshd_with(dir: &Path, client_key: &Path, more: &str) -> Option<(Sshd, u16)> {
     let sshd = Path::new("/usr/sbin/sshd");
     if !sshd.exists() {
         return None;
@@ -83,7 +88,7 @@ fn start_sshd(dir: &Path, client_key: &Path) -> Option<(Sshd, u16)> {
         format!(
             "Port {port}\nListenAddress 127.0.0.1\nHostKey {}\nAuthorizedKeysFile {}\n\
              PasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\n\
-             StrictModes no\nPidFile {}\n{subsystem}",
+             StrictModes no\nPidFile {}\n{subsystem}{more}",
             host_key.display(),
             dir.join("authorized_keys").display(),
             dir.join("sshd.pid").display(),
@@ -518,4 +523,83 @@ fn the_server_deletes_and_moves_what_is_on_it(ssh: &Arc<SystemSsh>, fs_name: &st
     assert!(!server.join("ops/new").join(name).exists());
     assert!(server.join("ops/new").exists() && server.join("ops/old").exists());
     exec.shutdown();
+}
+
+/// A server that lets the account in for sftp only runs no command, so it has no `rm` to
+/// ask for: what is deleted there is removed over sftp by rse itself, through the master
+/// connection, and rclone is asked for none of it.
+#[test]
+fn a_tree_on_a_server_without_a_shell_is_removed_over_sftp() {
+    if !have("ssh") || !have("ssh-keygen") {
+        eprintln!("skipped: ssh or ssh-keygen not installed");
+        return;
+    }
+    let work = socket_work_dir();
+    let key = keygen(work.path());
+    let sftp_only = "ForceCommand internal-sftp\n";
+    let Some((_sshd, port)) = start_sshd_with(work.path(), &key, sftp_only) else {
+        eprintln!("skipped: no sshd");
+        return;
+    };
+    let user = std::env::var("USER").unwrap_or_else(|_| "root".to_owned());
+    let embedded: Arc<dyn Backend> = Arc::new(Embedded::new());
+    let askpass = PathBuf::from(env!("CARGO_BIN_EXE_rse"));
+    let ssh = Arc::new(SystemSsh::new(embedded, &work.path().join("sockets"), Some(askpass)));
+    let _close = CloseMasters(ssh.clone());
+    ssh.set_prompter(Box::new(|question| {
+        assert!(question.confirm, "only the host key is asked about: {question:?}");
+        Some(SshAnswer { text: "yes".to_owned(), remember: false })
+    }));
+    let fs_name = format!(
+        ":sftp,host=127.0.0.1,port={port},user={user},key_file='{}',known_hosts_file='{}':",
+        key.display(),
+        work.path().join("known_hosts").display()
+    );
+
+    let server = work.path().join("server");
+    let name = "it's a $HOME `tree` -rf";
+    let tree = server.join(name);
+    for d in 0..5 {
+        let dir = tree.join(format!("dir {d}/deep"));
+        fs::create_dir_all(&dir).unwrap();
+        for f in 0..120 {
+            fs::write(dir.join(format!("file {f}")), "x").unwrap();
+        }
+    }
+    fs::write(server.join("kept"), "x").unwrap();
+    std::os::unix::fs::symlink(server.join("kept"), tree.join("link")).unwrap();
+
+    let engines = Engines::new(Some(ssh.clone()), EngineChoice::Auto, false);
+    let (tx, rx) = unbounded();
+    let exec = Exec::spawn_with(ssh.clone(), tx, 1, Duration::from_millis(50), engines);
+    let transfer = Transfer {
+        kind: OpKind::Delete,
+        src_dir: Location::new(&fs_name, server.to_str().unwrap()),
+        name: name.to_owned(),
+        is_dir: true,
+        dst_dir: None,
+        size: None,
+        overwrite: false,
+    };
+    let (method, params) = transfer.rc_call().unwrap();
+    exec.submit(1, transfer, method, params);
+    let deadline = Instant::now() + Duration::from_secs(60);
+    let (mut engine, mut finished, mut removed) = (None, None, 0);
+    while finished.is_none() && Instant::now() < deadline {
+        match rx.recv_timeout(Duration::from_millis(200)) {
+            Ok(Event::JobStarted { engine: e, .. }) => engine = Some(e),
+            Ok(Event::Jobs(snaps)) => {
+                removed = removed.max(snaps[0].stats.transfers);
+                finished.clone_from(&snaps[0].finished);
+            }
+            _ => {}
+        }
+    }
+    exec.shutdown();
+    assert_eq!((engine, finished), (Some(Engine::Sftp), Some(Ok(()))));
+    // 5 × (120 files + 2 directories), the link and the tree itself.
+    assert_eq!(removed, 5 * 122 + 2);
+    assert!(fs::symlink_metadata(&tree).is_err(), "the tree is gone");
+    assert!(server.join("kept").exists(), "what the link led to stays");
+    assert_eq!(logins(work.path()), 1, "through the one login");
 }

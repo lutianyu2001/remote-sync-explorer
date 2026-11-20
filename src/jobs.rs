@@ -64,6 +64,9 @@ pub enum Engine {
     Rsync,
     /// The machine's own `rm`, `mv` and `cp` (see [`crate::hostops`]).
     Host,
+    /// sftp spoken by rse itself, many requests at once, to remove what is on a server
+    /// that runs no command (see [`crate::librse::sftp`]).
+    Sftp,
 }
 
 impl Engine {
@@ -72,6 +75,7 @@ impl Engine {
             Self::Rclone => "rclone",
             Self::Rsync => "rsync",
             Self::Host => "sh",
+            Self::Sftp => "sftp",
         }
     }
 }

@@ -161,6 +161,8 @@ the system ssh is carried out by that machine's own
 or
 .BR mv ,
 which takes one command where rclone would ask the server about every file.
+On a server that runs no command (an account let in for sftp only), rse removes a directory
+over sftp itself, with up to 64 requests under way at once.
 A copy inside one such server, and a move onto what is already there, are carried out by
 the server's own rsync (3.1 or newer), where rclone would download every file and upload
 it again.

@@ -8,11 +8,14 @@
 //! - [`shell`]: a machine as a shell reaches it, and its directories.
 //! - [`command`]: the command lines, and one at work.
 //! - [`rsync`]: rsync's command line, and rsync at work with its progress read.
+//! - [`sftp`]: removing a tree over sftp alone, many requests under way at once, for a
+//!   server that runs no command.
 
 use std::fmt;
 
 pub mod command;
 pub mod rsync;
+pub mod sftp;
 pub mod shell;
 
 /// How a command that did not succeed ended.

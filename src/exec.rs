@@ -19,6 +19,7 @@ use crate::engine::Engines;
 use crate::event::{BrowseOp, Entry, Event, JobId, JobSnapshot, ReqId};
 use crate::hostops;
 use crate::jobs::{Engine, OpKind, Transfer};
+use crate::librse::sftp;
 use crate::location::{Location, endpoint_key};
 use crate::rclone::api::{self, Stats};
 use crate::rclone::{Backend, RpcError};
@@ -249,6 +250,7 @@ fn is_not_found(e: &RpcError) -> bool {
 enum Active {
     Rclone { rc_id: i64, stop_sent: bool },
     Host { run: Box<hostops::Running> },
+    Sftp { run: Box<sftp::Removal> },
     Rsync { run: Box<Running>, transfer: Transfer },
 }
 
@@ -287,6 +289,7 @@ fn job_worker(
                 }
                 Some(Active::Rsync { run, .. }) => run.terminate(),
                 Some(Active::Host { run }) => run.terminate(),
+                Some(Active::Sftp { run }) => run.terminate(),
                 None => {}
             },
             Err(RecvTimeoutError::Timeout) => {
@@ -308,6 +311,7 @@ fn job_worker(
                         }
                         Active::Rsync { run, .. } => run.stop(),
                         Active::Host { run } => run.stop(),
+                        Active::Sftp { run } => run.stop(),
                         Active::Rclone { .. } => {}
                     }
                 }
@@ -332,6 +336,15 @@ fn start(
             .map(|run| Active::Rsync { run: Box::new(run), transfer })
             .map_err(|e| tr!("rsync-not-started", error = e.to_string()));
         return (run, (Engine::Rsync, true));
+    }
+    if let Some((command, entry)) = engines.sftp_removal(&transfer) {
+        let run = match sftp::Removal::spawn(command, &entry) {
+            Some(Ok(run)) => Ok(Active::Sftp { run: Box::new(run) }),
+            Some(Err(e)) => Err(tr!("host-not-started", error = e.to_string())),
+            // A path that names nothing is rclone's to refuse.
+            None => Err(tr!("host-not-started", error = entry.shown())),
+        };
+        return (run, (Engine::Sftp, true));
     }
     if let Some((run, command)) = engines.host_command(&transfer) {
         let run = hostops::Running::spawn(&run, &command)
@@ -377,6 +390,11 @@ fn poll_jobs(backend: &dyn Backend, active: &mut BTreeMap<JobId, Active>) -> Vec
             Active::Rclone { rc_id, .. } => poll_rclone(backend, *rc_id),
             Active::Host { run } => {
                 (Stats::default(), run.poll().map(|end| end.map_err(hostops::said)))
+            }
+            Active::Sftp { run } => {
+                let transfers = i64::try_from(run.removed()).unwrap_or(i64::MAX);
+                let stats = Stats { transfers, ..Stats::default() };
+                (stats, run.poll().map(|end| end.map_err(hostops::said)))
             }
             Active::Rsync { run, transfer } => {
                 let (stats, finished) = run.poll();

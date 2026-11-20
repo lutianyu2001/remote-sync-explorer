@@ -121,6 +121,27 @@ impl Engines {
         self.hosts.has_sh(&target.run).then_some((target.run, command))
     }
 
+    /// How to remove what `t` deletes over sftp spoken by rse itself, many requests under
+    /// way at once: the command that starts the sftp subsystem on the server, and the
+    /// entry. For a delete on a server reached through the system ssh that has no sh, so
+    /// no `rm` to ask for ([`Self::host_command`]), where rclone would remove one file
+    /// at a time. May open the master connection to the server.
+    pub fn sftp_removal(&self, t: &Transfer) -> Option<(Vec<String>, ShellDir)> {
+        if self.choice != EngineChoice::Auto
+            || t.kind != OpKind::Delete
+            || t.name.is_empty()
+            || t.src_dir.is_local()
+        {
+            return None;
+        }
+        let target = self.ssh.as_ref()?.shell(&t.src_dir.fs).ok().flatten()?;
+        if self.hosts.has_sh(&target.run) {
+            return None;
+        }
+        let entry = target.dir(&t.src_dir.join(&t.name).path);
+        Some((crate::librse::sftp::subsystem(&target.run), entry))
+    }
+
     /// The server's own rsync for `t`, a transfer inside one server reached through the
     /// system ssh: its command line, and the command that runs it there. It carries out a
     /// copy, and a move onto what may be there ([`Transfer::overwrite`]), merging into

@@ -86,7 +86,11 @@ chance. Good designs, it seems, think alike. Not every key is the same, though:
   system ssh that has `rsync` (delta transfer, through the same login), rclone for
   everything else. A delete, or a move to a name not taken, inside the local disk or one
   such server is that machine's own `rm -rf` or `mv`, one command instead of rclone's
-  round trip for every file. A copy inside one such server, and a move onto what is
+  round trip for every file. A server that runs no command (an account let in for sftp
+  only) has no `rm` to ask for: there rse removes a directory over sftp itself, with up
+  to 64 requests under way at once in one session, where rclone sends one per
+  connection and waits for its answer.
+  A copy inside one such server, and a move onto what is
   already there, never leave the server, where rclone would download every file and
   upload it again: the server's own rsync (3.1 or newer) carries them out, with progress,
   resuming and the same merging as between two machines; a server without it copies to a
