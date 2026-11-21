@@ -1661,6 +1661,36 @@ fn wheel_scrolls_the_pane_under_the_pointer_without_focus() {
     assert_eq!(h.app.panes[1].offset, 3);
 }
 
+/// Over the transfer window, the wheel moves the cursor the way it moves a pane's entries:
+/// the turn that scrolls a view down (a finger pushed up under natural scrolling) moves it up.
+#[test]
+fn wheel_moves_the_transfer_cursor_with_the_content() {
+    let backend = Arc::new(FakeBackend::new(move |m, input| match m {
+        "operations/list" => Ok(json!({"list": if input["fs"] == "/home/sky" {
+            vec![file("a", 10), file("b", 10), file("c", 10)]
+        } else {
+            vec![]
+        }})),
+        "rse/copy" | "operations/copyfile" => Ok(json!({"jobid": 1})),
+        "job/status" => Ok(json!({"id": 1, "finished": false, "success": false})),
+        _ => Ok(json!({})),
+    }));
+    let mut h = Harness::new(backend, home(), nas());
+    for name in ["a", "b", "c"] {
+        select(&mut h, name);
+        h.press(KeyCode::F(5));
+        h.press(KeyCode::Enter);
+    }
+    h.wait_until(|a| a.queue.jobs.len() == 3);
+    let q = h.app.hitmap.queue;
+    let (x, y) = (q.x + 5, q.y + 2);
+    h.mouse_at(MouseEventKind::ScrollUp, x, y, KeyModifiers::NONE, Instant::now());
+    h.mouse_at(MouseEventKind::ScrollUp, x, y, KeyModifiers::NONE, Instant::now());
+    assert_eq!(h.app.queue_cursor, 2);
+    h.mouse_at(MouseEventKind::ScrollDown, x, y, KeyModifiers::NONE, Instant::now());
+    assert_eq!(h.app.queue_cursor, 1);
+}
+
 /// The wheel moves the view, not the highlight: the cursor stays on its entry out of view,
 /// and the view comes back to it when the cursor moves.
 #[test]
@@ -2408,8 +2438,9 @@ fn names_differing_only_in_case_conflict() {
 fn wheel_in_remote_picker_stops_at_the_last_choice() {
     let mut h = standard();
     h.press(KeyCode::Char('g'));
+    // The cursor goes the way the content of a pane would: down on the turn that scrolls up.
     for _ in 0..10 {
-        h.mouse_at(MouseEventKind::ScrollDown, 40, 12, KeyModifiers::NONE, Instant::now());
+        h.mouse_at(MouseEventKind::ScrollUp, 40, 12, KeyModifiers::NONE, Instant::now());
     }
     h.press(KeyCode::Enter);
     assert_eq!(h.app.panes[0].loc, Location::new("s3:", ""));
@@ -3161,9 +3192,11 @@ fn the_settings_page_shows_what_the_environment_sets_and_takes_clicks() {
     h.click(x, y + 6);
     assert!(settings_page(&h).menu.is_none());
     assert_eq!(settings_page(&h).rows[settings_page(&h).cursor].key, "ui.show_hidden");
-    // The wheel moves the cursor; a click outside closes the page.
-    h.mouse_at(MouseEventKind::ScrollDown, x, y, KeyModifiers::NONE, Instant::now());
+    // The wheel moves the cursor with the content; a click outside closes the page.
+    h.mouse_at(MouseEventKind::ScrollUp, x, y, KeyModifiers::NONE, Instant::now());
     assert_eq!(settings_page(&h).rows[settings_page(&h).cursor].key, "ui.mouse");
+    h.mouse_at(MouseEventKind::ScrollDown, x, y, KeyModifiers::NONE, Instant::now());
+    assert_eq!(settings_page(&h).rows[settings_page(&h).cursor].key, "ui.show_hidden");
     h.click(0, 0);
     assert_eq!(h.app.dialog, None);
 }

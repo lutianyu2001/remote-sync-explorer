@@ -476,6 +476,7 @@ Mouse support is on by default (`[ui] mouse = true`). Every mouse action also ha
 | Alt+click or Shift+click | Mark everything from the cursor to there, keep the other marks |
 | Double click | Open a directory; on `..` go up |
 | Wheel | Scroll the pane under the pointer (focus and cursor do not move) |
+| Wheel over the transfers, the remote picker or the settings | Move the cursor the way the content of a pane moves: up when a pane would scroll down |
 | Drag the scrollbar's thumb / click its track | Scroll that pane: the thumb follows the pointer / jumps there (focus, cursor and marks do not change) |
 | Click ▴ / ▾ at the scrollbar's ends | Scroll that pane up / down one row |
 | Click a column header (Name, Size, Modified) | Sort by it; again, the other way round |

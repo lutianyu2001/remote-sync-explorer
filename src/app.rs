@@ -2469,7 +2469,11 @@ impl App {
         }
     }
 
+    /// `down` is a turn of the wheel that scrolls a view down, carrying its content up.
     fn wheel(&mut self, at: (u16, u16), down: bool) {
+        // A cursor moves with the content, the way the finger goes under natural scrolling:
+        // the turn that carries a pane's entries up moves it up, to the job or choice above.
+        let next = !down;
         let choices = match &self.dialog {
             Some(Dialog::Remotes { filter, .. }) => self.remote_choices(filter).len(),
             _ => 0,
@@ -2486,9 +2490,9 @@ impl App {
                 }
                 Dialog::Remotes { cursor, .. } => {
                     let last = choices.saturating_sub(1);
-                    *cursor = if down { (*cursor + 1).min(last) } else { cursor.saturating_sub(1) };
+                    *cursor = if next { (*cursor + 1).min(last) } else { cursor.saturating_sub(1) };
                 }
-                Dialog::Settings(page) => page.step(if down { 1 } else { -1 }),
+                Dialog::Settings(page) => page.step(if next { 1 } else { -1 }),
                 _ => {}
             }
             return;
@@ -2500,7 +2504,7 @@ impl App {
         }
         if self.hitmap.queue.contains(ratatui::layout::Position::new(at.0, at.1)) {
             let last = self.queue.visible().len().saturating_sub(1);
-            self.queue_cursor = if down {
+            self.queue_cursor = if next {
                 (self.queue_cursor + 1).min(last)
             } else {
                 self.queue_cursor.saturating_sub(1)
