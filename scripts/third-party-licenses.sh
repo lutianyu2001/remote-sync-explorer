@@ -7,7 +7,8 @@
 #                            <dir> is its directory with / as _, root for "."),
 #   OUT/go-licenses.csv      with the list of them; first each is checked: a license not in
 #                            GO_ALLOWED fails the run, but in GO_ALLOWED_MODULES
-#   OUT/GPL-3.0.txt          the GPL-3.0's text, when an LGPL-3.0 library is among them
+#   OUT/GPL-3.0.txt          the GPL-3.0's text, when an LGPL-3.0 library is among them,
+#                            from scripts/license-texts/ (no download)
 #   OUT/licenses.txt         all of the above as plain text, one block a component (written
 #                            by scripts/notices.py), which a release build embeds in the
 #                            program to print (distribution.md)
@@ -17,8 +18,14 @@
 # Copied into a project as scripts/third-party-licenses.sh; only the lines marked
 # "Per project" change. Needs cargo-about (cargo install --locked --features cli
 # cargo-about@0.9.3) and, with GO_MODULES, go-licenses (go install
-# github.com/google/go-licenses@v1.6.0), at the versions the release job installs, python3
-# and curl.
+# github.com/google/go-licenses@v1.6.0), at the versions the release job installs, and
+# python3.
+#
+# scripts/license-texts/<SPDX id>.txt holds the official full texts of licenses the
+# dependencies require beside their own but do not carry, only those the project needs
+# (GPL-3.0.txt, for an LGPL-3.0 library). Licenses are versioned and rarely change, so they
+# are kept in the repository rather than downloaded at the release, which would make it
+# depend on the license's web site.
 set -eu
 
 # Per project: the Cargo.toml of the crate the artifact is built from, relative to the
@@ -108,7 +115,12 @@ rm -f "$out/.rust.json" "$out/.go-index"
 # LGPL-3.0 is a set of permissions added to the GPL-3.0, whose text it requires beside it
 # (section 4(b)); the libraries ship only the LGPL's.
 if grep -A1 'GNU LESSER GENERAL PUBLIC LICENSE' "$out/licenses.txt" | grep -q 'Version 3,'; then
-    curl -fsSL https://www.gnu.org/licenses/gpl-3.0.txt -o "$out/GPL-3.0.txt"
+    gpl="$here/scripts/license-texts/GPL-3.0.txt"
+    [ -f "$gpl" ] || {
+        echo "an LGPL-3.0 library needs the GPL-3.0's text beside it: put it in $gpl" >&2
+        exit 1
+    }
+    cp "$gpl" "$out/GPL-3.0.txt"
     head -5 "$out/GPL-3.0.txt" | grep -q 'GNU GENERAL PUBLIC LICENSE' &&
         head -5 "$out/GPL-3.0.txt" | grep -q 'Version 3, 29 June 2007' ||
         { echo "GPL-3.0.txt: not the GPL-3.0's text" >&2; exit 1; }

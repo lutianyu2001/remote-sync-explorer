@@ -262,10 +262,11 @@ const PROBES: [(&str, &str, &[&str]); 0] = [];
 // change to them changes no result. A directory counts with all under it. What every task
 // reads (the manifests, .cargo/, xtask/) counts whether listed or not. Here what the release
 // job runs to collect the license texts.
-const READ_BY_NO_TASK: [&str; 5] = [
+const READ_BY_NO_TASK: [&str; 6] = [
     "about.hbs",
     "about.toml",
     "scripts/check-embedded-licenses.sh",
+    "scripts/license-texts",
     "scripts/notices.py",
     "scripts/third-party-licenses.sh",
 ];
@@ -653,6 +654,7 @@ mod tests {
         );
         assert_eq!(reads("scripts/third-party-licenses.sh"), Vec::<&str>::new());
         assert_eq!(reads("scripts/notices.py"), Vec::<&str>::new());
+        assert_eq!(reads("scripts/license-texts/GPL-3.0.txt"), Vec::<&str>::new());
         let rust = only(&["review", "geiger", "miri", "asan", "coverage", "kani", "fuzz"]);
         assert_eq!(reads("src/lib.rs"), rust);
         let code = only(&["geiger", "miri", "asan", "coverage", "kani", "fuzz"]);

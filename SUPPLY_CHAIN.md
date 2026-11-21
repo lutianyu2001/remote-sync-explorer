@@ -45,6 +45,8 @@
   LGPL-3.0 below builds on: the release build embeds them, collected at the release by
   `scripts/third-party-licenses.sh` from the same lock files as the build, and checks the
   program prints them (`scripts/check-embedded-licenses.sh`). Other builds print a note.
+  The GPL-3.0's text comes from `scripts/license-texts/`, kept in the repository so
+  that the release downloads nothing.
 - A release archive also holds them in `third-party/` (`licenses.txt`,
   `rust-licenses.html`, `GPL-3.0.txt`, `go/librclone-rse/` and the list `go-licenses.csv`).
 - Go links everything statically, and a few of the modules rclone brings in ask more of a
