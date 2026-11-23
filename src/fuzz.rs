@@ -64,7 +64,7 @@ impl RsyncProgress {
     }
 
     pub fn stats(&self) -> crate::rclone::api::Stats {
-        self.0.stats()
+        crate::rsync::stats(self.0.stats())
     }
 
     pub fn total_bounds(&self) -> (u64, Option<u64>) {
