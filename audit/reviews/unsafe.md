@@ -1,14 +1,14 @@
 # Review of rse's unsafe code
 
-- file: src/i18n.rs sha256:5cc60b8a91bead370f4a5b6122db7f451301e679f7f9a6031ced794e04b02daf
-- file: src/main.rs sha256:d8472fffd9c78c026796f53be6bb34cc9e6240b469a74b8c445938d05a306476
-- file: src/rclone/ffi.rs sha256:b701e4ddee91f173439cc79cadd9ef79c0f775401d52551c86f2059838bc6d9a
-- file: src/rclone/system_ssh.rs sha256:999cf0696f65954c1238cf547e7f6e776494097db634f3c946ccc66313cda10d
+- file: src/i18n.rs sha256:22c013a782b04eae3eeabc207ace92aabe9a3323eb6ad1178db95a216d2d9e55
+- file: src/main.rs sha256:7701a1d7e30c5d881e9a7560b3113e85483013a1e906bb6592df79bc508988ce
+- file: src/rclone/ffi.rs sha256:c09893dfa8bce79aa12cf13f6272717ea1444a966d15ee2ced8cc58f90aa2cff
+- file: src/rclone/system_ssh.rs sha256:38b66d579ff2ee9a7e6e2a12c5cf8fd1edc4b529634f0ec0090c1c8d8ceeb60f
 - file: src/signals.rs sha256:e5614d52a244e3a5d8afc7111ba5268da002566d414211731bfac0c041bb8809
-- file: src/terminal.rs sha256:d7f7d8ae7cb1df69142e73758ae5fb5dd5896074c29cd3a3a2bb83bf32dbb658
-- reviewer: ten independent reviewers, each given the code alone, without the findings of the others: three of the code as it was, then one of it changed and one of it as committed; later two of the `SIGWINCH` handler installed before Go's runtime, as written and as committed, and one of the check of the Rust declarations in `build.rs`; last one of the compiler's check of those declarations, and one of the pseudo-terminal opened close-on-exec on macOS and of the `SIGWINCH` handler in every mode
-- date: 2026-11-09
-- commit: d54b9c0
+- file: src/terminal.rs sha256:70bfb2dbfea1f51b3eaca3c37b1f1960ca4ffec6d1ecfc676821d17ef0c3f026
+- reviewer: ten independent reviewers, each given the code alone, without the findings of the others: three of the code as it was, then one of it changed and one of it as committed; later two of the `SIGWINCH` handler installed before Go's runtime, as written and as committed, and one of the check of the Rust declarations in `build.rs`; last one of the compiler's check of those declarations, and one of the pseudo-terminal opened close-on-exec on macOS and of the `SIGWINCH` handler in every mode; then, on 2026-11-23, the maintainer reviewed the five files changed since, whose `unsafe` blocks were the same but for `wait_for_go` built on glibc alone and the Go module's new name in two `// SAFETY:` comments
+- date: 2026-11-23
+- commit: 541c3fe
 
 rse's `unsafe` code is calls with no safe form: into librclone (`src/rclone/ffi.rs`), `setlocale` and glibc's
 `bind_textdomain_codeset` (`src/i18n.rs`), `sigaction` and signal-hook-registry's `register` (`src/signals.rs`), and
