@@ -602,15 +602,20 @@ pub fn wrap(text: &str, w: usize) -> Vec<String> {
                     line.push_str(&word);
                     break;
                 }
-                let room = w.saturating_sub(width(&line) + sep);
+                // A line with no room even for the space takes nothing more, not even
+                // characters of no width, which would bring the space along.
+                let used = width(&line) + sep;
+                let room = w.saturating_sub(used);
                 let wide = width(&word) > word.chars().count();
-                let mut head = if wide || empty {
+                let mut head = if used <= w && (wide || empty) {
                     super::text::take_width(&word, room).to_owned()
                 } else {
                     String::new()
                 };
-                // A character wider than the line goes on one of its own, or this never ends.
+                // A character wider than the line goes on one of its own, or this never ends;
+                // without the indent, which would only make that line wider still.
                 if head.is_empty() && empty {
+                    line.clear();
                     word.graphemes(true).next().unwrap_or_default().clone_into(&mut head);
                 }
                 if !head.is_empty() {
@@ -634,6 +639,20 @@ pub fn wrap(text: &str, w: usize) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_character_too_wide_for_the_indent_goes_without_it() {
+        // A wide character, and a cluster of a jamo with a syllable, each fill a line of
+        // two cells on their own, but not after the indent's cell.
+        assert_eq!(wrap(" 中", 2), ["中"]);
+        assert_eq!(wrap(" \u{a96f}\u{ac38}", 2), ["\u{a96f}\u{ac38}"]);
+        assert_eq!(wrap(" 中文", 3), [" 中", " 文"]);
+    }
+
+    #[test]
+    fn a_full_line_takes_no_characters_of_no_width() {
+        assert_eq!(wrap("( \0中中", 1), ["(", "\0", "中", "中"]);
+    }
 
     #[test]
     fn breadcrumb_joins_the_levels() {
