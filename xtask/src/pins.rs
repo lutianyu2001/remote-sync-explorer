@@ -14,7 +14,7 @@ pub const STABLE: &str = "1.99.1";
 
 /// The cargo plugins: crate, version, and the cargo subcommand it adds.
 pub const TOOLS: [(&str, &str, &str); 6] = [
-    ("cargo-deny", "0.20.2", "deny"),
+    ("cargo-deny", "0.22.0", "deny"),
     ("cargo-vet", "0.10.3", "vet"),
     ("cargo-geiger", "0.14.0", "geiger"),
     ("cargo-fuzz", "0.13.2", "fuzz"),
