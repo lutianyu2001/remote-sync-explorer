@@ -2,7 +2,7 @@
 
 use std::borrow::Cow;
 
-use chrono::{DateTime, FixedOffset, Local};
+use jiff::{Timestamp, tz::TimeZone};
 use lazyui_ratatui::text::grapheme_width;
 // Measured the way ratatui draws text (per grapheme), as the windows and fields are.
 pub use lazyui_ratatui::text::{take_width, width};
@@ -147,11 +147,9 @@ pub fn format_eta(secs: f64) -> String {
 }
 
 /// `2026-10-22 02:32` in `tz`, or local time when `tz` is `None`.
-pub fn format_time(t: &DateTime<FixedOffset>, tz: Option<FixedOffset>) -> String {
-    match tz {
-        Some(tz) => t.with_timezone(&tz).format("%Y-%m-%d %H:%M").to_string(),
-        None => t.with_timezone(&Local).format("%Y-%m-%d %H:%M").to_string(),
-    }
+pub fn format_time(t: &Timestamp, tz: Option<&TimeZone>) -> String {
+    let tz = tz.cloned().unwrap_or_else(TimeZone::system);
+    t.to_zoned_datetime(tz).strftime("%Y-%m-%d %H:%M").to_string()
 }
 
 #[cfg(test)]
@@ -236,7 +234,7 @@ mod tests {
 
     #[test]
     fn time_in_given_zone() {
-        let t = DateTime::parse_from_rfc3339("2026-10-22T02:32:59+08:00").unwrap();
-        assert_eq!(format_time(&t, FixedOffset::east_opt(0)), "2026-10-21 18:32");
+        let t: Timestamp = "2026-10-22T02:32:59+08:00".parse().unwrap();
+        assert_eq!(format_time(&t, Some(&TimeZone::UTC)), "2026-10-21 18:32");
     }
 }

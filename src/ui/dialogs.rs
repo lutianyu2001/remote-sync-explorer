@@ -193,7 +193,9 @@ fn confirm_text(plan: &Plan, overwrite: bool) -> (String, Vec<(String, Style)>) 
 fn describe(app: &App, e: &Entry) -> String {
     let size = if e.is_dir { tr!("entry-dir") } else { human_size(e.size) };
     match &e.mtime {
-        Some(t) => tr!("entry-modified", size = size, time = format_time(t, app.display_tz)),
+        Some(t) => {
+            tr!("entry-modified", size = size, time = format_time(t, app.display_tz.as_ref()))
+        }
         None => size,
     }
 }

@@ -1,7 +1,7 @@
 //! Everything the UI thread receives, plus the plain data carried by those events.
 
-use chrono::{DateTime, FixedOffset};
 use crossterm::event::{KeyEvent, MouseEvent};
+use jiff::Timestamp;
 
 use crate::location::Location;
 use crate::rclone::RpcError;
@@ -20,7 +20,7 @@ pub struct Entry {
     pub is_dir: bool,
     /// Bytes; negative when the backend does not know.
     pub size: i64,
-    pub mtime: Option<DateTime<FixedOffset>>,
+    pub mtime: Option<Timestamp>,
 }
 
 impl Entry {
@@ -48,7 +48,7 @@ pub struct Mark {
 impl From<ListItem> for Entry {
     fn from(item: ListItem) -> Self {
         Self {
-            mtime: DateTime::parse_from_rfc3339(&item.mod_time).ok(),
+            mtime: item.mod_time.parse().ok(),
             name: item.name,
             is_dir: item.is_dir,
             size: item.size,

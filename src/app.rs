@@ -669,7 +669,7 @@ pub struct App {
     pub spinner: usize,
     pub quit: QuitState,
     /// Time zone for modification times; `None` means local time.
-    pub display_tz: Option<chrono::FixedOffset>,
+    pub display_tz: Option<jiff::tz::TimeZone>,
     exec: Exec,
     home: PathBuf,
     cwd: PathBuf,
@@ -995,7 +995,7 @@ impl App {
                 p.status = PaneStatus::Ready;
                 p.rebuild(show_hidden);
                 p.refresh = changes.map(|(added, removed, changed)| Refresh::Done {
-                    time: chrono::Local::now().format("%H:%M:%S").to_string(),
+                    time: jiff::ZonedDateTime::now().strftime("%H:%M:%S").to_string(),
                     added,
                     removed,
                     changed,
@@ -2174,7 +2174,7 @@ impl App {
     }
 
     pub fn log_error(&mut self, message: String) {
-        let time = chrono::Local::now().format("%H:%M:%S").to_string();
+        let time = jiff::ZonedDateTime::now().strftime("%H:%M:%S").to_string();
         self.errors.push_front(LogEntry { time, message });
         self.errors.truncate(ERROR_LOG_LEN);
     }

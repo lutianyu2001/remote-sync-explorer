@@ -162,7 +162,7 @@ impl Harness {
             settings: crate::settings::Source::none(),
         };
         let mut app = App::new(init, exec);
-        app.display_tz = chrono::FixedOffset::east_opt(0);
+        app.display_tz = Some(jiff::tz::TimeZone::UTC);
         let terminal = Terminal::new(TestBackend::new(w, h)).unwrap_or_else(|e| panic!("{e}"));
         let frame = Buffer::empty(Rect::new(0, 0, w, h));
         let mut h = Self {

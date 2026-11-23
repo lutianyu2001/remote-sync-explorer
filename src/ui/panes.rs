@@ -436,8 +436,11 @@ fn draw_list(buf: &mut Buffer, area: Rect, app: &App, id: PaneId, offset: usize,
                 let name = shown(&e.name);
                 let name = if e.is_dir { format!("{name}/") } else { name.into_owned() };
                 let size = if e.is_dir { tr!("dir-size") } else { human_size(e.size) };
-                let time =
-                    e.mtime.as_ref().map(|t| format_time(t, app.display_tz)).unwrap_or_default();
+                let time = e
+                    .mtime
+                    .as_ref()
+                    .map(|t| format_time(t, app.display_tz.as_ref()))
+                    .unwrap_or_default();
                 (name, size, time, e.is_dir)
             }
         };
