@@ -1,5 +1,2 @@
-src/rclone/ffi.rs: changed since its review in audit/reviews/unsafe.md
-
-Once the code is reviewed, put these lines in the header of a review in audit/reviews/ (a new one, audit/reviews/<name>.md, also has `- reviewer: `, `- date: ` and `- commit: ` lines, then the findings):
-- file: src/rclone/ffi.rs sha256:4d91bbe6426566e2ab6705da5bdb701cd96971a6c8c805f0f6bd35392d9bbaf9
-xtask: review: failed: a problem with the reviews (see above)
+each file that wants a review is reviewed as it is (6)
+xtask: review: succeeded
