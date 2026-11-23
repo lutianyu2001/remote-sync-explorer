@@ -105,11 +105,12 @@ pub enum Event {
     },
     Jobs(Vec<JobSnapshot>),
     /// A job has started, run by `engine`; `resumable` when a stop keeps what it has done
-    /// of the file under way.
+    /// of the file under way, `chunkable` when it can send its files in chunks.
     JobStarted {
         id: JobId,
         engine: crate::jobs::Engine,
         resumable: bool,
+        chunkable: bool,
     },
     /// Copies between these two endpoints (by `endpoint_key`, either way) run with
     /// `engine`.

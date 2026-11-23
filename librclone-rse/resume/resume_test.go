@@ -445,6 +445,7 @@ func TestResumable(t *testing.T) {
 		out, err := rc.Calls.Get("rse/resumable").Fn(context.Background(), rc.Params{"srcFs": "/", "dstFs": dst})
 		require.NoError(t, err, dst)
 		assert.Equal(t, want, out["resumable"], dst)
+		assert.Equal(t, false, out["chunked"], dst)
 	}
 	_, err := rc.Calls.Get("rse/resumable").Fn(context.Background(), rc.Params{"srcFs": "/", "dstFs": "nosuchremote:"})
 	assert.Error(t, err)

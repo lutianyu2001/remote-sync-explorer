@@ -397,6 +397,7 @@ fn run(cli: &Cli) -> Result<()> {
         ui: config.ui.clone(),
         keymap,
         max_concurrent: config.jobs.max_concurrent,
+        retry: config.jobs.retry_policy(),
         left,
         right,
         remotes,

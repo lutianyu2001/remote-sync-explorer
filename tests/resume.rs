@@ -166,7 +166,11 @@ fn resumable_answers_by_target() {
         (":sftp,host=box:/srv", false),
         (":memory:bucket", false),
     ] {
-        assert_eq!(api::resumable(&b, ":memory:bucket", dst), Ok(want), "{dst}");
+        assert_eq!(
+            api::resumable(&b, ":memory:bucket", dst).map(|t| t.resumable),
+            Ok(want),
+            "{dst}"
+        );
     }
     assert!(api::resumable(&b, "/", "nosuchremote:").is_err());
 }
@@ -300,7 +304,7 @@ fn upload_to_sftp_over_system_ssh_resumes_after_stop() {
     let embedded: Arc<dyn Backend> = Arc::new(Embedded::new());
     api::set_config_path(embedded.as_ref(), conf.to_str().unwrap()).unwrap();
     // Without the system ssh, rclone's built-in one cannot be resumed.
-    assert_eq!(api::resumable(embedded.as_ref(), "/", "box:"), Ok(false));
+    assert_eq!(api::resumable(embedded.as_ref(), "/", "box:").map(|t| t.resumable), Ok(false));
     let askpass: PathBuf = env!("CARGO_BIN_EXE_rse").into();
     let ssh = Arc::new(SystemSsh::new(embedded, &work.path().join("sockets"), Some(askpass)));
     let _close = CloseMasters(ssh.clone());
@@ -309,7 +313,7 @@ fn upload_to_sftp_over_system_ssh_resumes_after_stop() {
         Some(SshAnswer { text: "yes".to_owned(), remember: false })
     }));
     let b: &dyn Backend = ssh.as_ref();
-    assert_eq!(api::resumable(b, "/", "box:"), Ok(true));
+    assert_eq!(api::resumable(b, "/", "box:").map(|t| t.resumable), Ok(true));
 
     let local = tempfile::tempdir().unwrap();
     let content = data(16 * MIB, 4);

@@ -31,7 +31,9 @@ const (
 type job struct {
 	fsrc, fdst fs.Fs
 	// target writes partial files on fdst; nil when it cannot.
-	target             target
+	target target
+	// chunks says how to send files in chunks; nil sends them whole.
+	chunks             *chunking
 	move               bool
 	createEmptySrcDirs bool
 }
@@ -49,6 +51,18 @@ func (j *job) file(ctx context.Context, remote string, src fs.Object) error {
 		return nil
 	}
 	if dst != nil && !operations.NeedTransfer(ctx, dst, src) {
+		if j.move {
+			return operations.DeleteFile(ctx, src)
+		}
+		return nil
+	}
+	// Where partial files are not resumed, a large file goes in chunks when asked to,
+	// unless the target can copy it itself.
+	if j.chunks != nil && j.target == nil && src.Size() > j.chunks.size && chunkable(j.fdst) &&
+		!operations.SameConfig(src.Fs(), j.fdst) {
+		if err := j.chunkedCopy(ctx, remote, src); err != nil {
+			return err
+		}
 		if j.move {
 			return operations.DeleteFile(ctx, src)
 		}

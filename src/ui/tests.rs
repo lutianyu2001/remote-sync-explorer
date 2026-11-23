@@ -171,6 +171,8 @@ fn focused_queue_expands_with_current_file() {
     let mut h = harness(80, 24, "/home/sky/projects", projects());
     with_jobs(&mut h);
     h.app.focus = crate::app::Focus::Queue;
+    // The running job, under the newer one queued.
+    h.app.queue_cursor = 1;
     let screen = h.render().to_owned();
     assert!(screen.contains("↳ huge.bin"), "{screen}");
     insta::assert_snapshot!(screen);

@@ -81,7 +81,10 @@ to copy them, or
 .B F6
 to move them, into the directory the other pane shows.
 With nothing marked, the entry under the cursor is copied.
-The Transfers window shows each job; Ctrl+T enters it, to cancel or retry one.
+The Transfers window shows each job, the newest first; Ctrl+T enters it, to cancel or
+retry one.
+A job that fails is tried again by itself; if it still fails, a dialog asks whether to
+retry it now, in chunks, or later.
 .IP 5. 4
 .B ?
 shows every key on the screen;
@@ -530,6 +533,10 @@ Cancel it.
 .B r
 Retry it.
 .TP
+.B R
+Retry it in chunks, where its target puts a file together from them (see
+.BR "FAILURES AND RETRIES" ).
+.TP
 .B c
 Clear the finished jobs.
 .TP
@@ -633,6 +640,40 @@ A stopped transfer keeps what it has done as
 .I .rse\-partial/
 directory (rsync) beside the target; delete them if you give the transfer up.
 A move across remotes copies, then deletes the source.
+.SH FAILURES AND RETRIES
+A job that fails waits
+.B jobs.retry_delay
+seconds and runs again by itself, up to
+.B jobs.retries
+times; with
+.BR jobs.retry_backoff ,
+each further wait is twice the one before, up to 5 minutes.
+A waiting job shows in yellow with the time left, and each retry goes into the error log.
+A target that already has the job's name is not retried: that is asked about as a conflict.
+.PP
+A job that has failed every retry shows in red, the Transfers window's frame turns red,
+and a dialog lists the jobs that failed with their errors:
+.I Retry now
+tries them again at once (a file that can resume goes on where it stopped),
+.I Retry in chunks
+sends files larger than
+.B jobs.chunk_size
+MiB in chunks, each chunk sent again by itself when it fails, and the target puts them
+together once all have arrived (a multipart upload on S3 and other object storage, cut at
+the remote's own chunk_size in rclone.conf; SMB and Azure Files take chunks of
+.BR jobs.chunk_size ;
+offered only when one of the jobs has such a target), and
+.I Later
+leaves them failed in Transfers, where
+.B r
+and
+.B R
+retry them.
+With
+.BR jobs.chunked_retry ,
+the automatic retries go in chunks too.
+Targets that resume a stopped file (the local disk, an sftp server through the system ssh)
+need no chunks: a retry goes on from the partial file.
 .SH CONFIGURATION
 Each setting is taken from the highest of these layers that has it: the defaults, the
 config file, the environment
@@ -666,6 +707,11 @@ max_concurrent = 2       # jobs running at once
 poll_ms = 500            # progress refresh
 engine = "auto"          # or "rclone": never rsync, nor rm, mv and cp
 checksum = false         # compare files by checksum
+retries = 3              # a failed job is tried again this many times
+retry_delay = 5          # seconds before the first retry
+retry_backoff = true     # each further retry waits twice as long
+chunked_retry = false    # retries send files in chunks
+chunk_size = 64          # files larger than this many MiB
 
 [keys]
 copy = ["F5", "c"]       # any action, by its name below
@@ -675,7 +721,8 @@ The actions are named switch_pane, up, down, page_up, page_down, home, end, ente
 parent, mark, mark_all, filter, sort, sort_reverse, toggle_hidden, goto, remote, swap,
 refresh, copy, move, rename, mkdir, delete, overwrite_mode, queue, terminal,
 terminal_sync, focus_left_address, focus_left, focus_right_address, focus_right, focus_queue,
-error_log, settings, help, quit, queue_cancel, queue_retry and queue_clear.
+error_log, settings, help, quit, queue_cancel, queue_retry, queue_retry_chunked and
+queue_clear.
 Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn or Delete.
 .PP
 The settings page
@@ -693,7 +740,10 @@ included, stays as it was written; a value that does not fit its setting is not 
 .BR ui.multi_select_modifier ,
 .BR ui.drop_action ,
 .BR ui.language ,
-.B jobs.max_concurrent
+.BR jobs.max_concurrent ,
+the retry settings
+.RB ( jobs.retries ", " jobs.retry_delay ", " jobs.retry_backoff ,
+.BR jobs.chunked_retry ", " jobs.chunk_size )
 and the keys hold at once, the other settings from the next start.
 Where the environment or
 .B \-\-set

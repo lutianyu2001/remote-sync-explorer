@@ -133,14 +133,18 @@ queue-running = { $count } running
 queue-queued = { $count } queued
 queue-done = { $count } done
 queue-failed = { $count } failed
+queue-retrying = { $count } retrying
 queue-elsewhere = { $count } paused between other places
-queue-keys = x cancel · r retry · c clear · Esc back
+queue-keys = x cancel · r retry · R chunked · c clear · Esc back
 job-to = { $op } { $name } → { $dir }
 job-in = { $op } { $name } in { $dir }
 job-queued = queued
 job-checking = { $spinner } checking the target
 job-done = done
 job-failed = failed: { $error }
+job-retrying-in = retry { $attempt }/{ $of } in { $seconds } s: { $error }
+job-retrying = { $job }: failed, retry { $attempt } of { $of } in { $seconds } s: { $error }
+job-not-chunkable = { $job }: its target cannot take files in chunks; { $key } retries it as it is
 job-cancelled = cancelled
 job-skipped = skipped
 job-exists = { $name } already exists there
@@ -165,6 +169,9 @@ button-pause-and-leave = Pause and leave
 button-stay = Stay
 button-copy-here = Copy here
 button-move-here = Move here
+button-retry-now = Retry now
+button-retry-chunked = Retry in chunks
+button-later = Later
 confirm-title = { $op }?
 confirm-from = from  { $dir }
 confirm-to = to    { $dir }
@@ -194,6 +201,18 @@ conflict-job-note = { $count ->
     [1] Cancel leaves the job failed in the queue; retrying it checks the target again.
    *[other] Cancel leaves the { $count } jobs not yet decided failed in the queue; retrying one checks its target again.
 }
+failed-title = Transfer failed
+failed-intro = { $count ->
+    [1] A job failed
+   *[other] { $count } jobs failed
+}{ $retries ->
+    [0] {""} (automatic retries are off):
+   *[other] {""} after { $retries } automatic retries each:
+}
+failed-more = …and { $count } more
+failed-retry-note = Retry now: try again at once; a file that can resume goes on where it stopped.
+failed-chunked-note = Retry in chunks: files larger than { $size } go in chunks, each sent again by itself when it fails, and the target puts them together once all have arrived ({ $count } of { $total } can; the others are retried as they are).
+failed-later-note = Later: the jobs stay failed in the transfer window ({ $queue }); select one there and press { $retry } to retry it, { $chunked } to retry it in chunks.
 note-overwrite-mode = Overwrite mode is on: what the target has of these names is overwritten without asking.
 entry-dir = directory
 entry-modified = { $size }, modified { $time }
@@ -273,6 +292,11 @@ setting-jobs-max_concurrent-name = Concurrent jobs
 setting-jobs-poll_ms-name = Progress interval (ms)
 setting-jobs-engine-name = Transfer engine
 setting-jobs-checksum-name = Compare by checksum
+setting-jobs-retries-name = Automatic retries
+setting-jobs-retry_delay-name = First retry after (s)
+setting-jobs-retry_backoff-name = Exponential backoff
+setting-jobs-chunked_retry-name = Retry in chunks
+setting-jobs-chunk_size-name = Chunk size (MiB)
 setting-rclone-config = The rclone.conf to use; empty for rclone's own default
 setting-rclone-transfers = Files one job transfers at the same time (rclone --transfers)
 setting-rclone-checkers = Files one job compares at the same time (rclone --checkers)
@@ -289,6 +313,11 @@ setting-jobs-max_concurrent = Jobs running at the same time; the others wait
 setting-jobs-poll_ms = Milliseconds between two readings of the transfers' progress
 setting-jobs-engine = What copies and moves: auto uses rsync where it can and rclone elsewhere, rclone never rsync
 setting-jobs-checksum = Tell files apart by checksum, not by size and modification time
+setting-jobs-retries = How many more times a failed job is tried by itself before you are asked; 0 asks at once
+setting-jobs-retry_delay = Seconds before the first retry of a failed job
+setting-jobs-retry_backoff = Each further retry waits twice as long as the one before, up to 5 minutes; off, every retry waits the same
+setting-jobs-chunked_retry = Retries send files larger than a chunk in chunks, each chunk sent again by itself when it fails, where the target puts a file together from them (S3 and other multipart uploads); other targets are retried as they are
+setting-jobs-chunk_size = Retries in chunks send files larger than this many MiB in chunks of it; object storage (S3 and the like) cuts them at the chunk_size of its remote in rclone.conf instead
 
 ## Help
 
@@ -482,4 +511,5 @@ key-help = This help
 key-quit = Quit
 key-queue_cancel = Queue: cancel the job
 key-queue_retry = Queue: retry a failed job
+key-queue_retry_chunked = Queue: retry a failed job in chunks the target puts together
 key-queue_clear = Queue: clear finished jobs

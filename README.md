@@ -102,8 +102,10 @@ chance. Good designs, it seems, think alike. Not every key is the same, though:
   with rclone when the target is the local disk or an sftp server reached through the
   system ssh (downloads to the local disk resume from any remote). Identical files are
   skipped.
-- **Transfer queue**: jobs run concurrently with bytes, speed and time left, and can be
-  cancelled or retried one by one. A job runs while the panes show both of its ends
+- **Transfer queue**: jobs run concurrently with bytes, speed and time left, the newest
+  first, and can be cancelled or retried one by one. A job that fails is tried again by
+  itself, with a wait that doubles each time; one that still fails turns the window red
+  and asks whether to retry it now, in chunks the target puts together, or later. A job runs while the panes show both of its ends
   (the one it deletes in, for a delete); opening another place in a pane pauses it, and
   coming back goes on. Unfinished jobs are kept for the next start. Leaving or quitting
   while a transfer that cannot resume runs names the files that would start over first.
@@ -449,7 +451,7 @@ for those who know it; a key the two share spans both columns.
 <tr><td>New directory</td><td>F7 / n</td><td>F7</td></tr>
 <tr><td>Delete</td><td>F8 / Delete</td><td>F8</td></tr>
 <tr><td>Overwrite mode on or off: copies, moves and renames replace existing files without asking (off at every start; a red row across the top shows it is on)</td><td>O</td><td>—</td></tr>
-<tr><td>Enter or leave the transfer queue; there x cancels, r retries, c clears finished jobs</td><td>Ctrl+T</td><td>Ctrl+X J</td></tr>
+<tr><td>Enter or leave the transfer queue, the newest jobs first; there x cancels, r retries, R retries in chunks (see <a href="#failures-and-retries">Failures and Retries</a>), c clears finished jobs</td><td>Ctrl+T</td><td>Ctrl+X J</td></tr>
 <tr><td>Terminal under the active pane, in its directory, locally or on a server reached through ssh; in the terminal, back to the panes, folding it to five lines; <code>exit</code> in it closes it (see <a href="#terminal">Terminal</a>)</td><td colspan="2">Ctrl+O</td></tr>
 <tr><td>Keep the active pane and its terminal in the same directory, or stop: a <code>cd</code> in either moves the other (off at every start; the <code>⇅</code> button is lit while it is on)</td><td>Ctrl+S</td><td>—</td></tr>
 <tr><td>Error log (last 100)</td><td>E</td><td>—</td></tr>
@@ -593,6 +595,35 @@ servers, for when no shell should be opened from rse.
 - On macOS, rclone clones files that are copied within one APFS volume instead of
   copying their bytes, so such copies finish at once.
 
+### Failures and Retries
+
+- A job that fails is tried again by itself: after `retry_delay` seconds, up to
+  `retries` times, each wait twice the one before with `retry_backoff` (at most five
+  minutes). While it waits it shows in yellow with the time left, `x` cancels it and `r`
+  runs it at once; each retry goes into the error log (`E`). A target that already has
+  the job's name is not retried: that is a conflict, asked about as above. A failure of
+  the check of the target, such as a listing that times out, is retried like any other.
+- A job that has failed every retry shows in red, the count of failures at the top of the
+  Transfers window is red, and so is the window's frame while it is not focused. A dialog
+  lists the jobs that failed, each with its error, and asks what to do:
+  - **Retry now** runs them again at once. Where the target resumes a stopped file (the
+    local disk, an sftp server through the system ssh, rsync), the retry goes on from the
+    partial file.
+  - **Retry in chunks** sends each file larger than `chunk_size` MiB in chunks, each
+    chunk sent again by itself when it fails (as many times as `retries` says, waiting as
+    for a job), and the target puts the file together once all have arrived. It is
+    offered when one of the jobs is carried out by rclone onto a target that can do this:
+    object storage with multipart uploads (S3 and its kin, B2, Azure Blob, Oracle Object
+    Storage), which cuts the file at its remote's own `chunk_size` in `rclone.conf` (5 MiB
+    on S3, more for a file that would need over 10,000 chunks), and SMB and Azure Files,
+    which are written at each chunk's place, in chunks of `chunk_size`. The others in the
+    dialog are retried as they are. A chunked copy that fails gives up the chunks it sent,
+    so the target never holds part of a file.
+  - **Later** (or Esc) leaves them failed in the Transfers window, where `r` retries the
+    job under the cursor and `R` retries it in chunks.
+- Jobs that fail while the dialog is open join it. With `chunked_retry = true`, the
+  automatic retries of a job whose target takes chunks go in chunks too.
+
 ## Which Program Does What
 
 sftp, and rclone working through it, have two slow habits that this routing is there to
@@ -666,7 +697,9 @@ names with spaces between them (`F5 c`). Del takes a setting
 out of the file, which leaves its default. A change is written to your file at once, and
 the rest of the file, comments included, stays as you wrote it; a value that does not fit
 its setting is not written. `ui.show_hidden`, `ui.mouse`, `ui.multi_select_modifier`,
-`ui.drop_action`, `ui.language`, `jobs.max_concurrent` and the keys hold at once, the
+`ui.drop_action`, `ui.language`, `jobs.max_concurrent`, the retry settings
+(`jobs.retries`, `jobs.retry_delay`, `jobs.retry_backoff`, `jobs.chunked_retry`,
+`jobs.chunk_size`) and the keys hold at once, the
 other settings from the next start. Where the environment or `--set` sets a setting for
 this run, the page shows that value beside the file's.
 
@@ -695,6 +728,11 @@ max_concurrent = 2              # jobs running at once; the rest wait
 poll_ms = 500                   # progress refresh
 engine = "auto"                 # or "rclone": never rsync, nor the machine's rm, mv and cp
 checksum = false                # tell files apart by checksum, not size and time
+retries = 3                     # a failed job is tried again by itself this many times
+retry_delay = 5                 # seconds before the first retry
+retry_backoff = true            # each further retry waits twice as long, up to 5 minutes
+chunked_retry = false           # retries send files in chunks the target puts together
+chunk_size = 64                 # chunked: files larger than this many MiB, in such chunks
 
 [keys]
 copy = ["F5", "c"]
@@ -705,7 +743,7 @@ move = ["F6", "m"]
 # mkdir, delete, overwrite_mode, queue, terminal, terminal_sync,
 # focus_left_address, focus_left, focus_right_address, focus_right,
 # focus_queue, error_log, settings, help, quit, queue_cancel, queue_retry,
-# queue_clear.
+# queue_retry_chunked, queue_clear.
 # Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn, Delete.
 ```
 

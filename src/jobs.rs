@@ -1,9 +1,16 @@
 //! The transfer queue: one job per top-level item, a concurrency limit, and the job
 //! state machine (queued → checking the target → running → done / failed / cancelled).
 //!
+//! A job that fails is tried again by itself, as often as [`RetryPolicy`] says, each
+//! time after a wait that may double; then it stays failed until the user retries it.
+//! A retry can send its files in chunks ([`Job::chunked`]), where the target puts a
+//! file together from chunks sent on their own.
+//!
 //! A job runs only while the panes show its endpoints: both for a copy or move, the one
 //! it deletes in for a delete. When a pane leaves for another endpoint, the jobs that no
 //! longer have theirs are paused, and they go on when the panes show them again.
+
+use std::time::{Duration, Instant};
 
 use serde_json::{Value, json};
 
@@ -149,6 +156,57 @@ fn in_dir(dir: &Location, name: &str) -> Value {
     json!({ "fs": dir.fs_string(), "remote": name })
 }
 
+/// The longest a job waits before it is tried again.
+pub const MAX_RETRY_WAIT: Duration = Duration::from_secs(300);
+
+/// How failed jobs are tried again, from `[jobs]`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RetryPolicy {
+    /// How many more times a failed job is tried by itself; then it stays failed.
+    pub retries: u32,
+    /// How long the first retry waits.
+    pub delay: Duration,
+    /// Each retry after the first waits twice as long as the one before, up to
+    /// [`MAX_RETRY_WAIT`].
+    pub backoff: bool,
+    /// Retries of a job whose target can take a file in chunks send it in chunks.
+    pub chunked: bool,
+    /// The size of a chunk, in bytes; files no larger go whole.
+    pub chunk_size: u64,
+}
+
+impl Default for RetryPolicy {
+    /// No retries.
+    fn default() -> Self {
+        Self {
+            retries: 0,
+            delay: Duration::from_secs(5),
+            backoff: true,
+            chunked: false,
+            chunk_size: 64 << 20,
+        }
+    }
+}
+
+impl RetryPolicy {
+    /// How long retry number `attempt` (1 for the first) waits.
+    pub fn wait(&self, attempt: u32) -> Duration {
+        let doublings = if self.backoff { attempt.saturating_sub(1).min(16) } else { 0 };
+        self.delay.saturating_mul(1 << doublings).min(MAX_RETRY_WAIT)
+    }
+
+    /// The parameters of `rse/copy` that send files in chunks, each chunk tried again
+    /// by itself as this says.
+    fn chunk_params(&self, params: &mut Value) {
+        let delay = u64::try_from(self.delay.as_millis()).unwrap_or(u64::MAX);
+        params["chunked"] = json!(true);
+        params["chunkSize"] = json!(self.chunk_size);
+        params["chunkRetries"] = json!(self.retries);
+        params["chunkDelayMs"] = json!(delay);
+        params["chunkBackoff"] = json!(self.backoff);
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum JobState {
     Queued,
@@ -165,6 +223,14 @@ pub enum JobState {
     Cancelled,
     /// The target had an entry of this name, and the user chose to keep it.
     Skipped,
+    /// Failed with `error`, and queued again after `wait`: from `due`, set at the first
+    /// tick after, with `left` of it to go.
+    Retrying {
+        error: String,
+        wait: Duration,
+        due: Option<Instant>,
+        left: Duration,
+    },
 }
 
 impl JobState {
@@ -175,6 +241,11 @@ impl JobState {
     /// Taking one of the places `max_concurrent` allows.
     pub fn is_active(&self) -> bool {
         matches!(self, Self::Checking | Self::Running | Self::Cancelling | Self::Pausing)
+    }
+
+    /// Waiting to start: queued, or to be tried again.
+    pub fn is_waiting(&self) -> bool {
+        matches!(self, Self::Queued | Self::Retrying { .. })
     }
 }
 
@@ -196,6 +267,22 @@ pub struct Job {
     /// its own doing, so a paused job goes on without the target being checked again.
     /// Not saved: at the next start the target is checked as for a new job.
     pub started: bool,
+    /// The retries made by themselves since it was queued or the user last retried it.
+    pub attempts: u32,
+    pub chunks: Chunks,
+}
+
+/// Whether a job sends its files in chunks. Whether its engine can is reported once it
+/// has started: rclone can, onto a target that puts a file together from chunks.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Chunks {
+    /// Its engine cannot, or has not said it can.
+    #[default]
+    Unable,
+    /// It can, and sends them whole.
+    Whole,
+    /// It sends them in chunks when it next runs.
+    Chunked,
 }
 
 impl Job {
@@ -214,6 +301,11 @@ impl Job {
         self.stats.transferring.first().map(|t| t.name.as_str())
     }
 
+    /// Whether its engine can send its files in chunks.
+    pub fn chunkable(&self) -> bool {
+        self.chunks != Chunks::Unable
+    }
+
     fn is_checking(&self, check: u64) -> bool {
         self.state == JobState::Checking && self.check == check
     }
@@ -230,8 +322,24 @@ pub enum Effect {
     Check { id: JobId, check: u64, dir: Location },
     /// Call `job/stop` for this job.
     Stop(JobId),
-    /// A job ended; reload these directories. `error` is set when it failed.
-    Finished { id: JobId, touched: Vec<Location>, error: Option<String> },
+    /// A job ended; reload these directories. `error` is set when it failed, and `ask`
+    /// when the user is to be asked whether to try it again: not for a target that has
+    /// the name, which is a question of its own.
+    Finished { id: JobId, touched: Vec<Location>, error: Option<String>, ask: bool },
+    /// A job failed with `error` and is tried again after `wait`, for retry number
+    /// `attempt` of `of`.
+    Retrying { id: JobId, error: String, attempt: u32, of: u32, wait: Duration },
+}
+
+/// How the check of a job's target came out.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Checked {
+    /// Nothing of the job's name there, or overwrite mode.
+    Free,
+    /// Something of its name is there: the job fails until the user says what to do.
+    Taken(String),
+    /// The target could not be listed: a failure like any other.
+    Failed(String),
 }
 
 #[derive(Debug)]
@@ -243,6 +351,7 @@ pub struct Queue {
     /// has. Off at every start.
     pub overwrite: bool,
     max_concurrent: usize,
+    retry: RetryPolicy,
     next_id: JobId,
 }
 
@@ -253,8 +362,18 @@ impl Queue {
             shown: None,
             overwrite: false,
             max_concurrent: max_concurrent.max(1),
+            retry: RetryPolicy::default(),
             next_id: 1,
         }
+    }
+
+    /// Changes how failed jobs are tried again; jobs waiting for a retry keep their wait.
+    pub fn set_retry(&mut self, retry: RetryPolicy) {
+        self.retry = retry;
+    }
+
+    pub fn retry_policy(&self) -> &RetryPolicy {
+        &self.retry
     }
 
     /// Changes how many jobs run at once: more start queued ones now, fewer let the
@@ -283,6 +402,8 @@ impl Queue {
                 engine: None,
                 resumable: false,
                 started: false,
+                attempts: 0,
+                chunks: Chunks::Unable,
             };
             self.jobs.push(job);
         }
@@ -347,17 +468,22 @@ impl Queue {
         }
     }
 
-    /// The jobs of the endpoints shown, in order.
+    /// The jobs of the endpoints shown, the newest first.
     pub fn visible(&self) -> Vec<&Job> {
-        self.jobs.iter().filter(|j| self.present(&j.transfer)).collect()
+        self.jobs.iter().rev().filter(|j| self.present(&j.transfer)).collect()
     }
 
-    /// The engine that runs job `id` and whether it can resume, as reported once it has
-    /// started.
-    pub fn started(&mut self, id: JobId, engine: Engine, resumable: bool) {
+    /// The engine that runs job `id`, whether it can resume, and whether it can send its
+    /// files in chunks, as reported once it has started.
+    pub fn started(&mut self, id: JobId, engine: Engine, resumable: bool, chunkable: bool) {
         if let Some(job) = self.jobs.iter_mut().find(|j| j.id == id) {
             job.engine = Some(engine);
             job.resumable = resumable;
+            job.chunks = match (chunkable, job.chunks) {
+                (false, _) => Chunks::Unable,
+                (true, Chunks::Unable) => Chunks::Whole,
+                (true, chunks) => chunks,
+            };
         }
     }
 
@@ -401,7 +527,7 @@ impl Queue {
                     out.push(Effect::Check { id: job.id, check: job.check, dir: dir.clone() });
                 }
                 // Not checked, so the target may have the name.
-                _ => out.push(start(job, false)),
+                _ => out.push(start(job, false, &self.retry)),
             }
             if job.state.is_active() {
                 free -= 1;
@@ -419,27 +545,29 @@ impl Queue {
         let transfer = &self.jobs[index].transfer;
         self.jobs.iter().enumerate().any(|(i, other)| {
             i != index
-                && (other.state.is_active() || (i < index && other.state == JobState::Queued))
+                && (other.state.is_active() || (i < index && other.state.is_waiting()))
                 && transfer.clashes(&other.transfer)
         })
     }
 
-    /// The target of a checking job was listed, for its check number `check`: `Ok` when
-    /// it was free, which starts the job, or why the job fails instead. A failure reloads
-    /// the target, as the panes may not show what it has. The answer to an older check,
-    /// cancelled since, changes nothing.
-    pub fn checked(&mut self, id: JobId, check: u64, result: Result<(), String>) -> Vec<Effect> {
+    /// The target of a checking job was listed, for its check number `check`: free, which
+    /// starts the job, or why the job fails instead. A target that has the name fails it
+    /// for the user to decide; one that could not be listed is tried again as any other
+    /// failure. A failure reloads the target, as the panes may not show what it has. The
+    /// answer to an older check, cancelled since, changes nothing.
+    pub fn checked(&mut self, id: JobId, check: u64, result: Checked) -> Vec<Effect> {
         let mut out = Vec::new();
-        let overwrite = self.overwrite;
+        let (overwrite, retry) = (self.overwrite, self.retry);
         if let Some(job) = self.jobs.iter_mut().find(|j| j.id == id && j.is_checking(check)) {
+            let touched = job.transfer.dst_dir.iter().cloned().collect();
             match result {
-                // In overwrite mode `Ok` is also the answer when the name is there.
-                Ok(()) => out.push(start(job, !overwrite)),
-                Err(e) => {
+                // In overwrite mode `Free` is also the answer when the name is there.
+                Checked::Free => out.push(start(job, !overwrite, &retry)),
+                Checked::Taken(e) => {
                     job.state = JobState::Failed(e.clone());
-                    let touched = job.transfer.dst_dir.iter().cloned().collect();
-                    out.push(Effect::Finished { id, touched, error: Some(e) });
+                    out.push(Effect::Finished { id, touched, error: Some(e), ask: false });
                 }
+                Checked::Failed(e) => out.push(fail(job, e, touched, &retry)),
             }
         }
         out.extend(self.start_ready());
@@ -454,6 +582,7 @@ impl Queue {
     /// Applies a poll result from the job worker.
     pub fn apply(&mut self, snaps: Vec<JobSnapshot>) -> Vec<Effect> {
         let mut out = Vec::new();
+        let retry = self.retry;
         for snap in snaps {
             let Some(job) = self.jobs.iter_mut().find(|j| j.id == snap.id) else {
                 continue;
@@ -468,29 +597,42 @@ impl Queue {
             let Some(result) = snap.finished else {
                 continue;
             };
-            let error = match (result, &job.state) {
-                (Ok(()), _) => {
-                    job.state = JobState::Done;
-                    None
-                }
-                (Err(_), JobState::Cancelling) => {
-                    job.state = JobState::Cancelled;
-                    None
-                }
+            let touched = job.transfer.touched();
+            match (result, &job.state) {
+                (Ok(()), _) => job.state = JobState::Done,
+                (Err(_), JobState::Cancelling) => job.state = JobState::Cancelled,
                 (Err(_), JobState::Pausing) => {
                     job.state = JobState::Queued;
                     job.stats = Stats::default();
                     continue;
                 }
                 (Err(e), _) => {
-                    job.state = JobState::Failed(e.clone());
-                    Some(e)
+                    out.push(fail(job, e, touched, &retry));
+                    continue;
                 }
-            };
-            out.push(Effect::Finished { id: job.id, touched: job.transfer.touched(), error });
+            }
+            out.push(Effect::Finished { id: job.id, touched, error: None, ask: false });
         }
         out.extend(self.start_ready());
         out
+    }
+
+    /// Counts down the waits of the jobs to be tried again, from the first tick after
+    /// each began, and queues those whose wait is over.
+    pub fn tick(&mut self, now: Instant) -> Vec<Effect> {
+        let mut due_now = false;
+        for job in &mut self.jobs {
+            if let JobState::Retrying { wait, due, left, .. } = &mut job.state {
+                let at = *due.get_or_insert(now + *wait);
+                *left = at.saturating_duration_since(now);
+                if now >= at {
+                    job.state = JobState::Queued;
+                    job.stats = Stats::default();
+                    due_now = true;
+                }
+            }
+        }
+        if due_now { self.start_ready() } else { Vec::new() }
     }
 
     /// Cancels a queued or checking job at once, or asks rclone to stop a running one, and
@@ -507,7 +649,7 @@ impl Queue {
             return Vec::new();
         };
         match job.state {
-            JobState::Queued | JobState::Checking => {
+            JobState::Queued | JobState::Checking | JobState::Retrying { .. } => {
                 job.state = JobState::Cancelled;
                 Vec::new()
             }
@@ -542,15 +684,39 @@ impl Queue {
         out
     }
 
-    /// Puts a failed, cancelled or skipped job back in the queue. Its target is checked
-    /// again before it starts, unless the user chose to overwrite it.
+    /// Puts a failed, cancelled or skipped job back in the queue, or one waiting to be
+    /// tried again without the rest of its wait, its retries counted from nothing. Its
+    /// target is checked again before it starts, unless the user chose to overwrite it.
     pub fn retry(&mut self, id: JobId) -> Vec<Effect> {
+        self.retry_as(id, false)
+    }
+
+    /// As [`Queue::retry`], sending the job's files in chunks; nothing for a job that
+    /// cannot ([`Job::chunkable`]).
+    pub fn retry_chunked(&mut self, id: JobId) -> Vec<Effect> {
+        if self.jobs.iter().any(|j| j.id == id && !j.chunkable()) {
+            return Vec::new();
+        }
+        self.retry_as(id, true)
+    }
+
+    fn retry_as(&mut self, id: JobId, chunked: bool) -> Vec<Effect> {
         if let Some(job) = self.jobs.iter_mut().find(|j| j.id == id)
-            && matches!(job.state, JobState::Failed(_) | JobState::Cancelled | JobState::Skipped)
+            && matches!(
+                job.state,
+                JobState::Failed(_)
+                    | JobState::Cancelled
+                    | JobState::Skipped
+                    | JobState::Retrying { .. }
+            )
         {
             job.state = JobState::Queued;
             job.stats = Stats::default();
             job.started = false;
+            job.attempts = 0;
+            if job.chunkable() {
+                job.chunks = if chunked { Chunks::Chunked } else { Chunks::Whole };
+            }
         }
         self.start_ready()
     }
@@ -590,6 +756,11 @@ impl Queue {
         self.jobs.iter().filter(|j| j.state == JobState::Queued).count()
     }
 
+    /// Jobs waiting to be tried again.
+    pub fn retrying_count(&self) -> usize {
+        self.jobs.iter().filter(|j| matches!(j.state, JobState::Retrying { .. })).count()
+    }
+
     /// Jobs that would be lost by quitting now.
     pub fn unfinished_count(&self) -> usize {
         self.jobs.iter().filter(|j| !j.state.is_finished()).count()
@@ -599,20 +770,48 @@ impl Queue {
 /// Hands a job over to be carried out, or fails it when there is no call to make. `free`
 /// says its target was just seen without an entry of its name; otherwise the transfer
 /// handed over says that it may replace one, which the job itself does not come to say.
-fn start(job: &mut Job, free: bool) -> Effect {
+/// A job to send in chunks gets the parameters for it, chunks tried again as `retry`
+/// says.
+fn start(job: &mut Job, free: bool, retry: &RetryPolicy) -> Effect {
     match job.transfer.rc_call() {
-        Ok((method, params)) => {
+        Ok((method, mut params)) => {
             job.state = JobState::Running;
             job.started = true;
             let mut transfer = Box::new(job.transfer.clone());
             transfer.overwrite |= !free;
+            if job.chunks == Chunks::Chunked && method == api::COPY {
+                retry.chunk_params(&mut params);
+            }
             Effect::Start { id: job.id, transfer, method, params }
         }
         Err(e) => {
             job.state = JobState::Failed(e.clone());
-            Effect::Finished { id: job.id, touched: Vec::new(), error: Some(e) }
+            Effect::Finished { id: job.id, touched: Vec::new(), error: Some(e), ask: false }
         }
     }
+}
+
+/// A job failed with `error`: it waits to be tried again while `retry` allows more
+/// retries, sending its files in chunks if `retry` says so and it can, or else stays
+/// failed, the user to be asked what to do.
+fn fail(job: &mut Job, error: String, touched: Vec<Location>, retry: &RetryPolicy) -> Effect {
+    if job.attempts < retry.retries {
+        job.attempts += 1;
+        if retry.chunked && job.chunkable() {
+            job.chunks = Chunks::Chunked;
+        }
+        let wait = retry.wait(job.attempts);
+        job.state = JobState::Retrying { error: error.clone(), wait, due: None, left: wait };
+        return Effect::Retrying {
+            id: job.id,
+            error,
+            attempt: job.attempts,
+            of: retry.retries,
+            wait,
+        };
+    }
+    job.state = JobState::Failed(error.clone());
+    Effect::Finished { id: job.id, touched, error: Some(error), ask: true }
 }
 
 #[cfg(test)]
@@ -786,7 +985,7 @@ mod tests {
         let mut q = Queue::new(1);
         q.set_shown(shown(&["/", "nas:"]));
         q.push(vec![checked_copy("a")]);
-        q.checked(1, 1, Ok(()));
+        q.checked(1, 1, Checked::Free);
         q.set_shown(shown(&["/", "s3:"]));
         q.apply(vec![snap(1, Some(Err("context canceled".into())))]);
         assert!(matches!(q.set_shown(shown(&["/", "nas:"]))[..], [Effect::Start { id: 1, .. }]));
@@ -817,7 +1016,7 @@ mod tests {
         q.push(vec![t(OpKind::Copy, "a", false), t(OpKind::Copy, "b", false)]);
         assert_eq!(q.interrupted_by(&shown(&["/", "nas:"])), Vec::<JobId>::new());
         assert_eq!(q.interrupted_by(&shown(&["/", "s3:"])), vec![1]);
-        q.started(1, Engine::Rsync, true);
+        q.started(1, Engine::Rsync, true, false);
         assert_eq!(q.interrupted_by(&[]), Vec::<JobId>::new());
     }
 
@@ -847,7 +1046,7 @@ mod tests {
         );
         assert_eq!(q.jobs[0].state, JobState::Checking);
         assert_eq!((q.active_count(), q.queued_count()), (1, 1), "a check takes a place");
-        let effects = q.checked(1, 1, Ok(()));
+        let effects = q.checked(1, 1, Checked::Free);
         assert!(matches!(effects[..], [Effect::Start { id: 1, method: "rse/copy", .. }]));
         assert_eq!(q.jobs[0].state, JobState::Running);
     }
@@ -858,19 +1057,20 @@ mod tests {
     fn a_taken_target_fails_the_job_until_the_user_chooses() {
         let mut q = Queue::new(1);
         q.push(vec![checked_copy("a"), checked_copy("b")]);
-        let effects = q.checked(1, 1, Err("a already exists there".into()));
+        let effects = q.checked(1, 1, Checked::Taken("a already exists there".into()));
         assert_eq!(
             effects[0],
             Effect::Finished {
                 id: 1,
                 touched: vec![Location::new("nas:", "backup")],
                 error: Some("a already exists there".into()),
+                ask: false,
             }
         );
         assert!(matches!(effects[1], Effect::Check { id: 2, .. }), "the next job goes on");
         assert_eq!(q.jobs[0].state, JobState::Failed("a already exists there".into()));
 
-        q.checked(2, 1, Err("b already exists there".into()));
+        q.checked(2, 1, Checked::Taken("b already exists there".into()));
         assert!(matches!(q.approve(1)[..], [Effect::Start { id: 1, .. }]));
         q.skip(2);
         assert_eq!(q.jobs[1].state, JobState::Skipped);
@@ -903,7 +1103,7 @@ mod tests {
     fn a_start_without_a_free_target_seen_may_replace() {
         let mut q = Queue::new(1);
         q.push(vec![checked_copy("a")]);
-        assert!(!may_replace(&q.checked(1, 1, Ok(()))));
+        assert!(!may_replace(&q.checked(1, 1, Checked::Free)));
         // Paused and going on: what it wrote before may be there.
         q.set_shown(shown(&["/"]));
         q.apply(vec![snap(1, Some(Err("stopped".into())))]);
@@ -918,7 +1118,7 @@ mod tests {
         let mut q = Queue::new(1);
         q.push(vec![checked_copy("a")]);
         q.overwrite = true;
-        assert!(may_replace(&q.checked(1, 1, Ok(()))));
+        assert!(may_replace(&q.checked(1, 1, Checked::Free)));
     }
 
     /// Cancelling a checking job makes room for the next. The answer to its check changes
@@ -930,9 +1130,9 @@ mod tests {
         assert!(matches!(q.cancel(1)[..], [Effect::Check { id: 2, check: 1, .. }]));
         q.cancel(2);
         assert!(matches!(q.retry(1)[..], [Effect::Check { id: 1, check: 2, .. }]));
-        assert_eq!(q.checked(1, 1, Err("a already exists there".into())), vec![]);
+        assert_eq!(q.checked(1, 1, Checked::Taken("a already exists there".into())), vec![]);
         assert_eq!(q.jobs[0].state, JobState::Checking);
-        assert!(matches!(q.checked(1, 2, Ok(()))[..], [Effect::Start { id: 1, .. }]));
+        assert!(matches!(q.checked(1, 2, Checked::Free)[..], [Effect::Start { id: 1, .. }]));
     }
 
     /// A listing cannot see a transfer in flight: a job waits while another that changes
@@ -973,15 +1173,144 @@ mod tests {
     fn a_retried_job_waits_for_a_later_one_under_way() {
         let mut q = Queue::new(3);
         q.push(vec![checked_copy("a"), checked_copy("A")]);
-        q.checked(1, 1, Err("a already exists there".into()));
+        q.checked(1, 1, Checked::Taken("a already exists there".into()));
         assert_eq!(q.jobs[1].state, JobState::Checking);
         assert_eq!(q.retry(1), vec![]);
-        q.checked(2, 1, Ok(()));
+        q.checked(2, 1, Checked::Free);
         let effects = q.apply(vec![snap(2, Some(Ok(())))]);
         assert!(matches!(
             effects[..],
             [Effect::Finished { id: 2, .. }, Effect::Check { id: 1, check: 2, .. }]
         ));
+    }
+
+    fn retrying(retries: u32) -> Queue {
+        let mut q = Queue::new(1);
+        q.set_retry(RetryPolicy {
+            retries,
+            delay: Duration::from_secs(2),
+            ..RetryPolicy::default()
+        });
+        q
+    }
+
+    /// A failed job waits, twice as long each time, and runs again by itself without its
+    /// target checked; after the last retry it stays failed and the user is asked.
+    #[test]
+    fn a_failed_job_is_tried_again_after_a_wait_that_doubles() {
+        let mut q = retrying(2);
+        q.push(vec![checked_copy("a")]);
+        q.checked(1, 1, Checked::Free);
+        let effects = q.apply(vec![snap(1, Some(Err("broken pipe".into())))]);
+        let wait = Duration::from_secs(2);
+        assert_eq!(
+            effects,
+            vec![Effect::Retrying { id: 1, error: "broken pipe".into(), attempt: 1, of: 2, wait }]
+        );
+        assert!(matches!(q.jobs[0].state, JobState::Retrying { .. }));
+        assert_eq!((q.active_count(), q.unfinished().len()), (0, 1), "waiting takes no place");
+        let t0 = Instant::now();
+        assert_eq!(q.tick(t0), vec![]);
+        assert_eq!(q.tick(t0 + Duration::from_secs(1)), vec![]);
+        let JobState::Retrying { left, .. } = q.jobs[0].state else { panic!() };
+        assert_eq!(left, Duration::from_secs(1));
+        assert!(matches!(q.tick(t0 + wait)[..], [Effect::Start { id: 1, .. }]), "no check");
+
+        let effects = q.apply(vec![snap(1, Some(Err("broken pipe".into())))]);
+        let [Effect::Retrying { attempt: 2, wait: second, .. }] = effects[..] else { panic!() };
+        assert_eq!(second, 2 * wait);
+        let t1 = t0 + Duration::from_secs(10);
+        q.tick(t1);
+        assert!(matches!(q.tick(t1 + Duration::from_secs(4))[..], [Effect::Start { .. }]));
+        let effects = q.apply(vec![snap(1, Some(Err("broken pipe".into())))]);
+        assert!(matches!(&effects[..], [Effect::Finished { error: Some(_), ask: true, .. }]));
+        assert_eq!(q.jobs[0].state, JobState::Failed("broken pipe".into()));
+        // The user's retry counts from nothing again.
+        q.retry(1);
+        assert_eq!(q.jobs[0].attempts, 0);
+    }
+
+    #[test]
+    fn waits_double_up_to_a_limit_or_stay_the_same() {
+        let mut p = RetryPolicy { delay: Duration::from_secs(5), ..RetryPolicy::default() };
+        let waits: Vec<u64> = (1..=4).map(|n| p.wait(n).as_secs()).collect();
+        assert_eq!(waits, [5, 10, 20, 40]);
+        assert_eq!(p.wait(30), MAX_RETRY_WAIT);
+        p.backoff = false;
+        assert_eq!(p.wait(4), Duration::from_secs(5));
+    }
+
+    /// A target that could not be listed is a failure tried again, and checked again; one
+    /// that has the name is not, nor are the user asked: that is the conflict's question.
+    #[test]
+    fn a_failed_check_is_tried_again_and_a_taken_target_is_not() {
+        let mut q = retrying(1);
+        q.push(vec![checked_copy("a"), checked_copy("b")]);
+        let effects = q.checked(1, 1, Checked::Failed("timeout".into()));
+        assert!(matches!(
+            effects[..],
+            [Effect::Retrying { id: 1, .. }, Effect::Check { id: 2, .. }]
+        ));
+        let t0 = Instant::now();
+        q.tick(t0);
+        let effects = q.checked(2, 1, Checked::Taken("b already exists there".into()));
+        assert!(matches!(&effects[..], [Effect::Finished { id: 2, ask: false, .. }]));
+        assert!(matches!(q.tick(t0 + Duration::from_secs(2))[..], [Effect::Check { id: 1, .. }]));
+    }
+
+    /// A job sends its files in chunks when the user retries it so, or when retries do
+    /// and its target can take chunks; never one whose target cannot.
+    #[test]
+    fn chunked_retries_ask_rclone_for_chunks() {
+        let chunked = |effects: &[Effect]| match effects {
+            [Effect::Start { params, .. }] => params["chunked"] == json!(true),
+            other => panic!("{other:?}"),
+        };
+        let mut q = retrying(1);
+        q.set_retry(RetryPolicy { chunked: true, chunk_size: 1 << 20, ..*q.retry_policy() });
+        q.push(vec![t(OpKind::Copy, "a", false)]);
+        q.started(1, Engine::Rclone, false, true);
+        q.apply(vec![snap(1, Some(Err("reset".into())))]);
+        let t0 = Instant::now();
+        q.tick(t0);
+        let effects = q.tick(t0 + Duration::from_secs(2));
+        assert!(chunked(&effects));
+        let [Effect::Start { params, .. }] = &effects[..] else { panic!() };
+        assert_eq!(
+            (&params["chunkSize"], &params["chunkRetries"], &params["chunkDelayMs"]),
+            (&json!(1 << 20), &json!(1), &json!(2000))
+        );
+        assert_eq!(params["chunkBackoff"], json!(true));
+
+        // A target that cannot take chunks: a plain retry, and no chunked one.
+        q.started(1, Engine::Rsync, true, false);
+        q.cancel(1);
+        q.apply(vec![snap(1, Some(Err("stopped".into())))]);
+        assert_eq!(q.retry_chunked(1), vec![]);
+        assert_eq!(q.jobs[0].state, JobState::Cancelled);
+        q.started(1, Engine::Rclone, false, true);
+        assert!(chunked(&q.retry_chunked(1)));
+        // A plain retry by the user sends the file whole.
+        q.cancel(1);
+        q.apply(vec![snap(1, Some(Err("stopped".into())))]);
+        assert!(!chunked(&q.retry(1)));
+    }
+
+    /// The newest jobs come first; a retry of a waiting job does not wait, and a cancel
+    /// ends it.
+    #[test]
+    fn newest_first_and_waiting_jobs_can_be_retried_or_cancelled() {
+        let mut q = retrying(3);
+        q.push(vec![t(OpKind::Copy, "a", false), t(OpKind::Copy, "b", false)]);
+        assert_eq!(q.visible().iter().map(|j| j.id).collect::<Vec<_>>(), [2, 1]);
+        q.apply(vec![snap(1, Some(Err("reset".into())))]);
+        assert_eq!(q.retrying_count(), 1);
+        assert!(matches!(q.retry(1)[..], []), "b runs: the place is taken");
+        assert_eq!(q.jobs[0].state, JobState::Queued);
+        q.apply(vec![snap(2, Some(Err("reset".into())))]);
+        assert!(matches!(q.jobs[1].state, JobState::Retrying { .. }));
+        q.cancel(2);
+        assert_eq!(q.jobs[1].state, JobState::Cancelled);
     }
 
     #[test]

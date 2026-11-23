@@ -121,14 +121,18 @@ queue-running = { $count } 个进行中
 queue-queued = { $count } 个排队
 queue-done = { $count } 个完成
 queue-failed = { $count } 个失败
+queue-retrying = { $count } 个等待重试
 queue-elsewhere = { $count } 个在别处暂停
-queue-keys = x 取消 · r 重试 · c 清除 · Esc 返回
+queue-keys = x 取消 · r 重试 · R 分块 · c 清除 · Esc 返回
 job-to = { $op } { $name } → { $dir }
 job-in = { $op } { $dir } 中的 { $name }
 job-queued = 排队中
 job-checking = { $spinner } 正在检查目标
 job-done = 完成
 job-failed = 失败：{ $error }
+job-retrying-in = { $seconds } 秒后第 { $attempt }/{ $of } 次重试：{ $error }
+job-retrying = { $job }：失败，{ $seconds } 秒后第 { $attempt }/{ $of } 次自动重试：{ $error }
+job-not-chunkable = { $job }：目标不支持分块上传，按 { $key } 照常重传
 job-cancelled = 已取消
 job-skipped = 已跳过
 job-exists = 目标中已有 { $name }
@@ -153,6 +157,9 @@ button-pause-and-leave = 暂停并离开
 button-stay = 留下
 button-copy-here = 复制到这里
 button-move-here = 移动到这里
+button-retry-now = 立即重传
+button-retry-chunked = 分块 + 合并重传
+button-later = 以后再说
 confirm-title = { $op }？
 confirm-from = 从：{ $dir }
 confirm-to = 到：{ $dir }
@@ -176,6 +183,15 @@ conflict-job-note = { $count ->
     [1] 选“取消”时，任务以失败留在队列中；重试时会再次检查目标。
    *[other] 选“取消”时，还没决定的 { $count } 个任务都以失败留在队列中；重试时会再检查。
 }
+failed-title = 传输失败
+failed-intro = { $count } 个任务失败了{ $retries ->
+    [0] （自动重试已关闭）：
+   *[other] ，每个都已自动重试 { $retries } 次：
+}
+failed-more = ……还有 { $count } 个
+failed-retry-note = 立即重传：马上再试一次，能续传的文件从断点接着传。
+failed-chunked-note = 分块 + 合并重传：大于 { $size } 的文件分块逐块上传，哪块失败只重传那一块，全部到达后由目标合并成一个文件（{ $total } 个中有 { $count } 个的目标支持，其余照常重传）。
+failed-later-note = 以后再说：任务留在传输窗口里标为失败；在那里（{ $queue }）选中它，按 { $retry } 重传，按 { $chunked } 分块 + 合并重传。
 note-overwrite-mode = 覆写模式已开启：目标中的同名条目会被直接覆盖，不再询问。
 entry-dir = 目录
 entry-modified = { $size }，修改于 { $time }
@@ -255,6 +271,11 @@ setting-jobs-max_concurrent-name = 同时运行的任务数
 setting-jobs-poll_ms-name = 进度刷新间隔（毫秒）
 setting-jobs-engine-name = 传输引擎
 setting-jobs-checksum-name = 按校验和比较
+setting-jobs-retries-name = 自动重试次数
+setting-jobs-retry_delay-name = 首次重试等待（秒）
+setting-jobs-retry_backoff-name = 指数退避
+setting-jobs-chunked_retry-name = 分块重传
+setting-jobs-chunk_size-name = 分块大小（MiB）
 setting-rclone-config = 使用的 rclone.conf；留空即 rclone 的默认位置
 setting-rclone-transfers = 一个任务同时传输的文件数（rclone --transfers）
 setting-rclone-checkers = 一个任务同时比对的文件数（rclone --checkers）
@@ -271,6 +292,11 @@ setting-jobs-max_concurrent = 同时运行的任务数，其余的排队
 setting-jobs-poll_ms = 两次读取传输进度之间的毫秒数
 setting-jobs-engine = 复制和移动由谁执行：auto 能用 rsync 时用 rsync，其余用 rclone；rclone 从不用 rsync
 setting-jobs-checksum = 按校验和而不是大小和修改时间判断文件是否相同
+setting-jobs-retries = 失败的任务在询问你之前自动重试几次；0 为立即询问
+setting-jobs-retry_delay = 失败的任务第一次重试前等待的秒数
+setting-jobs-retry_backoff = 之后每次重试的等待时间是上一次的两倍，最长 5 分钟；关闭时每次等待一样久
+setting-jobs-chunked_retry = 重试时把大于一个分块的文件分块上传，哪块失败只重传那一块，由目标合并成一个文件（S3 等支持分块上传的目标）；其他目标照常重试
+setting-jobs-chunk_size = 分块重传时，大于这么多 MiB 的文件按这个大小分块；对象存储（S3 等）则按 rclone.conf 里该远程的 chunk_size 分块
 
 ## 帮助
 
@@ -461,4 +487,5 @@ key-help = 本帮助
 key-quit = 退出
 key-queue_cancel = 队列：取消任务
 key-queue_retry = 队列：重试失败的任务
+key-queue_retry_chunked = 队列：分块 + 合并重传失败的任务
 key-queue_clear = 队列：清除已结束的任务

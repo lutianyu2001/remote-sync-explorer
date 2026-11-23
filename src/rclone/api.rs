@@ -176,20 +176,27 @@ pub fn is_unknown_method(e: &RpcError) -> bool {
     e.message.contains("couldn't find method")
 }
 
-#[derive(Deserialize)]
-struct ResumableReply {
-    resumable: bool,
+/// How [`COPY`] writes to a target, from [`resumable`].
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+pub struct CopyTarget {
+    /// A stopped file is resumed instead of started over.
+    pub resumable: bool,
+    /// Files can be sent in chunks the target puts together (`chunked` of [`COPY`]).
+    /// Missing from an older rse/resumable, which never sends chunks.
+    #[serde(default)]
+    pub chunked: bool,
 }
 
-/// Whether [`COPY`] from `src_fs` to `dst_fs` resumes a stopped file instead of starting
-/// it over: when the target is the local disk or an sftp server reached through an
-/// `ssh` command.
+/// How [`COPY`] from `src_fs` to `dst_fs` writes: whether it resumes a stopped file
+/// instead of starting it over, when the target is the local disk or an sftp server
+/// reached through an `ssh` command, and whether it can send files in chunks, onto a
+/// target that puts a file together from them (a multipart upload, as on S3).
 ///
 /// # Errors
 /// Returns rclone's error, e.g. for an unknown remote.
-pub fn resumable(b: &dyn Backend, src_fs: &str, dst_fs: &str) -> Result<bool, RpcError> {
+pub fn resumable(b: &dyn Backend, src_fs: &str, dst_fs: &str) -> Result<CopyTarget, RpcError> {
     let v = b.rpc("rse/resumable", json!({ "srcFs": src_fs, "dstFs": dst_fs }))?;
-    Ok(decode::<ResumableReply>("rse/resumable", v)?.resumable)
+    decode::<CopyTarget>("rse/resumable", v)
 }
 
 /// Removes the empty directories under `remote` in `fs`, and `remote` itself too when it
@@ -386,8 +393,13 @@ mod tests {
     #[test]
     fn resumable_reads_the_reply() {
         let b = FakeBackend::new(|_, _| Ok(json!({"resumable": true})));
-        assert!(resumable(&b, "/", "box:").unwrap());
+        assert_eq!(
+            resumable(&b, "/", "box:").unwrap(),
+            CopyTarget { resumable: true, chunked: false }
+        );
         assert_eq!(b.calls_to("rse/resumable"), vec![json!({"srcFs": "/", "dstFs": "box:"})]);
+        let b = FakeBackend::new(|_, _| Ok(json!({"resumable": false, "chunked": true})));
+        assert!(resumable(&b, "/", "s3:").unwrap().chunked);
     }
 
     #[test]

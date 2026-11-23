@@ -68,7 +68,7 @@ remote-sync-explorer（命令为 `rse`）是一个双栏终端文件管理器，
 - **文件操作**：复制、移动、删除、重命名、新建目录。移动和删除总会先确认，拖放也一样。覆盖已有文件前会询问，除非开启了覆写模式：加入队列时和每个传输开始前都会检查目标，两个传输也不会同时写同一个文件。
 - **两种传输后端**：本地磁盘和经系统 ssh 连接、装了 `rsync` 的 sftp 服务器之间用 rsync（增量传输，走同一个登录），其余都用 rclone。底栏显示两个窗格之间复制用的后端。在本地磁盘内部、或同一台这样的服务器内部删除，或者移动到一个没被占用的名字，用的是那台机器自己的 `rm -rf` 或 `mv`：一条命令，而不是 rclone 那样每个文件往返一次。不能执行命令的服务器（只允许 sftp 的账号）没有 `rm` 可用：在那里 rse 自己通过 sftp 删除目录，在一个会话里同时让最多 64 个请求在路上，而 rclone 是每条连接发一个、等到答复再发下一个。在同一台这样的服务器内部复制，或者移动到已经有东西的名字上，数据不离开服务器，而 rclone 会把每个文件下载下来再传上去：由服务器自己的 rsync（3.1 或更新）来做，有进度、能续传，合并规则和两台机器之间一样；没有这种 rsync 的服务器，复制到一个没被占用的名字用它自己的 `cp`；合并到已有的东西上时逐个文件比较，有 shell 的服务器上每个要复制的文件同样由它自己的 `cp` 来复制。
 - **续传**：停下的文件会从停下的地方接着传。rsync 总是这样；rclone 在目标是本地磁盘或经系统 ssh 连接的 sftp 服务器时也是这样（下载到本地磁盘时，任何远程都能续传）。相同的文件会跳过。
-- **传输队列**：多个任务并发执行，显示已传字节、速度和剩余时间，可以逐个取消或重试。两个窗格显示着任务的两头时（删除只需要它删除的那一头），任务才运行；在窗格里打开别的地方会暂停它，回来后接着跑。没完成的任务会保留到下次启动。如果有不能续传的传输正在跑，离开或退出前会先列出哪些文件要从头重传。
+- **传输队列**：多个任务并发执行，显示已传字节、速度和剩余时间，最新的在最上面，可以逐个取消或重试。失败的任务会自动重试，每次等待加倍；仍然失败时传输窗口变红，并询问是立即重传、分块上传由目标合并，还是以后再说。两个窗格显示着任务的两头时（删除只需要它删除的那一头），任务才运行；在窗格里打开别的地方会暂停它，回来后接着跑。没完成的任务会保留到下次启动。如果有不能续传的传输正在跑，离开或退出前会先列出哪些文件要从头重传。
 - **鼠标**：单击、双击、滚轮、滚动条，Ctrl+单击或右键标记，Alt+单击标记一段，拖动来复制或移动。
 - **通过 OpenSSH 使用 SFTP**：`~/.ssh/config`（ProxyJump、证书、硬件密钥）照常生效，每台服务器只登录一次。
 - **终端**：Ctrl+O 在窗格下方打开你的 shell，从窗格所在目录开始：本地磁盘上直接打开，服务器上走同一个 ssh 登录；Ctrl+S（或 `⇅` 按钮）让它和窗格保持在同一个目录，哪一边换目录，另一边都跟着走。
@@ -235,7 +235,7 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
 1. 运行 `rse`。左窗格显示你的主目录，右窗格显示你的第一个 rclone 远程（没有远程时也是主目录）；`rse ~/work sftp://me@box/srv` 则从这两处开始。
 2. 用方向键（或 `j` 和 `k`）移动，Enter 打开目录，Backspace 回到上级目录。Tab 在两个窗格之间切换。
 3. 要打开服务器，按 `:` 输入它的地址，例如 `sftp://me@box/srv`（见[位置与地址](#位置与地址)）。要打开 rclone 里的远程，按 F9（或 `g`）：会打开一个列表，里面有本地磁盘和 `rclone.conf` 里的远程；输入文字缩小范围，Enter 打开选中的那个。远程用 `rclone config` 添加；一个都没有时，列表会说明。
-4. 用 Space 标记条目，按 F5 把它们复制到另一个窗格显示的目录，F6 则移动过去。没有标记时，复制的是光标所在的条目。传输窗口显示进度；按 Ctrl+T 进入，可以取消或重试任务。
+4. 用 Space 标记条目，按 F5 把它们复制到另一个窗格显示的目录，F6 则移动过去。没有标记时，复制的是光标所在的条目。传输窗口显示进度，最新的任务在最上面；按 Ctrl+T 进入，可以取消或重试任务。
 5. `?` 列出所有按键，`man rse` 是完整的手册（见[手册](#手册)）。F10（或 `q`）退出。
 
 屏幕从上到下：每个窗格上方的地址行；窗格，最后一行显示过滤条件和光标所在条目的完整名称，刷新（Ctrl+R 或 ↻）后几秒显示刷新的时间和变化；打开时的[终端](#终端)（Ctrl+O）；传输窗口；按键提示，最右端反色显示两个窗格之间复制时会用的引擎（`rsync` 或 `rclone`）；最底部的消息行，显示提示消息，几秒后消失（错误留得更久；刚加入队列的任务在这期间结束的，消息换成结果），输入法也在这里显示正在输入的内容。
@@ -302,7 +302,7 @@ rse [--config <PATH>] [-c <KEY=VALUE>]... [--rclone-config <PATH>] [--ask-passwo
 <tr><td>新建目录</td><td>F7 / n</td><td>F7</td></tr>
 <tr><td>删除</td><td>F8 / Delete</td><td>F8</td></tr>
 <tr><td>开关覆写模式：复制、移动和重命名直接覆盖已有文件，不再询问（每次启动时都是关闭的；开启时屏幕顶部有一行红色提示）</td><td>O</td><td>—</td></tr>
-<tr><td>进入或离开传输队列；在队列里 x 取消，r 重试，c 清除已完成的任务</td><td>Ctrl+T</td><td>Ctrl+X J</td></tr>
+<tr><td>进入或离开传输队列（最新的任务在最上面）；在队列里 x 取消，r 重试，R 分块 + 合并重传（见<a href="#失败与重试">失败与重试</a>），c 清除已完成的任务</td><td>Ctrl+T</td><td>Ctrl+X J</td></tr>
 <tr><td>在窗格下方打开终端，从窗格所在目录开始（本地或通过 ssh 连接的服务器）；在终端里则回到窗格（见<a href="#终端">终端</a>）</td><td colspan="2">Ctrl+O</td></tr>
 <tr><td>让当前窗格和它的终端保持在同一个目录，或者停止：任何一边 <code>cd</code>，另一边跟着走（每次启动时关闭；开启时 <code>⇅</code> 按钮反白）</td><td>Ctrl+S</td><td>—</td></tr>
 <tr><td>错误日志（最近 100 条）</td><td>E</td><td>—</td></tr>
@@ -370,6 +370,15 @@ Ctrl+O 会在窗格下方横跨整个宽度打开一个终端：本地磁盘上�
 - 服务器没有可用的 rsync、用自己的 `cp` 在内部复制时，没有进度显示，先复制成目标旁边的 `.rse-copy.<数字>`，完整之后才改成目标的名字，所以目标的名字下不会有复制到一半的东西。取消、暂停或失败时它会被删掉，重试从头开始。链接按链接复制，时间和权限保留。
 - 在 macOS 上，同一 APFS 卷内复制的文件会被 rclone 克隆，而不是逐字节复制，所以这类复制会立即完成。
 
+### 失败与重试
+
+- 失败的任务会自动再试：等待 `retry_delay` 秒，最多 `retries` 次；开启 `retry_backoff` 时之后每次等待是上一次的两倍（最长 5 分钟）。等待期间它显示为黄色并带倒计时，`x` 取消它，`r` 立即运行；每次重试都记入错误日志（`E`）。目标里已有同名条目的任务不会自动重试：那是冲突，按上面的方式询问。检查目标本身失败（例如列目录超时）则和其他失败一样重试。
+- 所有重试都失败的任务显示为红色，传输窗口顶部的失败计数是红色的，窗口没有焦点时边框也是红色的。同时弹出对话框，列出失败的任务和各自的错误，询问怎么办：
+  - **立即重传**：马上再运行一次。目标能续传时（本地磁盘、经由系统 ssh 的 sftp 服务器、rsync），重试从部分文件接着传。
+  - **分块 + 合并重传**：大于 `chunk_size` MiB 的文件分块上传，哪块失败只重传那一块（次数和等待方式同 `retries` 等设置），全部到达后由目标合并成一个文件。只有其中有任务由 rclone 传到支持这种方式的目标时才提供：支持分块上传的对象存储（S3 及兼容服务、B2、Azure Blob、Oracle Object Storage），按 `rclone.conf` 里该远程自己的 `chunk_size` 分块（S3 为 5 MiB，文件需要超过 10,000 块时更大）；SMB 和 Azure Files 把每块写到文件中对应的位置，按 `chunk_size` 分块。对话框里的其他任务照常重试。分块复制失败时会放弃已传的块，所以目标里不会留下半个文件。
+  - **以后再说**（或 Esc）：任务留在传输窗口里标为失败，之后在那里按 `r` 重传光标所在的任务，按 `R` 分块重传。
+- 对话框开着时又失败的任务会加入这个对话框。设置 `chunked_retry = true` 后，目标支持分块的任务自动重试时也分块进行。
+
 ## 哪个程序做哪件事
 
 sftp 以及经由它工作的 rclone 有两个慢的毛病，这套分派就是为了避开它们：
@@ -410,7 +419,7 @@ sftp 以及经由它工作的 rclone 有两个慢的毛病，这套分派就是�
 
 环境变量或命令行里的值不符合它的配置项时会报错，并说明是哪个环境变量，或者是命令行上的。
 
-设置页面（F4）列出所有配置项（包括 `[keys]`）和你的文件给它们的值，可以直接在上面修改：开关类和只有几个取值的配置项，值的两侧各有一个箭头，按左右方向键或单击箭头换到前一个或后一个值（空格也换到后一个），按 Enter 或单击该配置项则展开它的取值列表供选择；其余配置项按 Enter 或单击进入编辑，按键写成用空格隔开的按键名（`F5 c`）。Del 把配置项从文件里删掉，即恢复默认值。每次修改都立即写入你的文件，文件的其余部分（包括注释）保持原样；不符合配置项的值不会写入。`ui.show_hidden`、`ui.mouse`、`ui.multi_select_modifier`、`ui.drop_action`、`ui.language`、`jobs.max_concurrent` 和按键立即生效，其余配置项下次启动时生效。环境变量或 `--set` 为本次运行设置了某个配置项时，页面会在文件的值旁边显示那个值。
+设置页面（F4）列出所有配置项（包括 `[keys]`）和你的文件给它们的值，可以直接在上面修改：开关类和只有几个取值的配置项，值的两侧各有一个箭头，按左右方向键或单击箭头换到前一个或后一个值（空格也换到后一个），按 Enter 或单击该配置项则展开它的取值列表供选择；其余配置项按 Enter 或单击进入编辑，按键写成用空格隔开的按键名（`F5 c`）。Del 把配置项从文件里删掉，即恢复默认值。每次修改都立即写入你的文件，文件的其余部分（包括注释）保持原样；不符合配置项的值不会写入。`ui.show_hidden`、`ui.mouse`、`ui.multi_select_modifier`、`ui.drop_action`、`ui.language`、`jobs.max_concurrent`、重试的各项设置（`jobs.retries`、`jobs.retry_delay`、`jobs.retry_backoff`、`jobs.chunked_retry`、`jobs.chunk_size`）和按键立即生效，其余配置项下次启动时生效。环境变量或 `--set` 为本次运行设置了某个配置项时，页面会在文件的值旁边显示那个值。
 
 配置项和它们的默认值，和 [`src/defaults.toml`](../src/defaults.toml) 里的一样，再加上 `[keys]`（每个动作的默认按键在帮助界面 `?` 里）：
 
@@ -436,6 +445,11 @@ max_concurrent = 2              # jobs running at once; the rest wait
 poll_ms = 500                   # progress refresh
 engine = "auto"                 # or "rclone": never rsync, nor the machine's rm, mv and cp
 checksum = false                # tell files apart by checksum, not size and time
+retries = 3                     # a failed job is tried again by itself this many times
+retry_delay = 5                 # seconds before the first retry
+retry_backoff = true            # each further retry waits twice as long, up to 5 minutes
+chunked_retry = false           # retries send files in chunks the target puts together
+chunk_size = 64                 # chunked: files larger than this many MiB, in such chunks
 
 [keys]
 copy = ["F5", "c"]
@@ -445,7 +459,7 @@ move = ["F6", "m"]
 # sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename,
 # mkdir, delete, overwrite_mode, queue, terminal, terminal_sync, focus_left_address,
 # focus_left, focus_right_address, focus_right, focus_queue, error_log,
-# settings, help, quit, queue_cancel, queue_retry, queue_clear.
+# settings, help, quit, queue_cancel, queue_retry, queue_retry_chunked, queue_clear.
 # Keys are written like F5, c, E, Ctrl+U, Alt+x, Space, Enter, PgDn, Delete.
 ```
 

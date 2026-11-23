@@ -30,7 +30,7 @@ rse \- remote-sync-explorer，本地磁盘、服务器与 rclone 远程的双栏
 .IP 3. 4
 要在窗格里打开服务器，按 \fB:\fR 输入它的地址，例如 \fBsftp://me@box/srv\fR；要打开 rclone 里的远程，按 \fBF9\fR（或 \fBg\fR），从列表里选，列表里也有本地磁盘。
 .IP 4. 4
-用 Space 选中条目（或按住 Ctrl 点击），按 \fBF5\fR 把它们复制到另一个窗格显示的目录，按 \fBF6\fR 移动过去。没有选中任何条目时，复制的是光标所在的条目。“传输”窗口显示每个任务；按 Ctrl+T 进入，可以取消或重试任务。
+用 Space 选中条目（或按住 Ctrl 点击），按 \fBF5\fR 把它们复制到另一个窗格显示的目录，按 \fBF6\fR 移动过去。没有选中任何条目时，复制的是光标所在的条目。“传输”窗口显示每个任务，最新的在最上面；按 Ctrl+T 进入，可以取消或重试任务。失败的任务会自动重试；仍然失败时，弹出对话框询问立即重传、分块重传还是以后再说。
 .IP 5. 4
 \fB?\fR 在屏幕上列出所有按键；\fBF10\fR（或 \fBq\fR）退出。
 .PP
@@ -338,6 +338,9 @@ T}
 \fBr\fR
 重试任务。
 .TP
+\fBR\fR
+分块 + 合并重传任务，用于能把分块合并成文件的目标（见\fB失败与重试\fR）。
+.TP
 \fBc\fR
 清除已结束的任务。
 .TP
@@ -357,6 +360,10 @@ Ctrl+O 在窗格下方打开一个终端，位于窗格显示的目录：本地�
 窗格和它的终端默认各走各的：在窗格里按 Ctrl+S，或点击 \fB⇅\fR（窗格开着终端时在 \fB↻\fR 左边），把它们连起来，再按一次分开；连着时按钮反白，每次启动时都是分开的。连起来时，终端先回到窗格所在的目录。此后窗格在同一磁盘或服务器上换到别的目录时，rse 会在 shell 里没有命令运行时输入 \fBcd\fR。窗格也跟随终端：在终端里敲完一行、shell 回到提示符后，rse 会问 shell 在哪个目录，目录变了，窗格就跟过去，所以在终端里 \fBcd\fR，文件列表会一起走。窗格显示不了的目录（在打开这个远程时所用的根目录之外）不会跟随。
 .SH 冲突与覆盖
 目标里已有同名条目时，rse 会询问：覆盖、跳过、全部覆盖、全部跳过或取消；默认跳过。只有大小写不同的名称算作同名。移动和删除总要确认。每个任务开始时会再检查一次目标，两个任务从不同时写同一个文件。覆盖时能接着来的就接着来：相同的文件跳过，传了一半的文件续传，不同的文件替换。停下的传输把已完成的部分留在目标旁边：rclone 为 \fI<名称>.rse\-partial\fR，rsync 为 \fI.rse\-partial/\fR 目录；放弃这次传输时请删掉它们。跨远程移动是先复制、再删除源文件。
+.SH 失败与重试
+失败的任务等待 \fBjobs.retry_delay\fR 秒后自动再试，最多 \fBjobs.retries\fR 次；开启 \fBjobs.retry_backoff\fR 时，之后每次等待是上一次的两倍，最长 5 分钟。等待重试的任务显示为黄色并带倒计时，每次重试都记入错误日志。目标里已有同名条目的任务不会自动重试，而是按冲突询问。
+.PP
+所有重试都失败的任务显示为红色，传输窗口的边框变红，并弹出对话框列出失败的任务和错误：\fI立即重传\fR马上再试（能续传的文件从断点接着传）；\fI分块 + 合并重传\fR把大于 \fBjobs.chunk_size\fR MiB 的文件分块上传，哪块失败只重传那一块，全部到达后由目标合并成一个文件（S3 等对象存储的分块上传，按 rclone.conf 里该远程的 chunk_size 分块；SMB 和 Azure Files 按 \fBjobs.chunk_size\fR 分块；只有其中有任务的目标支持时才提供）；\fI以后再说\fR让任务留在传输窗口里标为失败，之后在那里按 \fBr\fR 或 \fBR\fR 重传。开启 \fBjobs.chunked_retry\fR 时，自动重试也分块进行。能续传的目标（本地磁盘、经由系统 ssh 的 sftp 服务器）不需要分块：重试会从部分文件接着传。
 .SH 配置
 每项设置取自下列各层中有它的最高一层：默认值、配置文件、环境变量（\fBRSE_\fR...），以及命令行上的 \fB\-\-set\fR。配置文件只需写要改的设置；写错的设置名是错误，会给出所在的行和列。各项设置及其默认值：
 .PP
@@ -382,14 +389,19 @@ max_concurrent = 2       # 同时运行的任务数
 poll_ms = 500            # 进度刷新间隔
 engine = "auto"          # 或 "rclone"：不用 rsync，也不用机器自己的 rm、mv 和 cp
 checksum = false         # 按校验和比较文件
+retries = 3              # 失败的任务自动重试的次数
+retry_delay = 5          # 第一次重试前等待的秒数
+retry_backoff = true     # 之后每次重试等待加倍
+chunked_retry = false    # 重试时分块上传
+chunk_size = 64          # 大于这么多 MiB 的文件才分块
 
 [keys]
 copy = ["F5", "c"]       # 任何操作，按下面的名称
 .EE
 .PP
-操作的名称有 switch_pane, up, down, page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort, sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename, mkdir, delete, overwrite_mode, queue, terminal, terminal_sync, focus_left_address, focus_left, focus_right_address, focus_right, focus_queue, error_log, settings, help, quit, queue_cancel, queue_retry, queue_clear。按键写作 F5、c、E、Ctrl+U、Alt+x、Space、Enter、PgDn 或 Delete 这样。
+操作的名称有 switch_pane, up, down, page_up, page_down, home, end, enter, parent, mark, mark_all, filter, sort, sort_reverse, toggle_hidden, goto, remote, swap, refresh, copy, move, rename, mkdir, delete, overwrite_mode, queue, terminal, terminal_sync, focus_left_address, focus_left, focus_right_address, focus_right, focus_queue, error_log, settings, help, quit, queue_cancel, queue_retry, queue_retry_chunked, queue_clear。按键写作 F5、c、E、Ctrl+U、Alt+x、Space、Enter、PgDn 或 Delete 这样。
 .PP
-设置页面（\fBF4\fR）列出所有设置和配置文件给它们的值，可以直接在上面修改：开关类和只有几个取值的设置，值的两侧各有一个箭头，按左右方向键或单击箭头换到前一个或后一个值（空格也换到后一个），按 Enter 或单击该设置则展开它的取值列表供选择；其余设置按 Enter 或单击进入编辑，按键写成用空格隔开的按键名。Del 把设置从文件里删掉，即恢复默认值。每次修改都立即写入配置文件，文件的其余部分（包括注释）保持原样；不符合设置的值不会写入。\fBui.show_hidden\fR、\fBui.mouse\fR、\fBui.multi_select_modifier\fR、\fBui.drop_action\fR、\fBui.language\fR、\fBjobs.max_concurrent\fR 和按键立即生效，其余设置下次启动时生效。环境变量或 \fB\-\-set\fR 为本次运行设了某项设置时，页面会在文件的值旁边显示那个值。
+设置页面（\fBF4\fR）列出所有设置和配置文件给它们的值，可以直接在上面修改：开关类和只有几个取值的设置，值的两侧各有一个箭头，按左右方向键或单击箭头换到前一个或后一个值（空格也换到后一个），按 Enter 或单击该设置则展开它的取值列表供选择；其余设置按 Enter 或单击进入编辑，按键写成用空格隔开的按键名。Del 把设置从文件里删掉，即恢复默认值。每次修改都立即写入配置文件，文件的其余部分（包括注释）保持原样；不符合设置的值不会写入。\fBui.show_hidden\fR、\fBui.mouse\fR、\fBui.multi_select_modifier\fR、\fBui.drop_action\fR、\fBui.language\fR、\fBjobs.max_concurrent\fR、重试的各项设置（\fBjobs.retries\fR、\fBjobs.retry_delay\fR、\fBjobs.retry_backoff\fR、\fBjobs.chunked_retry\fR、\fBjobs.chunk_size\fR）和按键立即生效，其余设置下次启动时生效。环境变量或 \fB\-\-set\fR 为本次运行设了某项设置时，页面会在文件的值旁边显示那个值。
 .SH 经由 OpenSSH 的 SFTP
 rse 经由系统 ssh 访问 sftp 服务器，所以 \fI\(ti/.ssh/config\fR 里的设置都适用。每台服务器只登录一次，并保持这条主连接；rclone 的所有连接都经由它，所以服务器每次会话只看到一次登录。这条连接不转发 agent、X11 或端口。ssh 要的密码、密钥口令或一次性验证码在对话框里询问，对话框可以记住密码（见\fB文件\fR一节）。没有 ssh、\fBrclone.system_ssh\fR 为 false、远程需要只有 rclone 内置 ssh 才能做的事，或经由 ssh 登录失败时，改用 rclone 内置的 ssh；这时它按 ssh 的 \fIknown_hosts\fR 检查主机密钥。
 .SH 环境变量

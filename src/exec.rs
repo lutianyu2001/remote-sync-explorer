@@ -270,7 +270,9 @@ fn job_worker(
                 let event = match run {
                     Ok(run) => {
                         active.insert(id, run);
-                        Event::JobStarted { id, engine: started.0, resumable: started.1 }
+                        let (engine, target) = started;
+                        let (resumable, chunkable) = (target.resumable, target.chunked);
+                        Event::JobStarted { id, engine, resumable, chunkable }
                     }
                     Err(e) => {
                         let finished = Some(Err(e));
@@ -321,21 +323,23 @@ fn job_worker(
     }
 }
 
-/// Starts `transfer`, and tells which engine runs it and whether a stop keeps the file
+/// Starts `transfer`, and tells which engine runs it, whether a stop keeps the file
 /// under way: rsync's partial files always do, rclone's copy where the target allows
-/// it, a delete loses nothing, and the machine's own copy starts over.
+/// it, a delete loses nothing, and the machine's own copy starts over; and whether it
+/// can send files in chunks: rclone's copy, onto a target that takes them.
 fn start(
     backend: &dyn Backend,
     engines: &Engines,
     transfer: Transfer,
     method: &str,
     mut params: Value,
-) -> (Result<Active, String>, (Engine, bool)) {
+) -> (Result<Active, String>, (Engine, api::CopyTarget)) {
+    let whole = |resumable| api::CopyTarget { resumable, chunked: false };
     if let Some((run, command)) = engines.server_rsync(&transfer) {
         let run = Running::spawn_on(&run, &command)
             .map(|run| Active::Rsync { run: Box::new(run), transfer })
             .map_err(|e| tr!("rsync-not-started", error = e.to_string()));
-        return (run, (Engine::Rsync, true));
+        return (run, (Engine::Rsync, whole(true)));
     }
     if let Some((command, entry)) = engines.sftp_removal(&transfer) {
         let run = match sftp::Removal::spawn(command, &entry) {
@@ -344,33 +348,33 @@ fn start(
             // A path that names nothing is rclone's to refuse.
             None => Err(tr!("host-not-started", error = entry.shown())),
         };
-        return (run, (Engine::Sftp, true));
+        return (run, (Engine::Sftp, whole(true)));
     }
     if let Some((run, command)) = engines.host_command(&transfer) {
         let run = hostops::Running::spawn(&run, &command)
             .map(|run| Active::Host { run: Box::new(run) })
             .map_err(|e| tr!("host-not-started", error = e.to_string()));
         // A stopped copy is removed; a delete or a move keeps what it did.
-        return (run, (Engine::Host, transfer.kind != OpKind::Copy));
+        return (run, (Engine::Host, whole(transfer.kind != OpKind::Copy)));
     }
     if let Some(args) = engines.rsync_args(&transfer) {
         let run = Running::spawn(args)
             .map(|run| Active::Rsync { run: Box::new(run), transfer })
             .map_err(|e| tr!("rsync-not-started", error = e.to_string()));
-        return (run, (Engine::Rsync, true));
+        return (run, (Engine::Rsync, whole(true)));
     }
-    let mut resumable = true;
+    let mut target = whole(true);
     let mut method = method;
     if method == api::COPY {
         let fs = |key: &str| params[key].as_str().unwrap_or_default().to_owned();
         match api::resumable(backend, &fs("srcFs"), &fs("dstFs")) {
-            Ok(r) => resumable = r,
+            Ok(t) => target = t,
             // An rclone without rse's additions (an external rcd) copies as rclone does.
             Err(e) if api::is_unknown_method(&e) => {
                 (method, params) = api::plain_copy(&params);
-                resumable = false;
+                target = whole(false);
             }
-            Err(_) => resumable = false,
+            Err(_) => target = whole(false),
         }
     }
     if method == api::COPY && engines.checksum {
@@ -379,7 +383,7 @@ fn start(
     let run = api::submit(backend, method, params)
         .map(|rc_id| Active::Rclone { rc_id, stop_sent: false })
         .map_err(|e| e.message);
-    (run, (Engine::Rclone, resumable))
+    (run, (Engine::Rclone, target))
 }
 
 fn poll_jobs(backend: &dyn Backend, active: &mut BTreeMap<JobId, Active>) -> Vec<JobSnapshot> {

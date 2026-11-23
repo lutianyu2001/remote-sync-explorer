@@ -47,6 +47,8 @@ pub enum Action {
     Quit,
     QueueCancel,
     QueueRetry,
+    /// Retry a failed job sending its files in chunks.
+    QueueRetryChunked,
     QueueClear,
     /// Focus a window: its key is shown in the window's top left corner.
     FocusLeftAddress,
@@ -166,6 +168,12 @@ const BINDINGS: &[Binding] = &[
         scope: Scope::Queue,
     },
     Binding { action: Action::QueueRetry, name: "queue_retry", keys: &["r"], scope: Scope::Queue },
+    Binding {
+        action: Action::QueueRetryChunked,
+        name: "queue_retry_chunked",
+        keys: &["R"],
+        scope: Scope::Queue,
+    },
     Binding { action: Action::QueueClear, name: "queue_clear", keys: &["c"], scope: Scope::Queue },
 ];
 

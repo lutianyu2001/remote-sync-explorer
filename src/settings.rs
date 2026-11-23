@@ -33,6 +33,11 @@ const LIVE: &[&str] = &[
     "ui.drop_action",
     "ui.language",
     "jobs.max_concurrent",
+    "jobs.retries",
+    "jobs.retry_delay",
+    "jobs.retry_backoff",
+    "jobs.chunked_retry",
+    "jobs.chunk_size",
 ];
 
 /// How a setting is changed on the page.

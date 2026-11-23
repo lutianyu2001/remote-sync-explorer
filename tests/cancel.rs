@@ -52,7 +52,7 @@ fn run(exec: &Exec, effects: Vec<Effect>) {
             }
             Effect::Stop(id) => exec.stop(id),
             Effect::Check { .. } => unreachable!("approved transfers start without a check"),
-            Effect::Finished { .. } => {}
+            Effect::Finished { .. } | Effect::Retrying { .. } => {}
         }
     }
 }

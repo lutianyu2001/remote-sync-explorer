@@ -44,6 +44,14 @@ func init() {
 - move - true to move instead of copy, deleting the emptied source directories
 - checksum - true to compare files by checksum rather than size and modification time
 - createEmptySrcDirs - true to create empty source directories on the destination
+- chunked - true to send each file larger than chunkSize in chunks, where the
+  destination can put a file together from chunks (a multipart upload, as on S3) and
+  partial files are not resumed: each chunk is sent again on its own when it fails, and
+  the destination puts the file together once all have arrived
+- chunkSize - the chunk size in bytes (default 64 MiB); the destination may take another
+- chunkRetries - how many more times a failed chunk is sent (default 0)
+- chunkDelayMs - how long the first retry of a chunk waits, in milliseconds (default 2000)
+- chunkBackoff - true to double the wait of each further retry, up to 5 minutes (default true)
 
 Files that are already the same on the destination are skipped. Files are written to
 their name plus ".rse-partial" and renamed when complete; a partial file left by a
@@ -65,6 +73,7 @@ other job; core/stats for its group reports its progress.
 Returns:
 
 - resumable - true when rse/copy writes partial files on dstFs that it can resume
+- chunked - true when rse/copy with chunked=true sends files to dstFs in chunks
 `,
 	})
 }
@@ -116,7 +125,12 @@ func rcResumable(ctx context.Context, in rc.Params) (rc.Params, error) {
 	if err != nil {
 		return nil, err
 	}
-	return rc.Params{"resumable": t != nil}, nil
+	if t != nil {
+		return rc.Params{"resumable": true, "chunked": false}, nil
+	}
+	// The copy that follows makes the same fs, and says why it cannot.
+	f, err := rc.GetFsNamed(ctx, in, "dstFs")
+	return rc.Params{"resumable": false, "chunked": err == nil && chunkable(f)}, nil
 }
 
 func rcCopy(ctx context.Context, in rc.Params) (rc.Params, error) {
@@ -146,6 +160,9 @@ func rcCopy(ctx context.Context, in rc.Params) (rc.Params, error) {
 		if *p, err = optionalBool(in, name); err != nil {
 			return nil, err
 		}
+	}
+	if j.chunks, err = chunkingParams(in); err != nil {
+		return nil, err
 	}
 	if j.target, err = targetFor(j.fdst); err != nil {
 		return nil, err

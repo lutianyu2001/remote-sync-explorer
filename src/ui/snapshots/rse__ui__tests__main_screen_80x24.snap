@@ -20,8 +20,8 @@ expression: h.render()
 ╰───────────────────────────[2 marked]─╯╰──────────────────────────────────────╯
 ╭─[5] Transfers────────────────────────────────────────────────────────────────╮
 │ 1 running · 1 queued                                                         │
-│   copy huge.bin → nas:backup/2026       ██████░░░░░░  48%    52 MB/s   0:16 ✕│
 │   copy report-final-v3.pdf → nas:backup/2026                         queued ✕│
+│   copy huge.bin → nas:backup/2026       ██████░░░░░░  48%    52 MB/s   0:16 ✕│
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
  F2 Rename  F5 Copy  F6 Move  F8 Delete  F9 Remote  / Filter  ? Help     rclone

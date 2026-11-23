@@ -220,7 +220,7 @@ impl App {
     }
 
     /// Takes up the settings that hold without a new start: the interface's, the keys,
-    /// and how many jobs run at once. The mouse is turned on and off by the event loop,
+    /// how many jobs run at once, and how failed ones are tried again. The mouse is turned on and off by the event loop,
     /// which reads `ui.mouse`.
     fn apply_settings(&mut self, config: Config, keymap: Keymap) {
         if config.ui.language != self.ui.language {
@@ -234,6 +234,7 @@ impl App {
         }
         self.ui = config.ui;
         self.keymap = keymap;
+        self.queue.set_retry(config.jobs.retry_policy());
         let effects = self.queue.set_max_concurrent(config.jobs.max_concurrent);
         self.run_effects(effects);
     }

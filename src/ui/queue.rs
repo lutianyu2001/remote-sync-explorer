@@ -34,7 +34,13 @@ pub fn height(app: &App, screen_height: u16) -> u16 {
 /// the panes show.
 pub fn draw(buf: &mut Buffer, area: Rect, app: &App) -> Vec<(u16, usize, u16)> {
     let focused = app.focus == Focus::Queue;
-    let border = if focused { super::FOCUSED } else { Style::new() };
+    // Red while a job of the endpoints shown has failed, so that it is not missed.
+    let failed = app.queue.visible().iter().any(|j| matches!(j.state, JobState::Failed(_)));
+    let border = match (focused, failed) {
+        (true, _) => super::FOCUSED,
+        (false, true) => FAILED.add_modifier(Modifier::BOLD),
+        (false, false) => Style::new(),
+    };
     let name = tr!("window-transfers");
     let window = super::named(app, Action::FocusQueue, &name).border_style(border);
     let area = super::window(buf, area, window);
@@ -52,10 +58,12 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App) -> Vec<(u16, usize, u16)> {
     // While focused, the selected job gets a second line with the current file.
     let detail = focused && jobs.get(app.queue_cursor).is_some_and(|j| j.current_file().is_some());
     let job_rows = if detail { rows.saturating_sub(1).max(1) } else { rows };
+    // Unfocused, from the newest job under way, waiting for a retry or failed: the jobs
+    // below it are older, and those above only queued.
     let anchor = if focused {
         app.queue_cursor
     } else {
-        jobs.iter().position(|j| !j.state.is_finished()).unwrap_or(0)
+        jobs.iter().position(|j| noteworthy(&j.state)).unwrap_or(0)
     };
     let start = if focused {
         anchor.saturating_sub(job_rows - 1)
@@ -94,40 +102,62 @@ pub fn draw(buf: &mut Buffer, area: Rect, app: &App) -> Vec<(u16, usize, u16)> {
     hits
 }
 
+/// Failed jobs, and the count of them.
+const FAILED: Style = Style::new().fg(Color::Red);
+/// Jobs waiting to be tried again.
+const RETRYING: Style = Style::new().fg(Color::Yellow);
+
+/// A job the transfer window shows first when it is not focused.
+fn noteworthy(state: &JobState) -> bool {
+    state.is_active() || matches!(state, JobState::Failed(_) | JobState::Retrying { .. })
+}
+
 fn draw_header(buf: &mut Buffer, area: Rect, app: &App, focused: bool) {
-    let w = usize::from(area.width);
     let jobs = app.queue.visible();
     let count = |f: fn(&JobState) -> bool| jobs.iter().filter(|j| f(&j.state)).count();
     let done = count(|s| *s == JobState::Done);
     let failed = count(|s| matches!(s, JobState::Failed(_)));
-    let mut text = String::new();
+    let retrying = count(|s| matches!(s, JobState::Retrying { .. }));
+    let bold = Style::new().add_modifier(Modifier::BOLD);
+    let mut parts = Vec::new();
     if jobs.is_empty() && app.queue.elsewhere() == 0 {
-        text.push_str(&tr!("queue-idle"));
+        parts.push((tr!("queue-idle"), bold));
     } else {
-        let mut parts = vec![
-            tr!("queue-running", count = count(JobState::is_active)),
-            tr!("queue-queued", count = count(|s| *s == JobState::Queued)),
-        ];
+        parts.push((tr!("queue-running", count = count(JobState::is_active)), bold));
+        parts.push((tr!("queue-queued", count = count(|s| *s == JobState::Queued)), bold));
+        if retrying > 0 {
+            parts.push((tr!("queue-retrying", count = retrying), RETRYING.patch(bold)));
+        }
         if done > 0 {
-            parts.push(tr!("queue-done", count = done));
+            parts.push((tr!("queue-done", count = done), bold));
         }
         if failed > 0 {
-            parts.push(tr!("queue-failed", count = failed));
+            parts.push((tr!("queue-failed", count = failed), FAILED.patch(bold)));
         }
         let elsewhere = app.queue.elsewhere();
         if elsewhere > 0 {
-            parts.push(tr!("queue-elsewhere", count = elsewhere));
+            parts.push((tr!("queue-elsewhere", count = elsewhere), bold));
         }
-        text.push_str(&parts.join(" · "));
+    }
+    // `2 running · 1 queued`, each part in its own style.
+    let mut x = area.x + 1;
+    let end = area.x + area.width;
+    for (i, (text, style)) in parts.iter().enumerate() {
+        let text = if i == 0 { text.clone() } else { format!(" · {text}") };
+        x = put(buf, x, end, area.y, &text, *style);
     }
     if focused {
-        text.push_str("   ");
-        text.push_str(&tr!("queue-keys"));
+        put(buf, x, end, area.y, &format!("   {}", tr!("queue-keys")), bold);
     }
-    // `2 running · 1 queued`.
-    let w = w.saturating_sub(1);
-    let text = take_width(&text, w).to_owned();
-    buf.set_stringn(area.x + 1, area.y, &text, w, Style::new().add_modifier(Modifier::BOLD));
+}
+
+/// Writes `text` at `x` on row `y`, as much of it as fits before `end`; returns where
+/// it ends.
+fn put(buf: &mut Buffer, x: u16, end: u16, y: u16, text: &str, style: Style) -> u16 {
+    let room = usize::from(end.saturating_sub(x));
+    let text = take_width(text, room);
+    buf.set_stringn(x, y, text, room, style);
+    x + u16::try_from(width(text)).unwrap_or(0)
 }
 
 /// Draws one job row and returns the column of its cancel mark.
@@ -141,9 +171,16 @@ fn draw_job(buf: &mut Buffer, area: Rect, app: &App, job: &Job, selected: bool) 
         JobState::Failed(e) => tr!("job-failed", error = e.as_str()),
         JobState::Cancelled => tr!("job-cancelled"),
         JobState::Skipped => tr!("job-skipped"),
+        JobState::Retrying { error, left, .. } => tr!(
+            "job-retrying-in",
+            attempt = job.attempts,
+            of = app.queue.retry_policy().retries,
+            seconds = left.as_secs() + u64::from(left.subsec_nanos() > 0),
+            error = error.as_str()
+        ),
     };
     let right_w = match job.state {
-        JobState::Failed(_) => (w / 2).min(width(&right)),
+        JobState::Failed(_) | JobState::Retrying { .. } => (w / 2).min(width(&right)),
         _ => width(&right),
     };
     let right = take_width(&right, right_w);
@@ -156,7 +193,8 @@ fn draw_job(buf: &mut Buffer, area: Rect, app: &App, job: &Job, selected: bool) 
         if cancellable(&job.state) { " ✕" } else { "  " }
     );
     let style = match job.state {
-        JobState::Failed(_) => Style::new().fg(Color::Red),
+        JobState::Failed(_) => FAILED.add_modifier(Modifier::BOLD),
+        JobState::Retrying { .. } => RETRYING,
         JobState::Done | JobState::Cancelled | JobState::Skipped => {
             Style::new().add_modifier(Modifier::DIM)
         }

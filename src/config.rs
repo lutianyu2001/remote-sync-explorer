@@ -154,11 +154,44 @@ pub struct JobsConfig {
     pub engine: EngineChoice,
     /// Tell files apart by checksum instead of size and modification time.
     pub checksum: bool,
+    /// How many more times a failed job is tried by itself.
+    pub retries: u32,
+    /// Seconds the first retry waits.
+    pub retry_delay: u64,
+    /// Each further retry waits twice as long as the one before.
+    pub retry_backoff: bool,
+    /// Retries send files in chunks where the target puts them together.
+    pub chunked_retry: bool,
+    /// The size of a chunk, in MiB.
+    pub chunk_size: u64,
 }
 
 impl Default for JobsConfig {
     fn default() -> Self {
-        Self { max_concurrent: 2, poll_ms: 500, engine: EngineChoice::Auto, checksum: false }
+        Self {
+            max_concurrent: 2,
+            poll_ms: 500,
+            engine: EngineChoice::Auto,
+            checksum: false,
+            retries: 3,
+            retry_delay: 5,
+            retry_backoff: true,
+            chunked_retry: false,
+            chunk_size: 64,
+        }
+    }
+}
+
+impl JobsConfig {
+    /// How the queue tries failed jobs again.
+    pub fn retry_policy(&self) -> crate::jobs::RetryPolicy {
+        crate::jobs::RetryPolicy {
+            retries: self.retries,
+            delay: std::time::Duration::from_secs(self.retry_delay),
+            backoff: self.retry_backoff,
+            chunked: self.chunked_retry,
+            chunk_size: self.chunk_size.saturating_mul(1 << 20),
+        }
     }
 }
 
@@ -310,6 +343,8 @@ impl Config {
             .with_context(|| origin("jobs.max_concurrent"))?;
         at_least("jobs.poll_ms", config.jobs.poll_ms, 50)
             .with_context(|| origin("jobs.poll_ms"))?;
+        at_least("jobs.chunk_size", config.jobs.chunk_size, 1)
+            .with_context(|| origin("jobs.chunk_size"))?;
         Ok(config)
     }
 }
@@ -370,6 +405,11 @@ max_concurrent = 3
 poll_ms = 500
 engine = "rclone"
 checksum = true
+retries = 5
+retry_delay = 1
+retry_backoff = false
+chunked_retry = true
+chunk_size = 16
 
 [keys]
 copy = ["F5", "c"]
@@ -382,6 +422,9 @@ move = ["F6", "m"]
         assert_eq!(c.ui.language, Language::ZhCn);
         assert_eq!(c.jobs.max_concurrent, 3);
         assert_eq!((c.jobs.engine, c.jobs.checksum), (EngineChoice::Rclone, true));
+        let retry = c.jobs.retry_policy();
+        assert_eq!((retry.retries, retry.delay.as_secs(), retry.backoff), (5, 1, false));
+        assert_eq!((retry.chunked, retry.chunk_size), (true, 16 << 20));
         assert_eq!(c.keys["move"], ["F6", "m"]);
         assert_eq!(c.keys["quit"], ["F10", "q"]); // not written: the default
     }
@@ -394,6 +437,9 @@ move = ["F6", "m"]
         assert!(message(&error).starts_with("in config.toml: unknown variant `move`"), "{error:#}");
         let error = Config::parse("[jobs]\nmax_concurrent = 0\n").unwrap_err();
         assert_eq!(message(&error), "in config.toml: jobs.max_concurrent must be at least 1");
+        let error = Config::parse("[jobs]\nchunk_size = 0\n").unwrap_err();
+        assert_eq!(message(&error), "in config.toml: jobs.chunk_size must be at least 1");
+        assert!(Config::parse("[jobs]\nretries = -1\n").is_err());
         assert!(Config::parse("[keys]\nnope = [\"x\"]\n").is_err());
         assert!(Config::parse("[rclone]\ntransfers = -1\n").is_err());
         assert!(

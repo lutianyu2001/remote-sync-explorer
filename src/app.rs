@@ -12,7 +12,7 @@ use crate::endpoint::{Address, Endpoint, Scheme};
 use crate::event::{BrowseOp, Entry, Event, JobId, JobSnapshot, Mark, PaneId, ReqId};
 use crate::exec::Exec;
 use crate::hitmap::{HitMap, ScrollbarArea, Target};
-use crate::jobs::{Effect, Engine, JobState, OpKind, Queue, Transfer, same_name};
+use crate::jobs::{Checked, Effect, Engine, JobState, OpKind, Queue, Transfer, same_name};
 use crate::keymap::{Action, Keymap};
 use crate::location::{Destination, Location, endpoint_key, safe_name};
 use crate::rclone::RpcError;
@@ -417,6 +417,13 @@ pub enum Dialog {
         jobs: Vec<JobId>,
         focus: usize,
     },
+    /// Jobs that failed, retries and all: whether to try them again now, in chunks
+    /// (offered when one of them `chunkable`), or later.
+    JobFailed {
+        jobs: Vec<JobId>,
+        chunkable: bool,
+        focus: usize,
+    },
     Help {
         scroll: usize,
     },
@@ -446,6 +453,14 @@ impl Dialog {
             Self::Leave { .. } => vec![tr!("button-pause-and-leave"), tr!("button-stay")],
             Self::Input { .. } => vec![tr!("button-ok"), tr!("button-cancel")],
             Self::SshConfirm { .. } => vec![tr!("button-yes"), tr!("button-no")],
+            Self::JobFailed { chunkable, .. } => {
+                let mut buttons = vec![tr!("button-retry-now")];
+                if *chunkable {
+                    buttons.push(tr!("button-retry-chunked"));
+                }
+                buttons.push(tr!("button-later"));
+                buttons
+            }
             Self::Remotes { .. }
             | Self::Help { .. }
             | Self::Errors { .. }
@@ -461,6 +476,7 @@ impl Dialog {
             | Self::JobConflict { focus, .. }
             | Self::Drop { focus, .. }
             | Self::SshConfirm { focus, .. }
+            | Self::JobFailed { focus, .. }
             | Self::Quit { focus, .. }
             | Self::Leave { focus, .. } => Some(focus),
             _ => None,
@@ -474,6 +490,7 @@ impl Dialog {
             | Self::JobConflict { focus, .. }
             | Self::Drop { focus, .. }
             | Self::SshConfirm { focus, .. }
+            | Self::JobFailed { focus, .. }
             | Self::Quit { focus, .. }
             | Self::Leave { focus, .. } => Some(*focus),
             _ => None,
@@ -622,6 +639,8 @@ pub struct AppInit {
     pub queue_file: Option<PathBuf>,
     /// Whether the terminal may be opened (`--no-terminal` turns it off).
     pub terminal: bool,
+    /// How failed jobs are tried again.
+    pub retry: crate::jobs::RetryPolicy,
     /// Where the settings are from, for the settings page.
     pub settings: crate::settings::Source,
 }
@@ -666,6 +685,9 @@ pub struct App {
     /// Jobs that found their target taken, with what it has, oldest first; asked about
     /// once no other dialog is open.
     job_conflicts: Vec<(JobId, Entry)>,
+    /// Jobs that failed, retries and all, oldest first; the user is asked whether to try
+    /// them again once no other dialog is open.
+    job_failures: Vec<JobId>,
     last_click: Option<((u16, u16), Instant)>,
     /// When Esc was last pressed by itself, for `ESC_PREFIX`.
     esc_at: Option<Instant>,
@@ -728,6 +750,7 @@ impl App {
             ssh_prompts: VecDeque::new(),
             ssh_prompt_shown: false,
             job_conflicts: Vec::new(),
+            job_failures: Vec::new(),
             last_click: None,
             esc_at: None,
             dialog_since: None,
@@ -742,6 +765,7 @@ impl App {
             terminal_allowed: init.terminal,
             settings: init.settings,
         };
+        app.queue.set_retry(init.retry);
         app.navigate(0, init.left);
         app.navigate(1, init.right);
         let effects = app.queue.push(init.saved);
@@ -785,6 +809,7 @@ impl App {
         }
         self.sync_ssh_prompt();
         self.sync_job_conflicts();
+        self.sync_job_failures();
         let after = dialog_identity(self.dialog.as_ref());
         if after != before {
             self.dialog_since = after.is_some().then_some(now);
@@ -811,8 +836,8 @@ impl App {
             Event::Obscured { req, result } => self.on_obscured(req, result),
             Event::SshPrompt { question, reply } => self.ssh_prompts.push_back((question, reply)),
             Event::Jobs(snaps) => self.on_jobs(snaps, now),
-            Event::JobStarted { id, engine, resumable } => {
-                self.queue.started(id, engine, resumable);
+            Event::JobStarted { id, engine, resumable, chunkable } => {
+                self.queue.started(id, engine, resumable, chunkable);
             }
             Event::Engine { endpoints, engine } => {
                 self.engines.insert(pair(endpoints.0, endpoints.1), engine);
@@ -1149,6 +1174,17 @@ impl App {
                     self.run_effects(effects);
                 }
             }
+            Action::QueueRetryChunked => {
+                let Some(job) = self.queue.visible().get(self.queue_cursor).copied() else {
+                    return;
+                };
+                if job.chunkable() {
+                    let effects = self.queue.retry_chunked(job.id);
+                    self.run_effects(effects);
+                } else {
+                    self.say(tr!("job-not-chunkable", job = job_label(job)));
+                }
+            }
             Action::QueueClear => {
                 self.queue.clear_finished();
                 self.queue_cursor =
@@ -1160,6 +1196,7 @@ impl App {
     }
 
     /// Runs an action from a key or a click on the key hints.
+    #[allow(clippy::too_many_lines, reason = "one arm per action")]
     pub fn action(&mut self, action: Action, now: Instant) {
         let pane = self.active;
         let rows_per_page = self.page(pane);
@@ -1259,7 +1296,10 @@ impl App {
                 self.focus = Focus::Address;
                 self.active = usize::from(action == Action::FocusRightAddress);
             }
-            Action::QueueCancel | Action::QueueRetry | Action::QueueClear => {}
+            Action::QueueCancel
+            | Action::QueueRetry
+            | Action::QueueRetryChunked
+            | Action::QueueClear => {}
         }
     }
 
@@ -1348,6 +1388,7 @@ impl App {
             Dialog::Confirm { .. }
             | Dialog::Conflict { .. }
             | Dialog::JobConflict { .. }
+            | Dialog::JobFailed { .. }
             | Dialog::Drop { .. }
             | Dialog::SshConfirm { .. }
             | Dialog::Quit { .. }
@@ -1654,6 +1695,27 @@ impl App {
         }
     }
 
+    /// Asks whether to try the jobs that failed again, once no other dialog is open.
+    /// Those that fail while it is open join it, so that its choices take them in.
+    fn sync_job_failures(&mut self) {
+        self.job_failures.retain(|id| {
+            self.queue.jobs.iter().any(|j| j.id == *id && matches!(j.state, JobState::Failed(_)))
+        });
+        if self.job_failures.is_empty() || self.quit != QuitState::Running {
+            return;
+        }
+        match &mut self.dialog {
+            None => {
+                let jobs = std::mem::take(&mut self.job_failures);
+                let chunkable =
+                    self.queue.jobs.iter().any(|j| jobs.contains(&j.id) && j.chunkable());
+                self.dialog = Some(Dialog::JobFailed { jobs, chunkable, focus: 0 });
+            }
+            Some(Dialog::JobFailed { jobs, .. }) => jobs.append(&mut self.job_failures),
+            Some(_) => {}
+        }
+    }
+
     fn on_obscured(&mut self, req: ReqId, result: Result<String, RpcError>) {
         let Some(Pending::Login { pane, mut endpoint, path }) = self.pending.remove(&req) else {
             return;
@@ -1673,6 +1735,21 @@ impl App {
         self.next_req += 1;
         self.pending.insert(id, pending);
         id
+    }
+
+    /// The choice `button` of the dialog about the failed `jobs`: retry now, in chunks
+    /// those that can (the others as they are) when the dialog offers it, or later.
+    fn retry_failed(&mut self, jobs: Vec<JobId>, chunkable: bool, button: usize) {
+        let chunked = chunkable && button == 1;
+        if button != 0 && !chunked {
+            return;
+        }
+        for id in jobs {
+            let can = self.queue.jobs.iter().any(|j| j.id == id && j.chunkable());
+            let effects =
+                if chunked && can { self.queue.retry_chunked(id) } else { self.queue.retry(id) };
+            self.run_effects(effects);
+        }
     }
 
     fn press_button(&mut self, dialog: Dialog, button: usize, now: Instant) {
@@ -1738,6 +1815,9 @@ impl App {
                 if index < conflicts.len() {
                     self.dialog = Some(Dialog::JobConflict { conflicts, index, focus: SKIP });
                 }
+            }
+            Dialog::JobFailed { jobs, chunkable, .. } => {
+                self.retry_failed(jobs, chunkable, button);
             }
             Dialog::Quit { .. } => {
                 if button == 0 {
@@ -1864,7 +1944,12 @@ impl App {
             return;
         }
         let first = self.queue.next_id();
+        let shown = self.queue.visible().len();
         let effects = self.queue.push(transfers);
+        // The newest jobs come first: the cursor stays on the job it was on.
+        if self.focus == Focus::Queue && shown > 0 {
+            self.queue_cursor += self.queue.visible().len().saturating_sub(shown);
+        }
         let jobs = (first..self.queue.next_id()).collect();
         let queued = tr!("queued", op = plan.kind.verb(), count = n);
         self.show(queued, Life::Batch { op: plan.kind, jobs });
@@ -1887,7 +1972,24 @@ impl App {
                     self.exec.probe(req, dir);
                 }
                 Effect::Stop(id) => self.exec.stop(id),
-                Effect::Finished { id, touched, error } => {
+                Effect::Retrying { id, error, attempt, of, wait } => {
+                    let label = self
+                        .queue
+                        .jobs
+                        .iter()
+                        .find(|j| j.id == id)
+                        .map(job_label)
+                        .unwrap_or_default();
+                    self.log_error(tr!(
+                        "job-retrying",
+                        job = label,
+                        attempt = attempt,
+                        of = of,
+                        seconds = wait.as_secs(),
+                        error = with_hint(&error)
+                    ));
+                }
+                Effect::Finished { id, touched, error, ask } => {
                     let done =
                         self.queue.jobs.iter().find(|j| j.id == id && j.state == JobState::Done);
                     if let Some(t) = done.map(|j| &j.transfer)
@@ -1909,6 +2011,9 @@ impl App {
                             .map(job_label)
                             .unwrap_or_default();
                         self.log_error(format!("{label}: {}", with_hint(&e)));
+                        if ask {
+                            self.job_failures.push(id);
+                        }
                     }
                     self.reload_showing(&touched, None);
                 }
@@ -1991,12 +2096,12 @@ impl App {
                 Some(existing) if !self.queue.overwrite => {
                     let error = tr!("job-exists", name = shown(&existing.name));
                     self.job_conflicts.push((id, existing));
-                    Err(error)
+                    Checked::Taken(error)
                 }
-                _ => Ok(()),
+                _ => Checked::Free,
             },
-            Err(e) if is_not_found(&e) => Ok(()),
-            Err(e) => Err(tr!("probe-failed", error = with_hint(&e.message))),
+            Err(e) if is_not_found(&e) => Checked::Free,
+            Err(e) => Checked::Failed(tr!("probe-failed", error = with_hint(&e.message))),
         };
         let effects = self.queue.checked(id, check, outcome);
         self.run_effects(effects);
@@ -2092,6 +2197,10 @@ impl App {
 
     fn on_tick(&mut self, now: Instant) {
         self.spinner = self.spinner.wrapping_add(1);
+        if self.quit == QuitState::Running {
+            let effects = self.queue.tick(now);
+            self.run_effects(effects);
+        }
         self.age_status(now);
         self.age_refresh(now);
         self.check_quit(now);
@@ -2534,6 +2643,8 @@ fn dialog_identity(d: Option<&Dialog>) -> Option<(std::mem::Discriminant<Dialog>
     d.map(|d| {
         let (step, conflicts) = match d {
             Dialog::Conflict { conflicts, index, .. } => (*index, conflicts.len()),
+            // A failure that joins changes what the choices take in.
+            Dialog::JobFailed { jobs, .. } => (0, jobs.len()),
             // By job, as the next dialog can follow the last one at once.
             Dialog::JobConflict { conflicts, index, .. } => (
                 conflicts.get(*index).map_or(0, |(id, _)| usize::try_from(*id).unwrap_or(0)),
@@ -2717,7 +2828,10 @@ fn works_in_address_bar(action: Action) -> bool {
 }
 
 pub fn cancellable(state: &JobState) -> bool {
-    matches!(state, JobState::Queued | JobState::Checking | JobState::Running)
+    matches!(
+        state,
+        JobState::Queued | JobState::Checking | JobState::Running | JobState::Retrying { .. }
+    )
 }
 
 #[cfg(test)]

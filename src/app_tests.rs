@@ -1025,7 +1025,7 @@ fn quit_with_a_job_that_cannot_resume_asks_and_q_again_pauses_it() {
 fn quit_with_jobs_that_resume_is_immediate() {
     let (backend, stopped) = stoppable_copy();
     let mut h = copy_running(backend);
-    h.app.queue.started(1, Engine::Rsync, true);
+    h.app.queue.started(1, Engine::Rsync, true, false);
     h.press(KeyCode::Char('q'));
     assert!(h.app.dialog.is_none());
     h.wait_until(|a| a.quit == QuitState::Done);
@@ -1327,7 +1327,9 @@ fn states(h: &Harness) -> Vec<JobState> {
 fn cancelling_checks_that_hang_starts_the_next_job() {
     let (mut h, release) = hanging_checks(&["a", "b", "c"]);
     assert_eq!(states(&h), [JobState::Checking, JobState::Checking, JobState::Queued]);
+    // The newest first: c, then b and a.
     h.press(KeyCode::Char('5'));
+    h.press(KeyCode::Down);
     h.press(KeyCode::Char('x'));
     h.press(KeyCode::Down);
     h.press(KeyCode::Char('x'));
@@ -3216,4 +3218,115 @@ fn more_jobs_at_once_start_those_waiting() {
     assert_eq!(q.push(vec![t("a"), t("b"), t("c")]).len(), 1);
     assert_eq!(q.set_max_concurrent(3).len(), 2);
     assert_eq!(q.set_max_concurrent(0).len(), 0);
+}
+
+/// A backend whose first copy fails with "disk full" and whose later ones succeed, onto
+/// a target that can take files in chunks.
+fn failing_once() -> Harness {
+    let submitted = Arc::new(AtomicUsize::new(0));
+    let backend = Arc::new(FakeBackend::new(move |m, input| match m {
+        "operations/list" if input["fs"] == "nas:backup" => Ok(json!({"list": []})),
+        "operations/list" => Ok(json!({"list": [file("a", 1)]})),
+        "rse/resumable" => Ok(json!({"resumable": false, "chunked": true})),
+        "job/status" => {
+            let ok = input["jobid"] != 1;
+            let error = if ok { "" } else { "disk full" };
+            Ok(json!({"id": input["jobid"], "finished": true, "success": ok, "error": error}))
+        }
+        _ if input.get("_async").is_some() => {
+            Ok(json!({"jobid": submitted.fetch_add(1, Ordering::SeqCst) + 1}))
+        }
+        _ => Ok(json!({})),
+    }));
+    let mut h = Harness::new(backend, home(), nas());
+    h.press(KeyCode::Char('a'));
+    h.press(KeyCode::F(5));
+    h.press(KeyCode::Enter);
+    h.wait_until(|a| matches!(a.dialog, Some(Dialog::JobFailed { .. })));
+    h
+}
+
+/// A job that has failed, retries and all, is asked about at once: retry now, in
+/// chunks, or later; and the transfer window shows it in red until then.
+#[test]
+fn a_failed_job_asks_whether_to_retry_now_in_chunks_or_later() {
+    let mut h = failing_once();
+    let screen = h.render().to_owned();
+    for text in ["Transfer failed", "disk full", "Retry now", "Retry in chunks", "Later"] {
+        assert!(screen.contains(text), "{text}:\n{screen}");
+    }
+    assert!(matches!(h.app.dialog, Some(Dialog::JobFailed { focus: 0, chunkable: true, .. })));
+    // Retry in chunks: rclone is asked for them.
+    h.press(KeyCode::Right);
+    h.press(KeyCode::Enter);
+    h.wait_until(|a| a.queue.jobs[0].state == JobState::Done);
+    let copies = h.calls("rse/copy");
+    assert_eq!(copies.len(), 2);
+    assert_eq!((copies[0].get("chunked"), &copies[1]["chunked"]), (None, &json!(true)));
+    assert_eq!(copies[1]["chunkSize"], json!(64 << 20));
+    assert!(h.app.dialog.is_none());
+}
+
+#[test]
+fn later_leaves_the_job_failed_for_the_queue_keys() {
+    let mut h = failing_once();
+    h.press(KeyCode::Esc);
+    assert!(h.app.dialog.is_none());
+    assert!(matches!(h.app.queue.jobs[0].state, JobState::Failed(_)));
+    // The transfer window's frame is red, and so is the count of failures.
+    let (x, y) = h.find("1 failed");
+    assert_eq!(h.fg(x, y), Color::Red);
+    assert_eq!(h.fg(0, y - 1), Color::Red, "the frame:\n{}", h.screen);
+    // In the queue, R retries it in chunks.
+    h.press(KeyCode::Char('5'));
+    h.press_mod(KeyCode::Char('R'), KeyModifiers::SHIFT);
+    h.wait_until(|a| a.queue.jobs[0].state == JobState::Done);
+    assert_eq!(h.calls("rse/copy")[1]["chunked"], json!(true));
+}
+
+/// A failed job is tried again by itself first, the retry logged; only then is the user
+/// asked.
+#[test]
+fn a_failed_job_is_retried_by_itself_before_the_user_is_asked() {
+    let backend = Arc::new(FakeBackend::new(|m, input| match m {
+        "operations/list" if input["fs"] == "nas:backup" => Ok(json!({"list": []})),
+        "operations/list" => Ok(json!({"list": [file("a", 1)]})),
+        "job/status" => Ok(json!({
+            "id": input["jobid"], "finished": true, "success": false, "error": "disk full"
+        })),
+        _ if input.get("_async").is_some() => Ok(json!({"jobid": 1})),
+        _ => Ok(json!({})),
+    }));
+    let mut h = Harness::new(backend, home(), nas());
+    let retry =
+        crate::jobs::RetryPolicy { retries: 1, delay: Duration::ZERO, ..Default::default() };
+    h.app.queue.set_retry(retry);
+    h.press(KeyCode::Char('a'));
+    h.press(KeyCode::F(5));
+    h.press(KeyCode::Enter);
+    h.wait_until(|a| matches!(a.queue.jobs[0].state, JobState::Retrying { .. }));
+    assert!(h.app.dialog.is_none());
+    assert!(h.app.errors[0].message.contains("retry 1 of 1 in 0 s: disk full"));
+    h.app.handle(Event::Tick, Instant::now());
+    h.wait_until(|a| matches!(a.dialog, Some(Dialog::JobFailed { chunkable: false, .. })));
+    assert_eq!(h.calls("rse/copy").len(), 2);
+    // Without a target that takes chunks, no chunked retry is offered.
+    assert!(!h.render().contains("Retry in chunks"));
+    assert!(h.screen.contains("after 1 automatic retries each"), "{}", h.screen);
+}
+
+/// The transfer window shows the newest jobs first, and unfocused, the newest that is
+/// under way or failed.
+#[test]
+fn the_newest_jobs_come_first() {
+    let mut h = standard();
+    for name in ["b.txt", "projects"] {
+        select(&mut h, name);
+        h.press(KeyCode::F(5));
+        h.press(KeyCode::Enter);
+        h.wait_until(|a| a.queue.jobs.iter().all(|j| j.state == JobState::Done));
+    }
+    let (_, older) = h.find("copy b.txt");
+    let (_, newer) = h.find("copy projects/");
+    assert!(newer < older, "{}", h.screen);
 }

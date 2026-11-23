@@ -43,6 +43,10 @@ pub fn draw(buf: &mut Buffer, screen: Rect, app: &App, dialog: &Dialog) -> Drawn
             let lines = job_conflict_text(app, conflicts, *index);
             boxed(buf, screen, &tr!("conflict-title"), &lines, &dialog.buttons(), Some(*focus))
         }
+        Dialog::JobFailed { jobs, chunkable, focus } => {
+            let lines = job_failed_text(app, jobs, *chunkable);
+            boxed(buf, screen, &tr!("failed-title"), &lines, &dialog.buttons(), Some(*focus))
+        }
         Dialog::Quit { jobs, focus } => {
             let lines = interrupted_text(app, &tr!("quit-note"), jobs);
             boxed(buf, screen, &tr!("quit-title"), &lines, &dialog.buttons(), Some(*focus))
@@ -243,6 +247,40 @@ fn job_conflict_text(
     let dim = Style::new().add_modifier(Modifier::DIM);
     let note = tr!("conflict-job-note", count = conflicts.len() - index);
     lines.insert(lines.len() - 1, (note, dim));
+    lines
+}
+
+/// The jobs that failed, each with its error, and what each choice does.
+fn job_failed_text(app: &App, ids: &[JobId], chunkable: bool) -> Vec<(String, Style)> {
+    let red = Style::new().fg(Color::Red);
+    let jobs: Vec<_> =
+        ids.iter().filter_map(|id| app.queue.jobs.iter().find(|j| j.id == *id)).collect();
+    let retry = app.queue.retry_policy();
+    let mut lines = vec![plain(tr!("failed-intro", count = jobs.len(), retries = retry.retries))];
+    for job in jobs.iter().take(MAX_LISTED) {
+        lines.push(plain(format!("  {}", job_label(job))));
+        if let JobState::Failed(e) = &job.state {
+            lines.push((format!("    {}", shown(e)), red));
+        }
+    }
+    if jobs.len() > MAX_LISTED {
+        lines.push(note(&tr!("failed-more", count = jobs.len() - MAX_LISTED)));
+    }
+    lines.push(plain(String::new()));
+    lines.push(note(&tr!("failed-retry-note")));
+    if chunkable {
+        let size = human_size(i64::try_from(retry.chunk_size).unwrap_or(i64::MAX));
+        let can = jobs.iter().filter(|j| j.chunkable()).count();
+        let text = tr!("failed-chunked-note", size = size, count = can, total = jobs.len());
+        lines.push(note(&text));
+    }
+    let key = |action| app.keymap.label(action).to_owned();
+    lines.push(note(&tr!(
+        "failed-later-note",
+        queue = key(Action::FocusQueue),
+        retry = key(Action::QueueRetry),
+        chunked = key(Action::QueueRetryChunked)
+    )));
     lines
 }
 

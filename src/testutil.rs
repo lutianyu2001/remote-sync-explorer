@@ -150,6 +150,7 @@ impl Harness {
             ui,
             keymap: Keymap::default(),
             max_concurrent: 2,
+            retry: crate::jobs::RetryPolicy::default(),
             left,
             right,
             remotes: vec![("nas".to_owned(), "smb".to_owned()), ("s3".to_owned(), "s3".to_owned())],
